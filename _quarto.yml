@@ -1,0 +1,52 @@
+project:
+  type: website
+
+website:
+  title: "Portfolio"
+  search: true
+  navbar:
+    left:
+      - text: Home
+        href: index.qmd
+      - text: About Me
+        href: about.qmd
+  sidebar:
+    style: docked        # "floating" if want it to scroll with the page
+    collapse-level: 1    
+    contents:
+      - href: intro.qmd
+        text: Introduction
+      - href: data_sources.qmd
+        text: Data Sources
+      - href: data_viz.qmd
+        text: Data Visualization
+      - href: eda.qmd
+        text: Exploratory Data Analysis
+      - href: uniTS_model.qmd
+        text: Univariate TS Models (ARIMA/SARIMA)
+      - href: multiTS_model.qmd
+        text: Multivariate TS Models (ARIMAX/SARIMAX/VAR)
+      - href: financialTS_model.qmd
+        text: Financial TS Models (ARCH/GARCH)
+      - href: DLTS.qmd
+        text: Deep Learning for TS
+      - href: other.qmd
+        text: Other (Interrupted TS/ARFIMA/Spectral Analysis)
+      - href: conclusion.qmd
+        text: Conclusions
+
+format:
+  html:
+    bibliography: references.bib
+    csl: nature.csl
+    theme: 
+      light: sketchy
+      dark: slate
+    toggle-theme: true
+    css: styles.css
+    toc: true
+    toc-depth: 3
+    page-navigation: true
+
+
+
