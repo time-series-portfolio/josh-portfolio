@@ -1,5 +1,6 @@
 project:
   type: website
+  output-dir: /docs
 
 website:
   title: "Portfolio"
@@ -16,7 +17,7 @@ website:
     contents:
       - href: intro.qmd
         text: Introduction
-      - href: data_sources.qmd
+      - href: data_source.qmd
         text: Data Sources
       - href: data_viz.qmd
         text: Data Visualization
