@@ -20,7 +20,27 @@ ul.task-list li input[type="checkbox"] {
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
 }
-</style>
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+  margin-bottom: 0em;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
 
 
 <script src="site_libs/quarto-nav/quarto-nav.js"></script>
@@ -188,8 +208,29 @@ ul.task-list li input[type="checkbox"] {
 </nav>
 <div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
 <!-- margin-sidebar -->
-    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
-        
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#introduction" id="toc-introduction" class="nav-link active" data-scroll-target="#introduction">Introduction</a>
+  <ul class="collapse">
+  <li><a href="#exploring-sports-betting-market-dynamics-and-the-role-of-latency-in-prediction-markets" id="toc-exploring-sports-betting-market-dynamics-and-the-role-of-latency-in-prediction-markets" class="nav-link" data-scroll-target="#exploring-sports-betting-market-dynamics-and-the-role-of-latency-in-prediction-markets">Exploring Sports Betting Market Dynamics and the Role of Latency in Prediction Markets</a></li>
+  <li><a href="#the-big-picture" id="toc-the-big-picture" class="nav-link" data-scroll-target="#the-big-picture">The Big Picture</a></li>
+  <li><a href="#literature-review" id="toc-literature-review" class="nav-link" data-scroll-target="#literature-review">Literature Review</a></li>
+  <li><a href="#analytical-angles" id="toc-analytical-angles" class="nav-link" data-scroll-target="#analytical-angles">Analytical Angles</a></li>
+  <li><a href="#guiding-questions" id="toc-guiding-questions" class="nav-link" data-scroll-target="#guiding-questions">Guiding Questions</a></li>
+  <li><a href="#data-sources-sportsradar-api" id="toc-data-sources-sportsradar-api" class="nav-link" data-scroll-target="#data-sources-sportsradar-api">Data Sources (SportsRadar API)</a>
+  <ul class="collapse">
+  <li><a href="#odds-movement-and-line-analysis" id="toc-odds-movement-and-line-analysis" class="nav-link" data-scroll-target="#odds-movement-and-line-analysis">Odds Movement and Line Analysis</a></li>
+  <li><a href="#market-efficiency-and-ev-opportunities" id="toc-market-efficiency-and-ev-opportunities" class="nav-link" data-scroll-target="#market-efficiency-and-ev-opportunities">Market Efficiency and EV Opportunities</a></li>
+  <li><a href="#latency-and-information-processing" id="toc-latency-and-information-processing" class="nav-link" data-scroll-target="#latency-and-information-processing">Latency and Information Processing</a></li>
+  <li><a href="#seasonal-and-event-driven-patterns" id="toc-seasonal-and-event-driven-patterns" class="nav-link" data-scroll-target="#seasonal-and-event-driven-patterns">Seasonal and Event-Driven Patterns</a></li>
+  <li><a href="#injury-impact-and-cascades" id="toc-injury-impact-and-cascades" class="nav-link" data-scroll-target="#injury-impact-and-cascades">Injury Impact and Cascades</a></li>
+  </ul></li>
+  </ul></li>
+  </ul>
+</nav>
     </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
@@ -197,10 +238,134 @@ ul.task-list li input[type="checkbox"] {
 
 
 
+<section id="introduction" class="level1">
+<h1>Introduction</h1>
+<section id="exploring-sports-betting-market-dynamics-and-the-role-of-latency-in-prediction-markets" class="level2">
+<h2 class="anchored" data-anchor-id="exploring-sports-betting-market-dynamics-and-the-role-of-latency-in-prediction-markets">Exploring Sports Betting Market Dynamics and the Role of Latency in Prediction Markets</h2>
+<p>Sports betting has rapidly expanded into a multi-billion-dollar global industry, serving not only as entertainment but also as a live laboratory for prediction markets. Unlike traditional financial markets, sports betting markets have defined endpoints (game outcomes) and rapidly incorporate new information from diverse sources such as player injuries, weather, and public sentiment. Because of this unique structure, sports betting markets provide an excellent lens for studying <strong>market efficiency, volatility, and temporal information flow</strong>.</p>
+<p>Recent growth in real-time data providers such as SportsRadar makes it possible to measure odds movements, expected value (EV) opportunities, and settlement times with millisecond precision. This creates a natural opportunity to examine <strong>latency</strong>—the time lag between when information becomes available, when markets adjust, and when bettors (or automated systems) can capture profitable opportunities.</p>
+<p>Understanding these temporal dynamics matters not only for sports bettors but also for <strong>financial market analytics</strong>, as the patterns and inefficiencies observed in betting markets often mirror those found in equities, options, and other fast-moving financial instruments.</p>
+</section>
+<section id="the-big-picture" class="level2">
+<h2 class="anchored" data-anchor-id="the-big-picture">The Big Picture</h2>
+<p>This project seeks to answer one central question:</p>
+<p><strong>How do odds movements, expected value opportunities, and latency shape the efficiency and profitability of sports betting markets?</strong></p>
+<p>The sports betting market offers multiple perspectives for time series analysis. The five analytical angles I will focus on include odds movement, expected value opportunities, latency in information processing, seasonal/event-driven patterns, and injury-driven cascades.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="images/flowchat.drawio.png" class="img-fluid figure-img"></p>
+<figcaption>The Big Picture</figcaption>
+</figure>
+</div>
+<p>This framework provides a structured way to analyze how information flows and inefficiencies arise across sports betting markets, with broader applications for prediction market theory and financial time series.</p>
+</section>
+<section id="literature-review" class="level2">
+<h2 class="anchored" data-anchor-id="literature-review">Literature Review</h2>
+<p>Research on sports betting markets highlights both efficiency and areas of exploitable inefficiency. Early foundational work established that while wagering markets tend to be broadly efficient, they can deviate under certain conditions<span class="citation" data-cites="sauer1998economics"><sup><a href="#ref-sauer1998economics" role="doc-biblioref">1</a></sup></span>. Subsequent studies built on this, showing that efficiency can vary significantly depending on the sport, bet type, or market segment<span class="citation" data-cites="kuypers2000information"><sup><a href="#ref-kuypers2000information" role="doc-biblioref">2</a></sup></span> <span class="citation" data-cites="vlastakis2009efficient"><sup><a href="#ref-vlastakis2009efficient" role="doc-biblioref">3</a></sup></span>.</p>
+<p>One stream of research has focused on <strong>information and efficiency</strong>. Evidence shows that markets usually process information effectively, but inefficiencies emerge when new information—such as injury announcements or sharp bettor activity—causes temporary delays in adjustment<span class="citation" data-cites="croxson2014information"><sup><a href="#ref-croxson2014information" role="doc-biblioref">4</a></sup></span>. Line movement studies demonstrate that odds shifts often carry predictive power, suggesting that not all information is immediately absorbed<span class="citation" data-cites="paul2008line"><sup><a href="#ref-paul2008line" role="doc-biblioref">5</a></sup></span>.</p>
+<p>Another important perspective examines <strong>odds movements and market behavior</strong>. Analyses of line adjustments indicate that markets respond quickly but not instantaneously, leaving short-lived opportunities for expected value capture<span class="citation" data-cites="croxson2014information"><sup><a href="#ref-croxson2014information" role="doc-biblioref">4</a></sup></span>. The dynamics of how odds move over time provide insight into the underlying mechanisms of information flow, sentiment, and market corrections<span class="citation" data-cites="paul2008line"><sup><a href="#ref-paul2008line" role="doc-biblioref">5</a></sup></span>.</p>
+<p>Together, these works confirm that while sports betting markets approximate efficiency, inefficiencies exist in predictable patterns<span class="citation" data-cites="vlastakis2009efficient"><sup><a href="#ref-vlastakis2009efficient" role="doc-biblioref">3</a></sup></span>. What remains less explored is the <strong>temporal persistence of these inefficiencies and the role of latency</strong> in whether bettors or systems can capture them—precisely the gap this project addresses with time series analysis of SportsRadar data.</p>
+</section>
+<section id="analytical-angles" class="level2">
+<h2 class="anchored" data-anchor-id="analytical-angles">Analytical Angles</h2>
+<p><strong>1. Odds Movement and Line Analysis</strong></p>
+<p>Track how opening lines, live odds, and consensus shifts occur across sportsbooks, measuring predictive power of line changes.</p>
+<p><strong>2. Market Efficiency and Expected Value Opportunities</strong></p>
+<p>Identify when EV opportunities persist, measure arbitrage duration, and track sportsbook discrepancies to quantify inefficiencies.</p>
+<p><strong>3. Latency and Information Processing</strong></p>
+<p>Measure how quickly odds updates, EV opportunities, and settlements propagate. Quantify how delays impact capturing value and portfolio outcomes.</p>
+<p><strong>4. Seasonal and Event-Driven Patterns</strong></p>
+<p>Examine playoff volatility, holiday/weekend effects, and weather-driven odds changes.</p>
+<p><strong>5. Injury Impact and Information Cascades</strong></p>
+<p>Analyze how injury reports ripple across related bets, from spreads to props, creating temporary inefficiencies.</p>
+</section>
+<section id="guiding-questions" class="level2">
+<h2 class="anchored" data-anchor-id="guiding-questions">Guiding Questions</h2>
+<ol type="1">
+<li>How quickly do betting markets incorporate new information?</li>
+<li>What temporal patterns exist in expected value opportunities across different sports and bet types?</li>
+<li>How do delays in opportunity detection affect profitability?</li>
+<li>What is the relationship between the magnitude of line movement and actual game outcomes?</li>
+<li>How variable are settlement times across bet types and market conditions?</li>
+<li>What thresholds indicate sustainable vs.&nbsp;short-lived EV opportunities?</li>
+<li>How do seasonal or playoff periods influence volatility and efficiency?</li>
+<li>Are there consistent time-of-day or day-of-week efficiency effects?</li>
+<li>How does public sentiment correlate with sharp money and line corrections?</li>
+<li>How do injuries cascade into related markets (e.g., props, futures)?</li>
+<li>What is the impact of latency on capturing closing line value?</li>
+<li>What risk management strategies best account for latency windows?</li>
+</ol>
+</section>
+<section id="data-sources-sportsradar-api" class="level2">
+<h2 class="anchored" data-anchor-id="data-sources-sportsradar-api">Data Sources (SportsRadar API)</h2>
+<section id="odds-movement-and-line-analysis" class="level3">
+<h3 class="anchored" data-anchor-id="odds-movement-and-line-analysis">Odds Movement and Line Analysis</h3>
+<ul>
+<li>Opening lines at market open (per book)</li>
+<li>Real-time live odds updates with timestamps</li>
+<li>Line velocity (rate of odds changes)</li>
+<li>Consensus line averages across books</li>
+</ul>
+</section>
+<section id="market-efficiency-and-ev-opportunities" class="level3">
+<h3 class="anchored" data-anchor-id="market-efficiency-and-ev-opportunities">Market Efficiency and EV Opportunities</h3>
+<ul>
+<li>Expected value opportunity series by bet type</li>
+<li>Arbitrage persistence times</li>
+<li>Sportsbook variance (differences across books)</li>
+<li>Sharp vs.&nbsp;public money indicators</li>
+</ul>
+</section>
+<section id="latency-and-information-processing" class="level3">
+<h3 class="anchored" data-anchor-id="latency-and-information-processing">Latency and Information Processing</h3>
+<ul>
+<li>Odds update timestamps vs.&nbsp;detection timestamps</li>
+<li>Injury event → odds adjustment lag</li>
+<li>Settlement times from game end to payout</li>
+<li>EV opportunity delay measurements</li>
+</ul>
+</section>
+<section id="seasonal-and-event-driven-patterns" class="level3">
+<h3 class="anchored" data-anchor-id="seasonal-and-event-driven-patterns">Seasonal and Event-Driven Patterns</h3>
+<ul>
+<li>Fixture schedules (regular season vs playoffs)</li>
+<li>Betting volumes during major events</li>
+<li>Weekend/holiday betting shifts</li>
+<li>Weather-adjusted odds for outdoor sports</li>
+</ul>
+</section>
+<section id="injury-impact-and-cascades" class="level3">
+<h3 class="anchored" data-anchor-id="injury-impact-and-cascades">Injury Impact and Cascades</h3>
+<ul>
+<li>Official injury announcement timestamps</li>
+<li>Odds movement post-injury</li>
+<li>Roster change reactions</li>
+<li>Prop/futures adjustments following injury news</li>
+</ul>
 
 
 
-</main> <!-- /main -->
+</section>
+</section>
+</section>
+
+<div id="quarto-appendix" class="default"><section class="quarto-appendix-contents" role="doc-bibliography" id="quarto-bibliography"><h2 class="anchored quarto-appendix-heading">References</h2><div id="refs" class="references csl-bib-body" data-entry-spacing="0" data-line-spacing="2" role="list">
+<div id="ref-sauer1998economics" class="csl-entry" role="listitem">
+<div class="csl-left-margin">1. </div><div class="csl-right-inline">Sauer, R. D. The economics of wagering markets. <em>Journal of economic Literature</em> <strong>36</strong>, 2021–2064 (1998).</div>
+</div>
+<div id="ref-kuypers2000information" class="csl-entry" role="listitem">
+<div class="csl-left-margin">2. </div><div class="csl-right-inline">Kuypers, T. Information and efficiency: An empirical study of a fixed odds betting market. <em>Applied Economics</em> <strong>32</strong>, 1353–1363 (2000).</div>
+</div>
+<div id="ref-vlastakis2009efficient" class="csl-entry" role="listitem">
+<div class="csl-left-margin">3. </div><div class="csl-right-inline">Vlastakis, N., Dotsis, G. &amp; Markellos, R. N. How efficient is the european football betting market? Evidence from arbitrage and trading strategies. <em>Journal of Forecasting</em> <strong>28</strong>, 426–444 (2009).</div>
+</div>
+<div id="ref-croxson2014information" class="csl-entry" role="listitem">
+<div class="csl-left-margin">4. </div><div class="csl-right-inline">Croxson, K. &amp; James Reade, J. Information and efficiency: Goal arrival in soccer betting. <em>The Economic Journal</em> <strong>124</strong>, 62–91 (2014).</div>
+</div>
+<div id="ref-paul2008line" class="csl-entry" role="listitem">
+<div class="csl-left-margin">5. </div><div class="csl-right-inline">Paul, R. J. &amp; Weinbach, A. P. Line movements and market timing in the baseball gambling market. <em>Journal of Sports Economics</em> <strong>9</strong>, 371–386 (2008).</div>
+</div>
+</div></section></div></main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
 window.document.addEventListener("DOMContentLoaded", function (event) {
   const toggleBodyColorMode = (bsSheetEl) => {
