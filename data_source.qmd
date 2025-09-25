@@ -1,0 +1,30 @@
+# Data Sources
+
+## Sports Betting Odds (Sportradar API)
+
+**Description:**  
+This dataset consists of real-time sports betting odds provided by [Sportradar](https://developer.sportradar.com). The API delivers moneylines, spreads, totals, and implied probabilities across multiple leagues (NBA, NFL, MLB, NHL). Because odds update dynamically throughout the day, they provide a high-frequency time series suitable for forecasting and volatility analysis.  
+
+**Variables:**  
+- `moneyline_home`, `moneyline_away`  
+- `spread` (point spread values)  
+- `total` (over/under lines)  
+- `vig` (implied margin)  
+- `implied_prob_home`, `implied_prob_away`  
+- `timestamp` (for update latency analysis)  
+
+**Link to Data:** [Sportradar API Portal](https://developer.sportradar.com)
+
+## Sportsbook Equities & ETF Data (Yahoo Finance / Alpha Vantage)
+
+**Description:**  
+The second dataset consists of daily stock market data for publicly traded sportsbook companies (e.g., DraftKings [DKNG], Caesars Entertainment [CZR], etc.). Data is collected via [Yahoo Finance](https://finance.yahoo.com). These equities reflect investor sentiment and financial spillovers from prediction market activity.  
+
+**Variables:**  
+- `open`, `high`, `low`, `close` (OHLC prices)  
+- `volume` (trading volume)  
+- `returns` (daily log/percent returns)  
+- `realized_volatility` (calculated metric for risk/uncertainty)
+
+**Link to Data:** [Yahoo Finance](https://finance.yahoo.com)
+

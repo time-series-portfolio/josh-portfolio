@@ -1,24 +1,44 @@
 # Introduction
 
-## Exploring Sports Betting Market Dynamics and the Role of Latency in Prediction Markets
+## Exploring Prediction Markets Through Sports Betting and Financial Time Series
 
-Sports betting has rapidly expanded into a multi-billion-dollar global industry, serving not only as entertainment but also as a live laboratory for prediction markets. Unlike traditional financial markets, sports betting markets have defined endpoints (game outcomes) and rapidly incorporate new information from diverse sources such as player injuries, weather, and public sentiment. Because of this unique structure, sports betting markets provide an excellent lens for studying **market efficiency, volatility, and temporal information flow**.
+Prediction markets aggregate information into prices that reflect collective forecasts of future events. Sports betting is one of the most active and transparent prediction markets, with odds functioning as “prices” on game outcomes. Like stocks or options, these odds respond dynamically to new information—injuries, weather, sharp bettor activity—and often exhibit predictable volatility and seasonality.
 
-Recent growth in real-time data providers such as SportsRadar makes it possible to measure odds movements, expected value (EV) opportunities, and settlement times with millisecond precision. This creates a natural opportunity to examine **latency**—the time lag between when information becomes available, when markets adjust, and when bettors (or automated systems) can capture profitable opportunities.
+In recent years, the legalization and digitization of sports betting has transformed it into a multi-billion-dollar industry, creating a live laboratory for studying market efficiency, volatility clustering, and information flow. Data providers such as Sportradar now offer real-time feeds of odds, play-by-play data, and settlements, enabling precise measurement of how betting markets process information. At the same time, the growth of publicly traded sportsbook companies (e.g., DraftKings, Caesars, Flutter) has created a direct connection between prediction markets and the financial markets, as investor sentiment and equity valuations reflect underlying betting dynamics.
 
-Understanding these temporal dynamics matters not only for sports bettors but also for **financial market analytics**, as the patterns and inefficiencies observed in betting markets often mirror those found in equities, options, and other fast-moving financial instruments.
+This project analyzes sports betting markets as financial time series, applying models such as ARIMA, GARCH, VAR, and LSTM. By pairing Sportradar odds with sportsbook equity data, it seeks to demonstrate how sports betting operates as a structured prediction market, with implications for both bettors and financial market participants.
 
 ## The Big Picture
 
-This project seeks to answer one central question:
+### Central Question:
 
-**How do odds movements, expected value opportunities, and latency shape the efficiency and profitability of sports betting markets?**
+**How do sports prediction markets exhibit seasonality, volatility, and inefficiency, and how are these dynamics tied to broader financial markets?**
 
-The sports betting market offers multiple perspectives for time series analysis. The five analytical angles I will focus on include odds movement, expected value opportunities, latency in information processing, seasonal/event-driven patterns, and injury-driven cascades.
+![](images/flowchart.png)
 
-![The Big Picture](images/flowchat.drawio.png)
+Analytical Angles:
 
-This framework provides a structured way to analyze how information flows and inefficiencies arise across sports betting markets, with broader applications for prediction market theory and financial time series.
+1. Odds Movements & Line Dynamics (Sportradar odds)
+
+- Opening vs live odds, consensus shifts, line velocity.
+- Insights into how quickly prediction markets absorb information.
+
+2. Market Efficiency & Volatility Clustering (Sportradar odds + GARCH models)
+
+- Measuring persistence of arbitrage opportunities and EV (expected value) windows.
+- Volatility spikes during high-stakes events.
+
+3. Latency & Information Flow (Sportradar timestamps)
+
+- Time lag from injury news → odds adjustment → settlement.
+- Operational inefficiencies in prediction markets.
+
+4. Financial Spillovers (Equities/ETF data)
+
+- DraftKings/Betting ETF returns and volatility.
+- How sportsbook equities mirror prediction market shocks.
+
+This framework provides a structured view of prediction markets as financial ecosystems, connecting micro-level betting markets with macro-level financial instruments.
 
 ## Literature Review
 
@@ -30,76 +50,17 @@ Another important perspective examines **odds movements and market behavior**. A
 
 Together, these works confirm that while sports betting markets approximate efficiency, inefficiencies exist in predictable patterns @vlastakis2009efficient. What remains less explored is the **temporal persistence of these inefficiencies and the role of latency** in whether bettors or systems can capture them—precisely the gap this project addresses with time series analysis of SportsRadar data.
 
-## Analytical Angles
-
-**1. Odds Movement and Line Analysis**
-
-Track how opening lines, live odds, and consensus shifts occur across sportsbooks, measuring predictive power of line changes.
-
-**2. Market Efficiency and Expected Value Opportunities**
-
-Identify when EV opportunities persist, measure arbitrage duration, and track sportsbook discrepancies to quantify inefficiencies.
-
-**3. Latency and Information Processing**
-
-Measure how quickly odds updates, EV opportunities, and settlements propagate. Quantify how delays impact capturing value and portfolio outcomes.
-
-**4. Seasonal and Event-Driven Patterns**
-
-Examine playoff volatility, holiday/weekend effects, and weather-driven odds changes.
-
-**5. Injury Impact and Information Cascades**
-
-Analyze how injury reports ripple across related bets, from spreads to props, creating temporary inefficiencies.
-
 ## Guiding Questions
 
-1. How quickly do betting markets incorporate new information?
-2. What temporal patterns exist in expected value opportunities across different sports and bet types?
-3. How do delays in opportunity detection affect profitability?
-4. What is the relationship between the magnitude of line movement and actual game outcomes?
-5. How variable are settlement times across bet types and market conditions?
-6. What thresholds indicate sustainable vs. short-lived EV opportunities?
-7. How do seasonal or playoff periods influence volatility and efficiency?
-8. Are there consistent time-of-day or day-of-week efficiency effects?
-9. How does public sentiment correlate with sharp money and line corrections?
-10. How do injuries cascade into related markets (e.g., props, futures)?
-11. What is the impact of latency on capturing closing line value?
-12. What risk management strategies best account for latency windows?
+1. How do sports odds behave as financial time series?
+2. What seasonal or cyclical patterns emerge in odds and equity prices?
+3. How quickly do odds incorporate new information?
+4. How persistent are arbitrage/EV opportunities
+5. What role does latency play in market efficiency?
+6. Do odds exhibit volatility clustering similar to equities?
+7. How do COVID and major shocks affect both odds and equity markets?
+8. Are there consistent day-of-week or playoff-related volatility effects?
+9. How correlated are betting market inefficiencies with sportsbook stock returns?
+10. What forecasting models (ARIMA, GARCH, LSTM) best capture prediction market behavior?
 
-## Data Sources (SportsRadar API)
-
-### Odds Movement and Line Analysis
-
-- Opening lines at market open (per book)
-- Real-time live odds updates with timestamps
-- Line velocity (rate of odds changes)
-- Consensus line averages across books
-
-### Market Efficiency and EV Opportunities
-
-- Expected value opportunity series by bet type
-- Arbitrage persistence times
-- Sportsbook variance (differences across books)
-- Sharp vs. public money indicators
-
-### Latency and Information Processing
-
-- Odds update timestamps vs. detection timestamps
-- Injury event → odds adjustment lag
-- Settlement times from game end to payout
-- EV opportunity delay measurements
-
-### Seasonal and Event-Driven Patterns
-
-- Fixture schedules (regular season vs playoffs)
-- Betting volumes during major events
-- Weekend/holiday betting shifts
-- Weather-adjusted odds for outdoor sports
-
-### Injury Impact and Cascades
-
-- Official injury announcement timestamps
-- Odds movement post-injury
-- Roster change reactions
-- Prop/futures adjustments following injury news
+Main Reference: Gamage, P. (2026). Applied Time Series for Data Science

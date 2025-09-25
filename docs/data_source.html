@@ -189,8 +189,18 @@ ul.task-list li input[type="checkbox"] {
 </nav>
 <div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
 <!-- margin-sidebar -->
-    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
-        
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#data-sources" id="toc-data-sources" class="nav-link active" data-scroll-target="#data-sources">Data Sources</a>
+  <ul class="collapse">
+  <li><a href="#sports-betting-odds-sportradar-api" id="toc-sports-betting-odds-sportradar-api" class="nav-link" data-scroll-target="#sports-betting-odds-sportradar-api">Sports Betting Odds (Sportradar API)</a></li>
+  <li><a href="#sportsbook-equities-etf-data-yahoo-finance-alpha-vantage" id="toc-sportsbook-equities-etf-data-yahoo-finance-alpha-vantage" class="nav-link" data-scroll-target="#sportsbook-equities-etf-data-yahoo-finance-alpha-vantage">Sportsbook Equities &amp; ETF Data (Yahoo Finance / Alpha Vantage)</a></li>
+  </ul></li>
+  </ul>
+</nav>
     </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
@@ -198,8 +208,35 @@ ul.task-list li input[type="checkbox"] {
 
 
 
+<section id="data-sources" class="level1">
+<h1>Data Sources</h1>
+<section id="sports-betting-odds-sportradar-api" class="level2">
+<h2 class="anchored" data-anchor-id="sports-betting-odds-sportradar-api">Sports Betting Odds (Sportradar API)</h2>
+<p><strong>Description:</strong><br>
+This dataset consists of real-time sports betting odds provided by <a href="https://developer.sportradar.com">Sportradar</a>. The API delivers moneylines, spreads, totals, and implied probabilities across multiple leagues (NBA, NFL, MLB, NHL). Because odds update dynamically throughout the day, they provide a high-frequency time series suitable for forecasting and volatility analysis.</p>
+<p><strong>Variables:</strong><br>
+- <code>moneyline_home</code>, <code>moneyline_away</code><br>
+- <code>spread</code> (point spread values)<br>
+- <code>total</code> (over/under lines)<br>
+- <code>vig</code> (implied margin)<br>
+- <code>implied_prob_home</code>, <code>implied_prob_away</code><br>
+- <code>timestamp</code> (for update latency analysis)</p>
+<p><strong>Link to Data:</strong> <a href="https://developer.sportradar.com">Sportradar API Portal</a></p>
+</section>
+<section id="sportsbook-equities-etf-data-yahoo-finance-alpha-vantage" class="level2">
+<h2 class="anchored" data-anchor-id="sportsbook-equities-etf-data-yahoo-finance-alpha-vantage">Sportsbook Equities &amp; ETF Data (Yahoo Finance / Alpha Vantage)</h2>
+<p><strong>Description:</strong><br>
+The second dataset consists of daily stock market data for publicly traded sportsbook companies (e.g., DraftKings [DKNG], Caesars Entertainment [CZR], etc.). Data is collected via <a href="https://finance.yahoo.com">Yahoo Finance</a>. These equities reflect investor sentiment and financial spillovers from prediction market activity.</p>
+<p><strong>Variables:</strong><br>
+- <code>open</code>, <code>high</code>, <code>low</code>, <code>close</code> (OHLC prices)<br>
+- <code>volume</code> (trading volume)<br>
+- <code>returns</code> (daily log/percent returns)<br>
+- <code>realized_volatility</code> (calculated metric for risk/uncertainty)</p>
+<p><strong>Link to Data:</strong> <a href="https://finance.yahoo.com">Yahoo Finance</a></p>
 
 
+</section>
+</section>
 
 </main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
