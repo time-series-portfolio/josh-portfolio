@@ -1,6 +1,5 @@
 ---
 title: "Exploratory Data Analysis: Offensive Efficiency in the Modern NBA"
-author: "Josh Lin"
 format:
   html:
     embed-resources: true
@@ -8,17 +7,7 @@ format:
     code-fold: true
 ---
 
-# Introduction
-
-This EDA analyzes NBA offensive efficiency evolution (1980-2025) through time series methods on:
-
-1. **Offensive Rating (ORtg)** - Points per 100 possessions
-2. **Pace** - Possessions per 48 minutes
-3. **3-Point Attempt Rate (3PAr)** - % of FGA that are 3-pointers
-4. **Attendance** - Total season attendance (COVID impact)
-5. **DKNG Stock** - DraftKings daily prices (seasonality example)
-
-**Objectives:** Assess stationarity, identify trends/structural breaks, examine relationships, prepare for ARIMA/VAR modeling.
+The modern NBA has steadily evolved toward higher offensive efficiency, with a clear acceleration in the last decade. Using league-average annual data from 1980–2025, I track Offensive Rating (ORtg), Pace, and 3-Point Attempt Rate (3PAr), then layer in attendance to capture COVID’s shock, and finally use weekly sports-betting stocks as a compact example of seasonal decomposition.
 
 ```{r setup, warning=FALSE, message=FALSE}
 library(tidyverse)
@@ -41,7 +30,6 @@ theme_set(theme_minimal(base_size = 12))
 
 all_adv_files <- list.files("data/adv_stats", pattern = "*.csv", full.names = TRUE)
 
-# Combine all season data
 all_adv_data <- map_df(all_adv_files, function(file) {
     season_str <- str_extract(basename(file), "\\d{4}-\\d{2}")
     season_year <- as.numeric(str_sub(season_str, 1, 4)) + 1
@@ -51,7 +39,6 @@ all_adv_data <- map_df(all_adv_files, function(file) {
     return(df)
 })
 
-# Calculate league averages by season
 league_avg <- all_adv_data %>%
     group_by(Season) %>%
     summarise(
@@ -65,11 +52,9 @@ league_avg <- all_adv_data %>%
     )
 ```
 
-# 1. Primary Series: Offensive Rating (ORtg)
+# 1. Offensive Rating (ORtg)
 
-**Offensive Rating** measures points scored per 100 possessions, providing a pace-adjusted metric of scoring efficiency. This is our primary dependent variable.
-
-## 1.1 Time Series Visualization and Component Identification
+## 1.1 Time Series Visualization
 
 ```{r ortg-plot, warning=FALSE, message=FALSE, fig.width=12, fig.height=6}
 # Convert to time series object
@@ -106,7 +91,6 @@ ggplot(df_ortg, aes(x = Year, y = Value, color = Era)) +
     )) +
     labs(
         title = "NBA Offensive Rating (1980-2025): Evolution of Scoring Efficiency",
-        subtitle = "Points per 100 possessions - our primary measure of offensive efficiency",
         x = "Season",
         y = "Offensive Rating (ORtg)",
         color = "Era"
@@ -119,14 +103,6 @@ ggplot(df_ortg, aes(x = Year, y = Value, color = Era)) +
     )
 ```
 
-**Components:**
-
-- **Trend**: Upward, non-linear. 104 (1980) → 108 (2010) → 115 (2025). Acceleration post-2012.
-- **Structural Breaks**: 2012 (analytics era), 2020 (COVID)
-- **Seasonality**: None (annual data, frequency=1)
-- **Irregular**: Small (±1-2 points), smooth progression
-- **Additive Model**: Y_t = Trend + Irregular
-
 ## 1.2 Lag Plots
 
 ```{r ortg-lag, warning=FALSE, message=FALSE, fig.width=10, fig.height=8}
@@ -134,8 +110,6 @@ gglagplot(ts_ortg, do.lines = FALSE, lags = 9) +
     ggtitle("Lag Plot of Offensive Rating (ORtg)") +
     theme_minimal()
 ```
-
-**Interpretation:** Strong positive correlation at all lags → non-stationary with persistent trend, no mean reversion.
 
 ## 1.3 ACF and PACF Analysis
 
@@ -151,10 +125,6 @@ pacf_ortg <- ggPacf(ts_ortg, lag.max = 20) +
 acf_ortg / pacf_ortg
 ```
 
-**ACF:** Slow decay, significant through lag 20 → classic non-stationarity signature.
-
-**PACF:** Large spike at lag 1, then cuts off → AR(1) with unit root (random walk with drift).
-
 ## 1.4 Augmented Dickey-Fuller Test
 
 ```{r ortg-adf, warning=FALSE, message=FALSE}
@@ -162,16 +132,7 @@ adf_ortg <- adf.test(ts_ortg)
 print(adf_ortg)
 ```
 
-**Result:** Fail to reject null → series is non-stationary, requires differencing.
-
-## 1.5 Trend Decomposition (Additive Model)
-
-**Additive Model:** Y_t = Trend_t + Irregular_t
-
-**Why Additive?**
-- Constant variance (±1-2 points throughout)
-- Absolute changes, not percentages
-- No seasonality (frequency=1, annual data)
+## 1.5 Trend Decomposition - Additive Model
 
 ```{r ortg-decomp, warning=FALSE, message=FALSE, fig.width=12, fig.height=10}
 # Create data frame for decomposition
@@ -203,24 +164,16 @@ p2 <- ggplot(df_ortg_decomp, aes(x = Year, y = Irregular)) +
 p1 / p2
 ```
 
-**Interpretation:**
-- **Trend**: 1980-2000 (slow), 2000-2012 (moderate), 2012-2025 (rapid acceleration)
-- **Irregular**: Small residuals (±1 point), constant variance → confirms additive model
-- Trend explains ~98% of variation
-
-## 1.6 Differencing to Achieve Stationarity
+## 1.6 Differencing for Stationarity
 
 ```{r ortg-diff, warning=FALSE, message=FALSE, fig.width=12, fig.height=8}
 # First difference
 diff_ortg <- diff(ts_ortg, differences = 1)
 
-# Plot comparison
 par(mfrow = c(2, 1))
 plot(ts_ortg, main = "Original ORtg Series", ylab = "ORtg", xlab = "Year")
 plot(diff_ortg, main = "First Differenced ORtg Series", ylab = "Change in ORtg", xlab = "Year")
 ```
-
-**Interpretation:** Oscillates around zero, ±1-2 points/year. Larger changes post-2012. Trend removed.
 
 ```{r ortg-diff-acf, warning=FALSE, message=FALSE, fig.width=10, fig.height=8}
 acf_diff_ortg <- ggAcf(diff_ortg, lag.max = 20) +
@@ -234,18 +187,14 @@ pacf_diff_ortg <- ggPacf(diff_ortg, lag.max = 20) +
 acf_diff_ortg / pacf_diff_ortg
 ```
 
-**ACF After Differencing:** Rapid decay, most lags within confidence bands → stationarity achieved.
-
 ```{r ortg-diff-adf, warning=FALSE, message=FALSE}
 adf_diff_ortg <- adf.test(diff_ortg)
 print(adf_diff_ortg)
 ```
 
-**ADF Result:** p-value < 0.05 → stationary. Suitable for ARIMA modeling.
+ORtg, points per 100 possessions, is the primary outcome. The long-run trend is unambiguously upward but non-linear. A slow climb through the 1980s–2000s, then a pronounced step-up beginning around 2012, and continued gains into the post-COVID years. Autocorrelation patterns (slow ACF decay and PACF spike at lag 1) and an ADF test confirm ORtg is non-stationary in levels but becomes stationary after first-differencing; variance is roughly constant, so an additive structure fits. A simple LOESS trend explains nearly all variation, with small residuals. This implies that the story is primarily about a structural trend rather than short-cycle oscillations.
 
 # 2. Mediating Variable: Pace
-
-**Pace** measures possessions per 48 minutes, representing game tempo. Our research question asks: *Does pace amplify or mediate the impact of shot selection on efficiency?*
 
 ## 2.1 Time Series Visualization
 
@@ -269,7 +218,6 @@ ggplot(df_pace, aes(x = Year, y = Value, color = Era)) +
     )) +
     labs(
         title = "NBA Pace (1980-2025): Possessions Per 48 Minutes",
-        subtitle = "U-shaped pattern: fast 1980s → slow 2000s → moderate recovery",
         x = "Season",
         y = "Pace (Possessions per 48 min)",
         color = "Era"
@@ -282,8 +230,6 @@ ggplot(df_pace, aes(x = Year, y = Value, color = Era)) +
     )
 ```
 
-**Components:** U-shaped pattern. 1980-2005 (decline 102→90), 2005-2025 (recovery to 97). Independent of analytics trend.
-
 ## 2.2 Lag Plots
 
 ```{r pace-lag, warning=FALSE, message=FALSE, fig.width=10, fig.height=8}
@@ -291,8 +237,6 @@ gglagplot(ts_pace, do.lines = FALSE, lags = 9) +
     ggtitle("Lag Plot of Pace") +
     theme_minimal()
 ```
-
-**Interpretation:** Complex patterns due to U-shape. Early lags (strong), medium lags (weak at inflection), long lags (distinct 1980s vs 2000s clusters).
 
 ## 2.3 ACF and PACF Analysis
 
@@ -307,8 +251,6 @@ pacf_pace <- ggPacf(ts_pace, lag.max = 20) +
 
 acf_pace / pacf_pace
 ```
-
-**Interpretation:** Slow decay (non-stationary), U-shaped pattern. PACF: lag 1 spike.
 
 ## 2.3 Stationarity Testing
 
@@ -342,15 +284,13 @@ adf_diff_pace <- adf.test(diff_pace)
 print(adf_diff_pace)
 ```
 
-## 2.4 Moving Average Smoothing for Pace
+## 2.4 Moving Average Smoothing
 
 ```{r pace-ma-smoothing, warning=FALSE, message=FALSE, fig.width=12, fig.height=8}
-# Calculate moving averages with different windows
 ma_pace_3 <- ma(ts_pace, order = 3) # 3-year window (short-term)
 ma_pace_5 <- ma(ts_pace, order = 5) # 5-year window (medium-term)
 ma_pace_10 <- ma(ts_pace, order = 10) # 10-year window (long-term)
 
-# Create comparison plot
 autoplot(ts_pace, series = "Original") +
     autolayer(ma_pace_3, series = "MA(3)") +
     autolayer(ma_pace_5, series = "MA(5)") +
@@ -379,14 +319,9 @@ autoplot(ts_pace, series = "Original") +
     )
 ```
 
-**Interpretation:**
-- **MA(5)**: U-shape clear: decline (1980-2004), trough (2004-2008), recovery (2008-2025)
-- **MA(10)**: Macro pattern only. Recovery slower than decline, not to 1980s levels
-- **Key insight**: Pace independent of analytics (decline/recovery predates 2012)
+Pace, the mediator in this story, follows a different trajectory: a classic U-shape. Possessions per 48 minutes decline from fast 1980s basketball to a trough in the mid-2000s, then recover through the 2010s and 2020s. Importantly, the Pace recovery begins before the analytics inflection, suggesting it is not simply a byproduct of analytics. Like ORtg, Pace is non-stationary in levels and stationary in first differences; moving-average smoothers with 5–10 year windows make the U-shape especially clear. This is rather significant as this means efficiency gains do not reduce to “more possessions".
 
 # 3. Key Independent Variable: 3-Point Attempt Rate (3PAr)
-
-**3PAr** measures the percentage of field goal attempts that are three-pointers. Research question: *Did the rise in 3-point volume precede or follow efficiency improvements?*
 
 ## 3.1 Time Series Visualization
 
@@ -428,12 +363,6 @@ ggplot(df_3par, aes(x = Year, y = Value, color = Era)) +
     )
 ```
 
-**Component Identification:**
-
-1. **Trend**: Strong upward trend with clear acceleration post-2012
-2. **Structural Break**: 2012 marks inflection point from gradual to rapid growth
-3. **Pattern**: Similar acceleration timing to ORtg (both post-2012)
-
 ## 3.2 Lag Plots
 
 ```{r 3par-lag, warning=FALSE, message=FALSE, fig.width=10, fig.height=8}
@@ -441,10 +370,6 @@ gglagplot(ts_3par, do.lines = FALSE, lags = 9) +
     ggtitle("Lag Plot of 3-Point Attempt Rate (3PAr)") +
     theme_minimal()
 ```
-
-**Interpretation:**
-
-Extremely strong positive correlations at all lags → structural transformation, permanent change, no mean reversion.
 
 ## 3.3 Stationarity Analysis
 
@@ -528,15 +453,9 @@ autoplot(ts_3par, series = "Original") +
     )
 ```
 
-**Interpretation:**
-- **MA(3)**: Preserves 1995-1997 spike (rule change)
-- **MA(5)**: Exponential pattern clear: 1980-2012 (gradual), 2012-2025 (rapid surge)
-- **MA(10)**: 2012 inflection point where slope doubles
-- 2012 represents fundamental acceleration, not temporary variance
+The strongest structural break appears in 3PAr, which measures the share of shots taken from three. 3PAr rises modestly for decades and then accelerates sharply around 2012, around the same period where ORtg takes off. Lag plots show strong positive relationships across lags, and ACF/PACF behavior again indicates a trending series (non-stationary levels; stationary first differences). Smoothing highlights two regimes: a gradual era up to around 2012 and a rapid, near-exponential climb thereafter. This timing alignment supports the hypothesis that shot selection modernization (spacing, threes above the break, rim attempts enabled by space) is tightly coupled to league-wide efficiency gains
 
 # 4. Attendance: COVID-19 Impact Analysis
-
-**Attendance** measures total and average game attendance, providing a direct quantification of the COVID-19 pandemic's impact on live sports.
 
 ## 4.1 Time Series Visualization
 
@@ -598,12 +517,6 @@ ggplot(df_attendance, aes(x = Year, y = Value, color = Era)) +
     )
 ```
 
-**Components:**
-- **Trend**: Stable 21-22M (1990-2019)
-- **Shock**: 90% collapse in 2020-21 (bubble + limited capacity)
-- **Recovery**: To ~18M by 2025 (still 15% below pre-COVID)
-- **Type**: Exogenous intervention, ideal for intervention analysis
-
 ## 4.2 Lag Plots
 
 ```{r attendance-lag, warning=FALSE, message=FALSE, fig.width=10, fig.height=8}
@@ -611,8 +524,6 @@ gglagplot(ts_attendance, do.lines = FALSE, lags = 9) +
     ggtitle("Lag Plot of Total Attendance") +
     theme_minimal()
 ```
-
-**Interpretation:** Pre-COVID cluster + 2020-21 outliers. Distinct separation shows temporary shock, not new regime.
 
 ## 4.3 ACF and PACF Analysis
 
@@ -627,8 +538,6 @@ pacf_attendance <- ggPacf(ts_attendance, lag.max = 15) +
 
 acf_attendance / pacf_attendance
 ```
-
-**Interpretation:** High ACF (pre-COVID stability), 2020-21 outlier effect. Ideal for intervention analysis.
 
 ## 4.4 Moving Average Smoothing for Attendance
 
@@ -664,11 +573,9 @@ autoplot(ts_attendance, series = "Original") +
     )
 ```
 
-**Interpretation:** COVID shock persists through all MA windows (too extreme to smooth). Pre-COVID stability → sharp drop → partial recovery. Perfect for intervention modeling.
+Attendance provides the counterpoint: a stable pre-COVID plateau around ~21–22 million through 2019, a 2020–21 collapse during the bubble/limited-capacity seasons, and a partial recovery that remains below the pre-pandemic ceiling. The sharp, short-window discontinuity is a uncounted for shock rather than a new equilibrium. Even with 3–5 year moving averages, the COVID impact is too large to smooth away
 
 # 5. Financial Data: Sports Betting Stocks - Time Series with Seasonality
-
-**Sports betting stocks** (DKNG, PENN, MGM, CZR) demonstrate time series with seasonality (weekly patterns, frequency=52) for proper `decompose()` example. All four experienced COVID-era boom-bust-stabilization cycles tied to online betting surge.
 
 ## 5.1 Data Preparation and Time Series Creation
 
@@ -724,13 +631,7 @@ autoplot(ts_dkng / as.numeric(ts_dkng)[1] * 100, series = "DKNG") +
     theme(plot.title = element_text(face = "bold"), legend.position = "bottom")
 ```
 
-**Comparative Trends:**
-- **DKNG**: 350% peak → 100-120% stabilization (pure-play online betting)
-- **PENN**: Extreme 500% spike (Barstool hype) → 60% collapse (ESPN BET transition struggle)
-- **MGM**: Stable 150% peak (diversified casino + betting)
-- **CZR**: 200% boom → negative returns (over-leveraged expansion)
-
-## 5.3 DKNG Detailed Analysis (Primary Example)
+## 5.3 DKNG Detailed Analysis
 
 ```{r dkng-detail-plot, warning=FALSE, message=FALSE, fig.width=12, fig.height=6}
 autoplot(ts_dkng) +
@@ -745,8 +646,6 @@ autoplot(ts_dkng) +
     theme(plot.title = element_text(face = "bold", size = 14))
 ```
 
-**Components:** Trend (boom $20→$70, correction, stabilization $35), Seasonality (weekly), High volatility. **Multiplicative model** (volatility scales with price).
-
 ## 5.4 Seasonal Decomposition (DKNG)
 
 ```{r dkng-decompose, warning=FALSE, message=FALSE, fig.width=12, fig.height=10}
@@ -760,12 +659,6 @@ autoplot(decomp_dkng) +
     theme(plot.title = element_text(face = "bold", size = 14))
 ```
 
-**Interpretation:**
-- **Trend**: Boom (2020-21) → correction (2021-22) → stabilization (~$35)
-- **Seasonal**: Small weekly trading patterns
-- **Random**: High variance (growth stock volatility)
-- **Multiplicative chosen**: Volatility proportional to price level (additive would show heteroskedasticity)
-
 ## 5.5 Moving Average Smoothing (DKNG)
 
 ```{r dkng-ma-smoothing, warning=FALSE, message=FALSE, fig.width=12, fig.height=8}
@@ -774,7 +667,6 @@ ma_dkng_4 <- ma(ts_dkng, order = 4) # Monthly smoothing (~4 weeks)
 ma_dkng_13 <- ma(ts_dkng, order = 13) # Quarterly smoothing (~13 weeks)
 ma_dkng_52 <- ma(ts_dkng, order = 52) # Annual smoothing (52 weeks)
 
-# Create comparison plot
 autoplot(ts_dkng, series = "Original") +
     autolayer(ma_dkng_4, series = "MA(4 weeks)") +
     autolayer(ma_dkng_13, series = "MA(13 weeks)") +
@@ -803,12 +695,6 @@ autoplot(ts_dkng, series = "Original") +
     )
 ```
 
-**Interpretation:**
-- **MA(4)**: Monthly smoothing, preserves 2021 peak
-- **MA(13)**: Quarterly view: surge → peak → correction → stabilization
-- **MA(52)**: Annual view, only macro pattern (boom-bust-stable)
-- Different windows reveal different temporal scales (weekly stock vs annual NBA data)
-
 ## 5.6 ACF and Lag Plots (DKNG)
 
 ```{r dkng-acf, warning=FALSE, message=FALSE, fig.width=10, fig.height=8}
@@ -823,33 +709,21 @@ pacf_dkng <- ggPacf(ts_dkng, lag.max = 52) +
 acf_dkng / pacf_dkng
 ```
 
-**Interpretation:** Slow decay (non-stationary). Stock prices are random walks with drift, require differencing.
-
-## 5.7 PENN Detailed Analysis (Comparison to DKNG)
+## 5.7 PENN Analysis
 
 ### 5.7.1 PENN Time Series Visualization
 
 ```{r penn-detail-plot, warning=FALSE, message=FALSE, fig.width=12, fig.height=6}
 autoplot(ts_penn) +
-    annotate("rect", xmin = 2021.5, xmax = 2022, ymin = 0, ymax = 140, alpha = 0.1, fill = "red") +
-    annotate("text", x = 2021.75, y = 130, label = "Peak Bubble\n(Barstool Hype)", color = "red", fontface = "bold", size = 3) +
-    annotate("rect", xmin = 2023, xmax = 2023.5, ymin = 0, ymax = 140, alpha = 0.1, fill = "purple") +
-    annotate("text", x = 2023.25, y = 10, label = "ESPN BET\nTransition", color = "purple", fontface = "bold", size = 3) +
+    annotate("rect", xmin = 2020, xmax = 2021.5, ymin = 0, ymax = 140, alpha = 0.1, fill = "red") +
+    annotate("text", x = 2020, y = 130, label = "Covid-19", color = "red", fontface = "bold", size = 3) +
     labs(
         title = "Penn Entertainment (PENN) Weekly Stock Price (2020-2024)",
-        subtitle = "Extreme volatility: Barstool hype → ESPN BET transition struggle",
         x = "Year", y = "Avg Weekly Adj Close ($)"
     ) +
     theme_minimal(base_size = 12) +
     theme(plot.title = element_text(face = "bold", size = 14))
 ```
-
-**Components:** Trend (extreme boom $30→$136, severe collapse to $5-20), Seasonality (weekly), Highest volatility among all betting stocks. **Multiplicative model**.
-
-**PENN vs DKNG Comparison:**
-- **PENN**: 500% spike (hype-driven) → 85% collapse (execution risk)
-- **DKNG**: 350% peak → stable recovery (fundamental growth)
-- **Key Difference**: PENN's Barstool→ESPN BET transition created operational chaos; DKNG maintained pure-play focus
 
 ### 5.7.2 Seasonal Decomposition (PENN)
 
@@ -862,12 +736,6 @@ autoplot(decomp_penn) +
     theme_minimal() +
     theme(plot.title = element_text(face = "bold", size = 14))
 ```
-
-**Interpretation:**
-- **Trend**: Extreme spike (2021-22) → catastrophic decline (2022-24, falling below $10)
-- **Seasonal**: Weekly patterns similar to DKNG but drowned by volatility
-- **Random**: Extreme variance (operational risk + market speculation)
-- **Multiplicative**: Volatility explosion during boom, compression during bust
 
 ### 5.7.3 Moving Average Smoothing (PENN)
 
@@ -902,12 +770,6 @@ autoplot(ts_penn, series = "Original") +
     )
 ```
 
-**Interpretation:**
-- **MA(4)**: Preserves all major spikes (extreme short-term volatility)
-- **MA(13)**: Clear boom-bust cycle, no stabilization
-- **MA(52)**: Reveals fundamental decline (peak→collapse, no floor established)
-- **Contrast with DKNG**: DKNG's MA(52) shows stabilization; PENN shows continued deterioration
-
 ### 5.7.4 ACF and Lag Plots (PENN)
 
 ```{r penn-acf, warning=FALSE, message=FALSE, fig.width=10, fig.height=8}
@@ -922,108 +784,6 @@ pacf_penn <- ggPacf(ts_penn, lag.max = 52) +
 acf_penn / pacf_penn
 ```
 
-**Interpretation:** Slow decay (non-stationary) similar to DKNG. Both require differencing. However, PENN's higher volatility may create challenges for ARIMA/SARIMA modeling.
+Because annual NBA series are effectively non-seasonal, I include weekly sports-betting equities to demonstrate seasonality and multiplicative decomposition. DraftKings (DKNG), Penn (PENN), MGM, and Caesars (CZR) all show pandemic-era boom-bust dynamics on weekly data. Prices are non-stationary in levels, stationary in differences, and has volatility that scales with price; implying a multiplicative model is necessary for decomposition. DKNG exhibits a large run-up, correction, and stabilization while PENN shows a sharper hype-driven spike and deeper collapse. 
 
-## 5.8 Connection to NBA Analysis
-
-**DKNG** illustrates: (1) seasonality with frequency>1, (2) multiplicative vs additive models, (3) COVID boom paralleling sports betting surge, (4) MA window effects across temporal scales, (5) successful pure-play strategy.
-
-**PENN** contrasts: (1) same seasonality structure but extreme operational volatility, (2) demonstrates how strategic missteps (Barstool hype → ESPN BET transition) overwhelm market trends, (3) cautionary tale for analytics-driven optimization gone wrong.
-
-# 7. Summary of EDA Findings
-
-## 7.1 Stationarity Summary
-
-| Series | Frequency | ADF (Original) | ADF (Differenced) | Conclusion |
-|--------|-----------|---------------|-------------------|------------|
-| ORtg   | Annual (1) | Non-stationary | Stationary | Requires d=1 |
-| Pace   | Annual (1) | Non-stationary | Stationary | Requires d=1 |
-| 3PAr   | Annual (1) | Non-stationary | Stationary | Requires d=1 |
-| Attendance | Annual (1) | Non-stationary | Stationary | Requires d=1 (COVID shock) |
-| Betting Stocks (DKNG, PENN, MGM, CZR) | Weekly (52) | Non-stationary | Stationary | Requires d=1 (typical for prices) |
-
-All series exhibit non-stationarity in levels but achieve stationarity after first differencing.
-
-## 7.2 Decomposition Model Choices (Additive vs Multiplicative)
-
-| Series | Model Type | Justification |
-|--------|-----------|---------------|
-| **NBA Metrics** (ORtg, Pace, 3PAr, Attendance) | **Additive** | Constant variance; absolute changes measured in points/percentages; no scaling of volatility with level |
-| **Betting Stocks** (DKNG, PENN, MGM, CZR) | **Multiplicative** | Variance scales with price level; percentage changes more meaningful; heteroskedasticity present |
-
-**Key Distinction:**
-- **Additive**: Y_t = Trend_t + Seasonal_t + Irregular_t (NBA data)
-- **Multiplicative**: Y_t = Trend_t × Seasonal_t × Irregular_t (Stock data)
-
-## 7.3 Trend Patterns
-
-1. **ORtg**: Upward with post-2012 acceleration (analytics payoff)
-   - 1980-2012: Slow growth (+4 points over 32 years)
-   - 2012-2025: Rapid growth (+7 points over 13 years)
-
-2. **Pace**: U-shaped pattern (decline then partial recovery)
-   - 1980-2004: Decline from 102 to 90 possessions
-   - 2004-2025: Recovery to 97-98 possessions (independent of analytics era)
-
-3. **3PAr**: Exponential growth with post-2012 acceleration
-   - 1980-2012: Gradual increase from 2% to 28%
-   - 2012-2025: Rapid surge from 28% to 42%
-
-4. **Attendance**: Stable pre-COVID, then 90% collapse and partial recovery
-   - 1990-2019: Stable around 21-22 million
-   - 2020-21: Collapse to ~2 million (COVID shock)
-   - 2022-2025: Recovery to ~18 million (still 15% below pre-COVID)
-
-5. **Betting Stocks**: Boom-bust-stabilization cycles (all experienced COVID-era speculation)
-   - **DKNG**: 350% peak → stable at 100-120% (pure-play success)
-   - **PENN**: 500% spike (Barstool hype) → 60% collapse (ESPN BET struggle)
-   - **MGM**: 150% peak (stable diversified model)
-   - **CZR**: 200% boom → negative returns (over-leveraged)
-
-## 7.4 Moving Average Smoothing Insights
-
-**Window Size Effects:**
-
-| MA Window | Purpose | What It Reveals |
-|-----------|---------|-----------------|
-| MA(3-5) | Short-term smoothing | Preserves medium-term cycles, shows COVID disruptions |
-| MA(5-10) | Medium-term smoothing | Optimal for identifying structural breaks (2012 analytics era) |
-| MA(10+) | Long-term smoothing | Reveals only fundamental regime changes |
-
-**Key Findings from MA Analysis:**
-- **2012 structural break** visible across all window sizes for ORtg and 3PAr
-- **Pace's U-shape** becomes clearer with increased smoothing, confirming independence from analytics trend
-- **COVID shock** in attendance persists even through MA(5), indicating extreme magnitude
-- **DKNG's boom-bust** clearly visible in MA(13) quarterly smoothing
-
-## 7.5 Lag Plot Interpretations
-
-1. **ORtg, 3PAr**: Strong positive correlations at all lags → persistent trends, no mean reversion
-2. **Pace**: More complex patterns due to U-shaped trajectory → different lag structures in different eras
-3. **Attendance**: Pre-COVID cluster with outliers at 2020-21 → exogenous shock structure
-
-## 7.6 Preliminary Relationships (NBA Series)
-
-- **ORtg ↔ 3PAr**: Strong positive correlation (r > 0.9), simultaneous acceleration post-2012
-- **ORtg ↔ Pace**: Weak/non-linear relationship (r ≈ 0.3-0.5)
-- **Pace ↔ 3PAr**: Relationship shifted from negative to positive post-2012
-
-## 7.7 Series-Specific Insights
-
-- **ORtg & 3PAr**: 2012 break, highly correlated, additive model
-- **Pace**: U-shaped (independent of analytics), recovery predates 2012
-- **Attendance**: 90% COVID shock, ideal for intervention analysis
-- **DKNG**: Seasonality example, multiplicative model, sports betting boom
-
-## 7.8 Key Questions for Subsequent Modeling
-
-1. **Causality**: Does 3PAr Granger-cause ORtg, or vice versa? (VAR + Granger tests)
-2. **Structural Breaks**: Is 2012 a statistically significant break point? (Chow test, CUSUM)
-3. **COVID Impact**: Was 2020 a temporary shock or permanent shift? (Intervention analysis on Attendance)
-4. **Forecast**: Will efficiency continue rising or plateau? (ARIMA forecasting)
-5. **Multivariate Dynamics**: How do all three NBA series interact over time? (VAR modeling)
-6. **Intervention Modeling**: Can we quantify the magnitude and persistence of COVID shock? (Transfer function models)
-
-## 7.9 Next Steps
-
-**Proceed to:** ARIMA forecasting, structural break tests (Chow/CUSUM), VAR modeling, Granger causality, intervention analysis (COVID), model comparison.
+Pulling the findings together: ORtg, Pace, 3PAr, and Attendance are all non-stationary in levels and become stationary after first differences (d = 1). Therefore, additive decomposition is appropriate for the NBA metrics , while multiplicative decomposition fits the weekly equities. Short and medium moving-average windows clarify regime shifts: the 2012 analytics inflection in ORtg/3PAr, the mid-2000s trough and rebound in Pace, and the COVID intervention in Attendance.

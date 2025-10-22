@@ -9,14 +9,9 @@ format:
 
 # Introduction
 
-This analysis implements **ARIMA** (AutoRegressive Integrated Moving Average) and **SARIMA** (Seasonal ARIMA) models on datasets from the NBA analytics project. The goal is to model temporal dependencies, forecast future values, and evaluate model performance against benchmarks.
-
-**Datasets:**
-- **ARIMA Analysis**: ORtg, Pace, 3PAr, Attendance (annual data, frequency=1)
-- **SARIMA Analysis**: DKNG and PENN stocks (weekly data, frequency=52, seasonal patterns)
+This page applies ARIMA to the annual NBA series (ORtg, 3PAr, Pace, Attendance) and SARIMA to weekly equities (DKNG, PENN) to quantify temporal structure and produce short-horizon forecasts. Consistent with the EDA, all four NBA series are non-stationary in levels. ACFs decay slowly and ADF tests fail to reject a unit root, but become stationary after first differencing (d=1) with roughly constant variance that favors additive dynamics.
 
 ```{r setup, warning=FALSE, message=FALSE}
-# Load required packages
 library(tidyverse)
 library(ggplot2)
 library(forecast)
@@ -64,17 +59,7 @@ league_avg <- all_adv_data %>%
 cat("League average data loaded: 1980-2025,", nrow(league_avg), "seasons\n")
 ```
 
----
-
-# Part I: ARIMA Modeling (Non-Seasonal Data)
-
-## Series 1: Offensive Rating (ORtg)
-
-**Context**: Offensive Rating measures points per 100 possessions, representing offensive efficiency. This series tracks the NBA's evolution toward higher-scoring, analytics-optimized basketball.
-
-### Step 1-2: Stationarity Information from EDA
-
-From our Exploratory Data Analysis, we obtained the following stationarity information:
+## Offensive Rating (ORtg)
 
 ```{r ortg-eda-review, warning=FALSE, message=FALSE}
 # Create time series
@@ -89,8 +74,6 @@ ggAcf(ts_ortg, lag.max = 20) +
     theme_minimal()
 ```
 
-**ACF Interpretation**: Slow decay with autocorrelations remaining significant through lag 20 → classic non-stationary pattern.
-
 ```{r ortg-adf-original, warning=FALSE, message=FALSE}
 # (b) Augmented Dickey-Fuller Test
 adf_ortg <- adf.test(ts_ortg)
@@ -100,11 +83,7 @@ cat("  p-value:", round(adf_ortg$p.value, 4), "\n")
 cat("  Conclusion:", ifelse(adf_ortg$p.value < 0.05, "Stationary", "Non-stationary"), "\n")
 ```
 
-**Determination**: Data is **NON-STATIONARY** (ACF shows slow decay, ADF p-value > 0.05).
-
-**Log Transformation**: Not necessary for ORtg as variance is relatively constant (points per 100 possessions).
-
-### Step 3: Differencing to Achieve Stationarity
+### Differencing to Achieve Stationarity
 
 #### (a) First-Order Differencing
 
@@ -136,9 +115,7 @@ cat("  p-value:", round(adf_diff_ortg$p.value, 4), "\n")
 cat("  Conclusion:", ifelse(adf_diff_ortg$p.value < 0.05, "Stationary", "Non-stationary"), "\n")
 ```
 
-**Result**: First-order differencing (d=1) achieves stationarity. No need for higher-order differencing.
-
-### Step 4: ACF and PACF to Determine p and q
+### ACF and PACF to Determine p and q
 
 ```{r ortg-acf-pacf, warning=FALSE, message=FALSE, fig.width=12, fig.height=8}
 acf_plot <- ggAcf(diff_ortg_1, lag.max = 20) +
@@ -152,21 +129,13 @@ pacf_plot <- ggPacf(diff_ortg_1, lag.max = 20) +
 acf_plot / pacf_plot
 ```
 
-**Model Selection from ACF/PACF**:
-- **ACF**: Cuts off after lag 1 or shows exponential decay → suggests **MA(1)** or **MA(2)**
-- **PACF**: Significant spike at lag 1, then cuts off → suggests **AR(1)**
-- **Candidate models**: ARIMA(1,1,0), ARIMA(0,1,1), ARIMA(1,1,1)
-- **Chosen d**: d=1 (first-order differencing)
-
-### Step 5: Fit ARIMA Models
+### Fit ARIMA Models
 
 ```{r ortg-fit-models, warning=FALSE, message=FALSE}
-# Fit candidate models
 model_110 <- Arima(ts_ortg, order = c(1, 1, 0))
 model_011 <- Arima(ts_ortg, order = c(0, 1, 1))
 model_111 <- Arima(ts_ortg, order = c(1, 1, 1))
 
-# Model comparison
 cat("Model Comparison:\n")
 cat("ARIMA(1,1,0): AIC =", round(model_110$aic, 2), "| BIC =", round(model_110$bic, 2), "\n")
 cat("ARIMA(0,1,1): AIC =", round(model_011$aic, 2), "| BIC =", round(model_011$bic, 2), "\n")
@@ -182,32 +151,19 @@ cat("\nBest Model: ARIMA", paste0(arimaorder(best_ortg)[c(1, 2, 3)], collapse = 
 
 **Model Equation**:
 
-If ARIMA(0,1,1) is selected:
 $$(1-B)Y_t = (1 + \theta_1 B)\epsilon_t$$
-
-Where:
-- $Y_t$ = ORtg at time t
-- $B$ = backshift operator
-- $\theta_1$ = MA(1) coefficient
-- $\epsilon_t$ = white noise error
 
 ```{r ortg-coef, warning=FALSE, message=FALSE}
 cat("Model Coefficients:\n")
 print(coef(best_ortg))
 ```
 
-### Step 6: Model Diagnostics
+### Model Diagnostics
 
 ```{r ortg-diagnostics, warning=FALSE, message=FALSE, fig.width=12, fig.height=10}
 # Full diagnostic plots using sarima
 sarima(ts_ortg, p = arimaorder(best_ortg)[1], d = arimaorder(best_ortg)[2], q = arimaorder(best_ortg)[3])
 ```
-
-**Diagnostic Interpretation**:
-1. **Standardized Residuals**: Should appear as white noise (random scatter around zero)
-2. **ACF of Residuals**: Should show no significant autocorrelation (all within confidence bands)
-3. **Normal Q-Q Plot**: Points should lie on diagonal line (normality assumption)
-4. **Ljung-Box p-values**: Should be above 0.05 (residuals are white noise)
 
 ```{r ortg-ljung-box, warning=FALSE, message=FALSE}
 ljung_ortg <- Box.test(best_ortg$residuals, lag = 10, type = "Ljung-Box")
@@ -216,7 +172,7 @@ cat("  p-value =", round(ljung_ortg$p.value, 4), "\n")
 cat("  Conclusion:", ifelse(ljung_ortg$p.value > 0.05, "Residuals are white noise ✓", "Some autocorrelation remains"), "\n")
 ```
 
-### Step 7: Compare with auto.arima()
+### Compare with auto.arima()
 
 ```{r ortg-auto-arima, warning=FALSE, message=FALSE}
 auto_ortg <- auto.arima(ts_ortg, seasonal = FALSE, stepwise = FALSE, approximation = FALSE)
@@ -237,7 +193,7 @@ if (paste0(auto_ortg) == paste0(best_ortg)) {
 }
 ```
 
-### Step 8: Forecasting with Confidence Bands
+### Forecasting
 
 ```{r ortg-forecast, warning=FALSE, message=FALSE, fig.width=12, fig.height=6}
 # Forecast 5 years ahead
@@ -256,12 +212,9 @@ cat("Point Forecasts (2026-2030):\n")
 print(fc_ortg$mean)
 ```
 
-**Forecast Interpretation**: The model forecasts continued gradual improvement in offensive efficiency, consistent with the ongoing analytics revolution. Prediction intervals widen over time, reflecting increasing uncertainty.
-
-### Step 9: Benchmark Comparison
+### Benchmark Comparison
 
 ```{r ortg-benchmark, warning=FALSE, message=FALSE, fig.width=12, fig.height=8}
-# Split data: train on 1980-2019, test on 2020-2024
 train_ortg <- window(ts_ortg, end = 2019)
 test_ortg <- window(ts_ortg, start = 2020)
 h <- length(test_ortg)
@@ -278,13 +231,11 @@ fc_naive <- naive_fit
 fc_mean <- mean_fit
 fc_drift <- drift_fit
 
-# Calculate accuracy
 acc_arima <- accuracy(fc_arima, test_ortg)[2, c("RMSE", "MAE", "MAPE")]
 acc_naive <- accuracy(fc_naive, test_ortg)[2, c("RMSE", "MAE", "MAPE")]
 acc_mean <- accuracy(fc_mean, test_ortg)[2, c("RMSE", "MAE", "MAPE")]
 acc_drift <- accuracy(fc_drift, test_ortg)[2, c("RMSE", "MAE", "MAPE")]
 
-# Display results
 cat("Forecast Accuracy Comparison (Test Set: 2020-2024):\n\n")
 comparison_df <- data.frame(
     Model = c("ARIMA", "Naive", "Mean", "Drift"),
@@ -294,7 +245,6 @@ comparison_df <- data.frame(
 )
 print(comparison_df)
 
-# Visual comparison
 autoplot(test_ortg) +
     autolayer(fc_arima, series = "ARIMA", PI = FALSE) +
     autolayer(fc_naive, series = "Naive", PI = FALSE) +
@@ -308,15 +258,9 @@ autoplot(test_ortg) +
     theme_minimal()
 ```
 
-**Observation**: ARIMA outperforms naive benchmarks in RMSE and MAE, capturing the underlying trend structure that simple benchmarks miss.
+For ORtg (primary outcome), the differenced series shows near-white-noise behavior with low-order AR or MA features. Candidate ARIMA(1,1,0), (0,1,1), and (1,1,1) are compared by AIC/BIC, and the winner clears residual diagnostics (no autocorrelation in residual ACF, Ljung–Box p>0.05). Five-year forecasts imply gradual efficiency gains with widening prediction bands; on a 2020–2024 holdout, the chosen ARIMA beats mean/naive/drift in RMSE and MAE, indicating it captures more than a random-walk drift.
 
----
-
-## Series 2: 3-Point Attempt Rate (3PAr)
-
-**Context**: Measures the percentage of field goal attempts that are three-pointers, tracking the analytics revolution's impact on shot selection.
-
-### Steps 1-2: Stationarity from EDA
+## 3-Point Attempt Rate (3PAr)
 
 ```{r 3par-eda, warning=FALSE, message=FALSE}
 ts_3par <- ts(league_avg$`3PAr`, start = 1980, frequency = 1)
@@ -332,9 +276,7 @@ adf_3par <- adf.test(ts_3par)
 cat("ADF Test (Original 3PAr): p =", round(adf_3par$p.value, 4), "→ Non-stationary\n")
 ```
 
-**Determination**: NON-STATIONARY (strong upward trend, slow ACF decay).
-
-### Step 3: Differencing
+### Differencing
 
 ```{r 3par-diff, warning=FALSE, message=FALSE, fig.width=12, fig.height=8}
 diff_3par_1 <- diff(ts_3par, differences = 1)
@@ -349,15 +291,13 @@ adf_diff_3par <- adf.test(diff_3par_1)
 cat("ADF Test (d=1): p =", round(adf_diff_3par$p.value, 4), "→ Stationary\n")
 ```
 
-### Step 4: Determine p and q
+### Determine p and q
 
 ```{r 3par-acf-pacf, warning=FALSE, message=FALSE, fig.width=12, fig.height=8}
 ggAcf(diff_3par_1, lag.max = 20) / ggPacf(diff_3par_1, lag.max = 20)
 ```
 
-**Candidate models**: ARIMA(1,1,0), ARIMA(0,1,1), ARIMA(2,1,0) based on ACF/PACF patterns.
-
-### Steps 5-9: Modeling
+### Modeling
 
 ```{r 3par-model, warning=FALSE, message=FALSE}
 # Fit models
@@ -403,15 +343,9 @@ cat("ARIMA RMSE:", round(accuracy(arima_3par, test_3par)[2, "RMSE"], 4), "\n")
 cat("Naive RMSE:", round(accuracy(naive_3par, test_3par)[2, "RMSE"], 4), "\n")
 ```
 
----
+3PAr behaves similarly; d=1 suffices, low-order AR/MA terms compete—with forecasts that extend the post-2012 shot-mix surge. Pace also requires d=1, but its U-shaped long-run pattern and weaker link to ORtg make forecasts flatter and less informative for efficiency.
 
-# Part II: SARIMA Modeling (Seasonal Data)
-
-## Series 1: DraftKings (DKNG) Stock Price
-
-**Context**: Weekly stock price data (frequency=52) with potential seasonal trading patterns. DKNG represents the sports betting industry's growth post-COVID.
-
-### Data Preparation
+## DraftKings (DKNG) Stock Price
 
 ```{r dkng-load, warning=FALSE, message=FALSE}
 dkng <- read_csv("data/financial/DKNG_daily.csv", show_col_types = FALSE) %>%
@@ -430,7 +364,7 @@ ts_dkng <- ts(dkng_weekly$Avg_Close, start = c(2020, min(dkng_weekly$Week[dkng_w
 cat("DKNG weekly series:", length(ts_dkng), "observations\n")
 ```
 
-### Steps 1-2: Check for Seasonality
+### Seasonality
 
 ```{r dkng-acf-seasonal, warning=FALSE, message=FALSE, fig.width=12, fig.height=6}
 ggAcf(ts_dkng, lag.max = 104) +
@@ -440,14 +374,12 @@ ggAcf(ts_dkng, lag.max = 104) +
     theme_minimal()
 ```
 
-**Seasonality Check**: Look for spikes at seasonal lags (52, 104). ACF shows slow decay (non-stationarity) with potential seasonal component.
-
 ```{r dkng-adf-original, warning=FALSE, message=FALSE}
 adf_dkng <- adf.test(ts_dkng)
 cat("ADF Test (Original DKNG): p =", round(adf_dkng$p.value, 4), "→ Non-stationary\n")
 ```
 
-### Step 3: Differencing (Regular and Seasonal)
+### Differencing (Regular and Seasonal)
 
 ```{r dkng-diff, warning=FALSE, message=FALSE}
 # Try regular differencing first
@@ -462,9 +394,7 @@ ggAcf(diff_dkng_reg, lag.max = 104) +
     theme_minimal()
 ```
 
-**Seasonal Differencing**: If ACF shows patterns at seasonal lags, apply seasonal differencing (D=1).
-
-### Step 4: Identify p, d, q, P, D, Q
+### Identify p, d, q, P, D, Q
 
 ```{r dkng-acf-pacf, warning=FALSE, message=FALSE, fig.width=12, fig.height=10}
 # ACF and PACF of differenced series
@@ -474,14 +404,7 @@ pacf(diff_dkng_reg, lag.max = 104, main = "PACF of Differenced DKNG")
 par(mfrow = c(1, 1))
 ```
 
-**Parameter Selection**:
-- **d**: 1 (regular differencing)
-- **D**: 0 or 1 (seasonal differencing if needed)
-- **p, q**: From ACF/PACF at non-seasonal lags
-- **P, Q**: From ACF/PACF at seasonal lags (52, 104)
-- **s**: 52 (weekly seasonality)
-
-### Step 5: Fit SARIMA Models
+### Fit SARIMA Models
 
 ```{r dkng-sarima-fit, warning=FALSE, message=FALSE}
 cat("Fitting SARIMA models (may take time with s=52)...\n\n")
@@ -495,7 +418,6 @@ auto_dkng <- auto.arima(ts_dkng,
 cat("auto.arima() selected:", paste0(auto_dkng), "\n")
 cat("AIC =", round(auto_dkng$aic, 2), "\n\n")
 
-# Fit some manual candidates
 m1_dkng <- Arima(ts_dkng, order = c(0, 1, 1), seasonal = c(0, 0, 1))
 m2_dkng <- Arima(ts_dkng, order = c(1, 1, 0), seasonal = c(1, 0, 0))
 
@@ -503,7 +425,6 @@ cat("Manual models:\n")
 cat("ARIMA(0,1,1)(0,0,1)[52]: AIC =", round(m1_dkng$aic, 2), "\n")
 cat("ARIMA(1,1,0)(1,0,0)[52]: AIC =", round(m2_dkng$aic, 2), "\n")
 
-# Select best
 models_dkng <- list(auto_dkng, m1_dkng, m2_dkng)
 aic_dkng <- c(auto_dkng$aic, m1_dkng$aic, m2_dkng$aic)
 best_dkng <- models_dkng[[which.min(aic_dkng)]]
@@ -511,10 +432,10 @@ best_dkng <- models_dkng[[which.min(aic_dkng)]]
 cat("\nBest Model:", paste0(best_dkng), "\n")
 ```
 
-**Model Equation** (example for SARIMA(0,1,1)(0,0,1)[52]):
+**Model Equation** 
 $$(1-B)(1-B^{52})Y_t = (1 + \theta_1 B)(1 + \Theta_1 B^{52})\epsilon_t$$
 
-### Step 6: Model Diagnostics
+### Model Diagnostics
 
 ```{r dkng-diagnostics, warning=FALSE, message=FALSE, fig.width=12, fig.height=10}
 best_order <- arimaorder(best_dkng)
@@ -524,7 +445,7 @@ sarima(ts_dkng,
 )
 ```
 
-### Step 7: Forecast
+### Forecast
 
 ```{r dkng-forecast, warning=FALSE, message=FALSE, fig.width=12, fig.height=6}
 fc_dkng <- forecast(best_dkng, h = 26) # 26 weeks = 6 months
@@ -538,10 +459,9 @@ autoplot(fc_dkng) +
     theme_minimal()
 ```
 
-### Step 8: Benchmark Comparison
+### Benchmark Comparison
 
 ```{r dkng-benchmark, warning=FALSE, message=FALSE}
-# Split: train on first 80%, test on last 20%
 n_train <- floor(0.8 * length(ts_dkng))
 train_dkng <- window(ts_dkng, end = time(ts_dkng)[n_train])
 test_dkng <- window(ts_dkng, start = time(ts_dkng)[n_train + 1])
@@ -566,7 +486,7 @@ snaive_fit <- snaive(train_dkng, h = h_dkng)
 fc_sarima <- forecast(sarima_fit, h = h_dkng)
 fc_snaive <- snaive_fit
 
-# Accuracy
+
 acc_sarima <- accuracy(fc_sarima, test_dkng)[2, c("RMSE", "MAE", "MAPE")]
 acc_snaive <- accuracy(fc_snaive, test_dkng)[2, c("RMSE", "MAE", "MAPE")]
 
@@ -581,7 +501,7 @@ if (acc_sarima["RMSE"] < acc_snaive["RMSE"]) {
 }
 ```
 
-### Step 9: Seasonal Cross-Validation
+### Seasonal Cross-Validation
 
 ```{r dkng-cv, warning=FALSE, message=FALSE}
 cat("Running time series cross-validation (this may take a while)...\n")
@@ -634,13 +554,7 @@ cat("52-step ahead RMSE: $", round(rmse_52step, 2), "\n")
 cat("\nNote: 52-step forecasts have higher uncertainty (longer horizon)\n")
 ```
 
----
-
-## Series 2: Penn Entertainment (PENN) Stock Price
-
-**Context**: PENN experienced extreme volatility due to strategic pivots (Barstool → ESPN BET transition), providing a contrasting case to DKNG's stability.
-
-### Data Preparation
+## Penn Entertainment (PENN) Stock Price
 
 ```{r penn-load, warning=FALSE, message=FALSE}
 penn <- read_csv("data/financial/PENN_daily.csv", show_col_types = FALSE) %>%
@@ -658,7 +572,7 @@ ts_penn <- ts(penn_weekly$Avg_Close, start = c(2020, min(penn_weekly$Week[penn_w
 cat("PENN weekly series:", length(ts_penn), "observations\n")
 ```
 
-### SARIMA Modeling (Same Steps as DKNG)
+### SARIMA Modeling
 
 ```{r penn-model, warning=FALSE, message=FALSE}
 # Note: PENN's extreme volatility may cause numerical issues
@@ -733,7 +647,6 @@ penn_fit <- tryCatch(
 sarima_penn <- forecast(penn_fit, h = length(test_penn))
 snaive_penn <- snaive(train_penn, h = length(test_penn))
 
-# Accuracy
 cat("\nPENN Benchmark Comparison (Test Set):\n")
 cat("Model RMSE:         $", round(accuracy(sarima_penn, test_penn)[2, "RMSE"], 2), "\n")
 cat("Seasonal Naive RMSE: $", round(accuracy(snaive_penn, test_penn)[2, "RMSE"], 2), "\n")
@@ -742,18 +655,10 @@ cat("\nNote: PENN's extreme volatility (Barstool→ESPN BET transition) makes fo
 cat("High RMSE values reflect fundamental business uncertainty rather than model inadequacy.\n")
 ```
 
----
+The weekly stock series use SARIMA with s=52. Prices are classic random walks with drift and volatility that scales with level, so multiplicative thinking fits. DKNG typically supports a modest seasonal AR/MA overlay and outperforms seasonal-naive on a rolling test; PENN’s extreme volatility forces simpler specifications and yields narrower skill gains, showing how business instability limits forecastability.
 
-# Summary
+Overall, the modeling confirms: 
 
-## ARIMA Models (Non-Seasonal)
-
-All NBA metrics (ORtg, 3PAr) required **d=1** first-order differencing to achieve stationarity. Simple MA(1) or AR(1) models generally performed best, outperforming naive benchmarks.
-
-## SARIMA Models (Seasonal)
-
-- **DKNG**: Successfully fit with seasonal components, demonstrating predictable weekly patterns
-- **PENN**: Extreme volatility limited model complexity; simpler structures required
-- **Key Insight**: Operational stability enables better time-series modeling
-
-**Conclusion**: ARIMA/SARIMA models effectively capture temporal dependencies in both annual NBA data and high-frequency financial data, but business fundamentals constrain forecast accuracy for volatile series like PENN.
+- NBA annual metrics are well handled by low-order ARIMA with d=1 and additive interpretation
+- Weekly equities benefit from SARIMA and multiplicative structure
+- Analytics-era improvements in ORtg are forecast to persist, while Pace and COVID-sensitive attendance inject asymmetric uncertainty.

@@ -24,38 +24,15 @@ Finally, the analysis turns toward the future. By modeling post-2023 trends usin
 
 ## Literature Review
 
-Early quantitative basketball research established the foundation for efficiency metrics such as *effective field goal percentage* (`eFG%`) and *true shooting percentage* (`TS%`) @poropudas2023dean. Subsequent work formalized advanced statistics including offensive rating and pace-adjusted metrics that underpin today's analytics frameworks @kubatko2007starting. **These established metrics serve as the dependent variables in this study's time-series models**, enabling longitudinal analysis of how efficiency has evolved across 45 NBA seasons (1980-2025).
+Early quantitative basketball research established the foundation for efficiency metrics such as effective field goal percentage (eFG%) and true shooting percentage (TS%) @poropudas2023dean. Subsequent work formalized offensive rating and pace-adjusted measures that underpin today’s analytics frameworks @kubatko2007starting. In this study, those established metrics anchor a longitudinal view of the NBA from 1980–2025, allowing us to trace how efficiency evolved and whether recent shifts reflect gradual adaptation or discrete regime changes.
 
-Academic and industry studies since the 2010s have documented three key developments that inform this project's analytical framework:
+A central thread is shot-selection optimization. Spatial analyses show that perimeter-oriented offenses and rim attempts yield higher expected value than mid-range play @skinner2012problem. Building on that evidence, we follow the league’s shot mix over time and date its key inflection points using structural-break diagnostics (e.g., Chow/CUSUM). Forecast comparisons around those dated transitions then indicate whether the modern shot profile has stabilized or is still moving toward further concentration in high-value zones.
 
-### Shot-Selection Optimization
+Tempo and spacing economics form the second pillar. Prior work links ball movement, spacing, and faster pace to scoring efficiency in the modern game @franks2015characterizing. Rather than treating pace and efficiency as static correlates, we examine their dynamic ordering: do changes in tempo precede shifts in efficiency, or the reverse? A multivariate framework (including Granger-style causality tests and rolling correlations) lets us see how this relationship strengthened from the pre-analytics period into the analytics era, clarifying whether “playing faster” is a driver, a consequence, or part of a feedback loop with shot quality.
 
-Spatial analysis research demonstrated that perimeter-oriented offenses generate higher expected value than traditional mid-range approaches @skinner2012problem. Studies using shot location data revealed systematic differences in shot efficiency by court zone, with corner three-pointers and restricted area shots offering superior returns compared to mid-range attempts.
+The third pillar addresses COVID-era disruptions. Empty-arena conditions in 2020 weakened traditional home-court effects and scrambled normal rhythms. We treat the bubble and capacity-limited seasons as an exogenous intervention, quantify the immediate impact on pace, efficiency, and scoring variance, and then measure persistence and recovery. By juxtaposing pre-2020 fitted behavior with realized outcomes through 2022, we can distinguish a temporary shock from a lasting structural shift—a nuance that single-season comparisons miss.
 
-**Time-Series Application**: Building on these cross-sectional findings, this project uses structural break tests (Chow tests, CUSUM) to identify *when* shot selection patterns fundamentally shifted. By modeling the percentage of mid-range attempts as a time series (2004-2025), the analysis can pinpoint inflection points in the analytics revolution and distinguish gradual adaptation from discrete strategic shifts. ARIMA models will then forecast whether shot selection has reached equilibrium or continues to evolve toward further optimization.
-
-### Pace and Spacing Economics
-
-Research quantifying the relationship between ball movement, spacing, and offensive efficiency established that faster pace correlates with higher scoring efficiency in modern basketball @franks2015characterizing. Cross-sectional studies showed teams adopting high-pace, spacing-oriented systems achieved competitive advantages.
-
-**Time-Series Application**: Rather than treating pace and efficiency as static correlates, this study employs **Vector Autoregression (VAR)** models to examine dynamic relationships. The VAR framework allows testing whether changes in pace *Granger-cause* changes in offensive rating, or vice versa, revealing the temporal ordering of strategic adoption. Additionally, **rolling correlation analysis** tracks how the pace-efficiency relationship has strengthened or weakened across different eras (pre-analytics vs. analytics era), providing evidence of regime change in how pace affects outcomes.
-
-### COVID-Era Performance Shifts
-
-Recent analyses documented sharp declines in home-court advantage during empty-arena games in 2020, attributing differences to psychological and crowd-driven effects. These studies primarily used season-to-season comparisons or aggregated 2020 data.
-
-**Time-Series Application**: This project extends COVID-era research through **intervention analysis**, treating the 2020 bubble season as an exogenous shock in time-series models of pace, efficiency, and scoring variance. By incorporating dummy variables and pulse functions in ARIMA models, the analysis quantifies not just the immediate disruption but also the **persistence and recovery dynamics** post-COVID. Comparing forecast errors from models trained on pre-2020 data against actual 2020-2022 performance reveals whether the pandemic created temporary volatility or permanent structural change—a question prior cross-sectional studies could not address.
-
-### Extending Prior Work Through Longitudinal Modeling
-
-While existing research has established *what* changed (shot selection, pace strategies, COVID effects), most studies rely on cross-sectional comparisons or short-term analyses. Few have integrated time-series methods to model *how* these changes unfolded over time, *when* transitions occurred, or whether effects persist. This project fills that gap by:
-
-- Using **structural break detection** to objectively date the analytics revolution
-- Applying **Granger causality tests** to determine whether 3-point volume preceded or followed efficiency gains
-- Employing **ARIMA and VAR models** to capture autocorrelation and feedback loops that cross-sectional designs miss
-- Conducting **intervention analysis** to separate transient COVID shocks from permanent regime shifts
-
-By treating efficiency, pace, and shot selection as interconnected time series rather than independent observations, this study reveals the *temporal dynamics* underlying the NBA's transformation.
+Together, these components extend prior literature that established what changed (shot mix, tempo strategies, COVID effects) but seldom mapped how and when the transitions unfolded or whether they endured. Concretely, we (i) date the analytics inflection with objective break tests; (ii) test whether rising three-point volume leads or follows efficiency gains; (iii) model low-order serial dependence and feedback that cross-sectional designs omit; and (iv) isolate the pandemic’s impulse and its decay. Treating efficiency, pace, and shot selection as interconnected trajectories—rather than isolated snapshots—reveals the timing, coupling, and durability of the forces reshaping the modern NBA.
 
 # Guiding Questions
 

@@ -1,8 +1,5 @@
 # Data Sources
 
-This project integrates four primary data sources spanning 1980-2025, providing comprehensive coverage of NBA team performance, shot-level spatial data, and financial market dynamics. All data collection methods are documented below.
----
-
 ## 1. Basketball Reference: Team Advanced Statistics (1980-2025)
 
 ### Source Information
@@ -10,21 +7,19 @@ This project integrates four primary data sources spanning 1980-2025, providing 
 - **Direct URL Pattern**: `https://www.basketball-reference.com/leagues/NBA_[YEAR].html`
   - Example: [2023-24 Advanced Stats](https://www.basketball-reference.com/leagues/NBA_2024.html)
 - **Coverage**: 45 seasons (1980-81 through 2024-25)
-- **Format**: CSV files
 
 ### Extraction Method
 
-Data was collected via manual download:
+Data was collected via manual download from Basketball Reference:
 
 1. Navigate to the season page (e.g., `https://www.basketball-reference.com/leagues/NBA_2024.html`)
 2. Scroll to "Team Per Game Stats" or "Advanced Stats" table
 3. Click **"Share & Export"** → **"Get table as CSV (for Excel)"**
 4. Save the exported HTML file, then convert to CSV
-5. Repeat for all 45 seasons (1980-81 through 2024-25) 
+5. Repeat for all 45 seasons (1980-81 through 2024-25)
 
-**Data Processing**:
+**Data Processing:**
 Downloaded HTML tables were converted to CSV format using a Python script that:
-
 - Reads HTML tables using `pandas.read_html()`
 - Handles multi-level column names
 - Exports clean CSV files
@@ -35,7 +30,7 @@ Downloaded HTML tables were converted to CSV format using a Python script that:
 
 | Variable | Description | Relevance to Time-Series Analysis |
 |----------|-------------|-----------------------------------|
-| `Team` | Team name | Identifier |
+| `Team` | Team name | Identifier for aggregation |
 | `W`, `L` | Wins, Losses | Win rate time series by season |
 | `ORtg` | Offensive Rating (pts per 100 possessions) | **Primary dependent variable** for efficiency evolution |
 | `DRtg` | Defensive Rating (pts allowed per 100 poss) | Defensive efficiency trends |
@@ -49,198 +44,7 @@ Downloaded HTML tables were converted to CSV format using a Python script that:
 | `TOV%` | Turnover Percentage | Ball security metric |
 | `Attendance` | Total season attendance | **COVID disruption proxy** |
 
-### Sample Data Illustration
-
-**File**: `data/adv_stats/2023-24_adv_stats.csv` (31 teams × 31 variables)
-
-```
-Team                     W    L   ORtg  DRtg  Pace  3PAr   TS%
-Boston Celtics*         64   18  123.2 111.6  97.2  .471  .609
-Oklahoma City Thunder*  57   25  119.5 112.1  99.8  .383  .608
-Minnesota Timberwolves* 56   26  115.6 109.0  97.1  .384  .594
-```
-
-### Relevance to Project
-
-This dataset provides the **foundational time series** for:
-
-1. **Long-run analysis (1980-2025)**:  Modeling `ORtg`, `Pace`, and `3PAr` as univariate time series to detect structural breaks using Chow tests and CUSUM statistics
-2. **Analytics revolution dating**: Using `3PAr` time series to objectively identify when the analytics era began (~2012)
-3. **COVID impact quantification**: Analyzing `Attendance` and scoring volatility before/during/after 2020
-4. **VAR modeling**: Examining dynamic relationships between `Pace`, `3PAr`, and `ORtg`
-5. **Granger causality**: Testing whether 3-point volume changes preceded or followed efficiency improvements
-
-**Time Series Variables Extracted**:
-- League-average `ORtg` by season (1980-2025)
-- League-average `Pace` by season (1980-2025)
-- League-average `3PAr` by season (1980-2025)
-- League-average `TS%` by season (1980-2025)
-- Total `Attendance` by season (proxy for COVID disruption)
-
----
-
-## 2. Basketball Reference: Team Total Statistics (1980-2025)
-
-### Source Information
-- **Primary Source**: [Basketball-Reference.com](https://www.basketball-reference.com/)
-- **Direct URL Pattern**: `https://www.basketball-reference.com/leagues/NBA_[YEAR].html` (same page, different table)
-- **Coverage**: 45 seasons (1980-81 through 2024-25)
-- **Format**: CSV files
-- **Location in Project**: `data/total_stats/[YEAR]_total_stats.csv`
-
-### Extraction Method
-
-Same manual download process as Advanced Stats, but selecting the **"Team Totals"** table instead. Downloaded HTML files were converted to CSV format.
-
-### Data Dictionary
-
-**Key Variables** (25 total columns):
-
-| Variable | Description | Relevance |
-|----------|-------------|-----------|
-| `FG`, `FGA` | Field Goals Made/Attempted | Raw shot volume trends |
-| `3P`, `3PA` | 3-Pointers Made/Attempted | **Direct measure of 3PT revolution** |
-| `2P`, `2PA` | 2-Pointers Made/Attempted | Complement to 3PT trends |
-| `FT`, `FTA` | Free Throws Made/Attempted | Offensive strategy evolution |
-| `PTS` | Total Points | Scoring trends over time |
-| `AST`, `TOV` | Assists, Turnovers | Pace and ball movement metrics |
-
-### Sample Data Illustration
-
-**File**: `data/total_stats/2023-24_total_stats.csv` (31 teams × 25 variables)
-
-```
-Team                     G   FG   FGA   3P   3PA   PTS
-Indiana Pacers*         82 3855  7599 1082  2891 10110
-Boston Celtics*         82 3601  7396 1351  3482  9887
-Oklahoma City Thunder*  82 3653  7324 1090  2805  9847
-```
-
-### Relevance to Project
-
-Provides **raw counting statistics** to:
-- Compute custom metrics (e.g., 3PA as % of total FGA)
-- Validate efficiency calculations from advanced stats
-- Analyze absolute changes in shot volume (not just percentages)
-
-**Time Series Variables Extracted**:
-- League total `3PA` by season (1980-2025)
-- League total `FGA` by season (1980-2025)
-- League average `PTS` per game by season
-
----
-
-## 3. NBA Shot Location Data (2004-2025)
-
-### Source Information
-- **Primary Source**: NBA.com Stats API
-- **GitHub Repository**: [DomSamangy/NBA_Shots_04_25](https://github.com/DomSamangy/NBA_Shots_04_25)
-- **Direct Download**: [Google Drive Link](https://drive.google.com/file/d/1uktZ3wcE5670ZAR5c7MciMHbu8-zPMwM/view?usp=sharing)
-- **Coverage**: 22 seasons (2003-04 through 2024-25 regular season only)
-- **Format**: CSV files (extracted from compressed `.zip` downloads)
-- **Location in Project**: `data/shot_location/NBA_[YEAR]_Shots.csv`
-
-### Extraction Method
-
-This data was **not collected by me directly**. Instead, I used a publicly available repository that aggregated NBA.com shot location data:
-
-1. **Clone GitHub repository**:
-   ```bash
-   git clone https://github.com/DomSamangy/NBA_Shots_04_25.git
-   ```
-
-2. **Original Data Source**: The repository author extracted data from the NBA.com Stats API endpoint:
-   - API: `https://stats.nba.com/stats/shotchartdetail`
-   - Parameters: `Season`, `TeamID`, `GameID`
-   - Authentication: None required (public API)
-
-3. **Data Processing**:
-   - Downloaded repository contains 22 compressed files (`NBA_2004_Shots.csv.zip` through `NBA_2025_Shots.csv.zip`)
-   - Each ZIP contains a single CSV with all regular season shots (~190k-220k shots per season)
-   - Files were extracted and organized into `data/shot_location/` directory
-
-4. **Reading Code**:
-   ```python
-   import pandas as pd
-
-   # Read extracted CSV directly
-   shots = pd.read_csv('data/shot_location/NBA_2023_Shots.csv')
-
-   # Or read all seasons into single dataframe
-   import glob
-
-   all_shots = []
-   for file in sorted(glob.glob('data/shot_location/NBA_*_Shots.csv')):
-       df = pd.read_csv(file)
-       all_shots.append(df)
-
-   combined_shots = pd.concat(all_shots, ignore_index=True)
-   ```
-
-### Data Dictionary
-
-**Shot-Level Variables** (26 total columns, ~217k rows per season):
-
-| Variable | Description | Relevance to Time-Series Analysis |
-|----------|-------------|-----------------------------------|
-| `SEASON_1`, `SEASON_2` | Season identifiers (e.g., 2023, 2022-23) | Grouping variable |
-| `GAME_DATE` | Date (M-D-Y format) | **Temporal dimension** for daily/weekly aggregation |
-| `TEAM_NAME` | Team name | Aggregation to team-season level |
-| `PLAYER_NAME` | Player name | Optional: player-level trends |
-| `SHOT_MADE` | Boolean (TRUE/FALSE) | Calculate shooting efficiency by zone |
-| `SHOT_TYPE` | 2PT or 3PT Field Goal | Filter for 3PT revolution analysis |
-| `BASIC_ZONE` | **Court zone** classification: | **Critical for spatial analysis** |
-|   | - Restricted Area | High-efficiency paint shots |
-|   | - In the Paint (Non-RA) | Medium-range paint shots |
-|   | - **Midrange** | **Key metric for analytics revolution** |
-|   | - Left/Right Corner 3 | Most efficient 3PT location |
-|   | - Above the Break 3 | Standard 3PT shots |
-| `ZONE_RANGE` | Distance categories (<8ft, 8-16ft, 16-24ft, 24+ft) | Binned distance analysis |
-| `SHOT_DISTANCE` | Distance from basket (feet) | Continuous distance variable |
-| `LOC_X`, `LOC_Y` | Court coordinates (0-50 scale) | Spatial visualization |
-
-### Sample Data Illustration
-
-**File**: `data/shot_location/NBA_2023_Shots.csv` (217,221 shots × 26 variables)
-
-```
-SEASON_1  TEAM_NAME          PLAYER_NAME      SHOT_TYPE  BASIC_ZONE      SHOT_MADE  SHOT_DISTANCE
-2023      Washington Wizards Bradley Beal     3PT        Left Corner 3   TRUE       24.0
-2023      Washington Wizards Kristaps Porzingis 3PT     Above Break 3   FALSE      26.0
-2023      Washington Wizards Monte Morris      2PT       Restricted Area TRUE       1.0
-```
-
-### Relevance to Project
-
-This **granular spatial data** enables:
-
-1. **"Death of the Midrange" quantification**:
-   - Calculate % of shots from `BASIC_ZONE == "Midrange"` by season (2004-2025)
-   - Apply structural break tests to identify when mid-range decline accelerated
-   - **Time series variable**: Midrange shot % by season
-
-2. **Zone-specific efficiency evolution**:
-   - Compute eFG% for each `BASIC_ZONE` over time
-   - Test whether efficiency improvements drove strategic changes (Granger causality)
-   - **Time series variables**: Corner 3 eFG%, Midrange eFG%, Paint eFG% by season
-
-3. **Spatial visualization**:
-   - Create shot density heat maps for 2004 vs 2024 (pre/post analytics)
-   - Illustrate "stretching" of the court from mid-range to corners + paint
-
-4. **Analytics era validation**:
-   - Correlate shot distance trends with team-level `3PAr` from Basketball Reference
-   - Verify that increased 3PAr reflects actual spatial shot redistribution
-
-**Time Series Variables Extracted**:
-- % of shots from Midrange zone by season (2004-2025)
-- % of shots from Corner 3 zones by season (2004-2025)
-- Average shot distance by season (2004-2025)
-- Shot location variance by season (measure of spatial concentration)
-
----
-
-## 4. Sports Betting & Media Stock Data (2020-2025)
+## 2. Sports Betting & Entertainment Stock Data (2020-2025)
 
 ### Source Information
 
@@ -248,25 +52,37 @@ This **granular spatial data** enables:
 - **API Library**: `yfinance` (Python package for Yahoo Finance data)
 - **Documentation**: [yfinance GitHub](https://github.com/ranaroussi/yfinance)
 - **Coverage**:
-  - **DKNG (DraftKings)**: April 23, 2020 - Present
-  - **DIS (Disney/ESPN)**: 1980 - Present
+  - **Sports Betting Stocks (DKNG, PENN, MGM, CZR)**: 2020 - Present
+  - **Entertainment Baseline (DIS)**: 1980 - Present
 - **Format**: CSV (saved locally after API download)
-- **Location in Project**: `data/financial/`
+- **Location in Project**: `data/financial/[TICKER]_daily.csv`
 - **Cost**: Free, no API key required
 
 ### Selected Tickers
 
-**Primary: DKNG (DraftKings Inc.)**
-- **Symbol**: DKNG (Nasdaq)
-- **IPO Date**: April 23, 2020
-- **Industry**: Sports Betting & Gaming
-- **Relevance**: Went public during COVID-19 pandemic, providing perfect natural experiment for sports industry disruption analysis
+**Sports Betting Stocks (COVID-era focus):**
 
-**Secondary: DIS (The Walt Disney Company)**
-- **Symbol**: DIS (NYSE)
-- **Established**: Trading since 1957
-- **Industry**: Media & Entertainment (owns ESPN, holds NBA broadcasting rights)
-- **Relevance**: Long-term data (1980+) to correlate with entire NBA evolution; NBA TV deal holder
+1. **DKNG (DraftKings Inc.)**
+   - **Symbol**: DKNG (Nasdaq)
+   - **IPO Date**: April 23, 2020
+
+2. **PENN (Penn Entertainment / ESPN BET)**
+   - **Symbol**: PENN (Nasdaq)
+   - **Start Date**: January 2020
+
+3. **MGM (MGM Resorts / MGM BET)**
+   - **Symbol**: MGM (NYSE)
+   - **Start Date**: January 2020
+
+4. **CZR (Caesars Entertainment / Caesars Sportsbook)**
+   - **Symbol**: CZR (Nasdaq)
+   - **Start Date**: January 2020
+
+**Entertainment Baseline:**
+
+1. **DIS (The Walt Disney Company)**
+   - **Symbol**: DIS (NYSE)
+   - **Established**: Trading since 1957
 
 ### Extraction Method
 
@@ -281,28 +97,33 @@ pip install yfinance
 ```python
 import yfinance as yf
 import pandas as pd
+import numpy as np
+import os
 
-# Download DraftKings data (COVID-era focus)
-dkng = yf.download('DKNG', start='2020-04-23', end='2025-01-01')
+# Create financial data directory
+os.makedirs('data/financial', exist_ok=True)
 
-# Download Disney data (long-term analysis)
-dis = yf.download('DIS', start='1980-01-01', end='2025-01-01')
+# Define stocks
+stocks = {
+    'DKNG': {'name': 'DraftKings', 'start': '2020-04-23'},
+    'PENN': {'name': 'Penn Entertainment', 'start': '2020-01-01'},
+    'MGM': {'name': 'MGM Resorts', 'start': '2020-01-01'},
+    'CZR': {'name': 'Caesars Entertainment', 'start': '2020-01-01'},
+    'DIS': {'name': 'Disney (ESPN)', 'start': '1980-01-01'}
+}
 
-# Save locally for reproducibility
-dkng.to_csv('data/financial/DKNG_daily.csv')
-dis.to_csv('data/financial/DIS_daily.csv')
-```
+# Download and process each stock
+for ticker, info in stocks.items():
+    df = yf.download(ticker, start=info['start'], end='2025-01-01', progress=False)
 
-**Step 3: Calculate Returns and Volatility**
-```python
-# Daily returns
-dkng['Returns'] = dkng['Adj Close'].pct_change()
+    # Calculate returns and volatility
+    df['Returns'] = df['Adj Close'].pct_change()
+    df['Log_Returns'] = np.log(df['Adj Close'] / df['Adj Close'].shift(1))
+    df['Volatility_20d'] = df['Returns'].rolling(window=20).std()
+    df['Cumulative_Returns'] = (1 + df['Returns']).cumprod() - 1
 
-# Rolling volatility (20-day window)
-dkng['Volatility'] = dkng['Returns'].rolling(window=20).std()
-
-# Cumulative returns
-dkng['Cumulative_Returns'] = (1 + dkng['Returns']).cumprod() - 1
+    # Save to CSV
+    df.to_csv(f'data/financial/{ticker}_daily.csv')
 ```
 
 ### Data Dictionary
@@ -319,99 +140,63 @@ dkng['Cumulative_Returns'] = (1 + dkng['Returns']).cumprod() - 1
 | `Adj Close` | Adjusted closing price | **Primary variable** (adjusted for splits/dividends) |
 | `Volume` | Trading volume | Liquidity and market interest |
 
-**Derived Time Series Variables**:
+**Derived Time Series Variables:**
 
 | Variable | Calculation | Use in Analysis |
 |----------|-------------|-----------------|
-| `Daily Returns` | `pct_change(Adj Close)` | **Main dependent variable** for GARCH modeling |
+| `Daily Returns` | `pct_change(Adj Close)` | **Main dependent variable** for volatility modeling |
 | `Log Returns` | `log(Close_t / Close_{t-1})` | Continuous returns for ARIMA |
 | `Volatility (20-day)` | `rolling(20).std(Returns)` | Volatility clustering analysis |
 | `Cumulative Returns` | `cumprod(1 + Returns) - 1` | Long-term performance trends |
 
-### Sample Data Illustration
-
-**File**: `DKNG_daily.csv` (1,180 trading days × 7 variables)
-
-```
-Date        Open    High    Low     Close   Adj Close  Volume      Returns
-2020-04-23  19.00   21.28   17.62   18.97   18.97     52458300    NaN
-2020-04-24  20.10   20.70   18.31   18.82   18.82     18584800   -0.0079
-2020-04-27  19.39   19.67   18.20   18.89   18.89     10713600    0.0037
-2020-04-28  19.50   21.36   19.40   20.88   20.88     16344300    0.1053
-...
-2024-12-31  41.23   42.15   40.87   41.85   41.85     8234500     0.0124
-```
-
-**File**: `DIS_daily.csv` (11,340 trading days × 7 variables for 1980-2025)
-
-### Relevance to Project
-
-This financial data provides the **required financial time-series component** while creating meaningful connections to NBA dynamics:
-
 #### 1. COVID-19 Disruption Analysis
 
-**DKNG as Natural Experiment**:
-- IPO occurred **April 23, 2020** - one month into NBA season suspension
-- Stock price reflects real-time market expectations of sports industry recovery
-- Correlation with NBA attendance recovery (2020-2025)
+**Sports Betting Stocks as Natural Experiment:**
+- Multiple stocks went public or became relevant during COVID-19 (2020)
+- Stock prices reflect real-time market expectations of sports industry recovery
+- Correlation with NBA attendance recovery and season disruptions
 
-**Research Questions**:
-- Did DKNG stock react to NBA bubble season announcement (July 2020)?
-- How did stock volatility correlate with attendance volatility?
-- Did return to normal NBA operations (2021-22) reduce DKNG volatility?
+**Research Questions:**
+- How did sports betting stocks react to NBA bubble season announcement (July 2020)?
+- Did stock volatility correlate with NBA attendance volatility?
+- How did return to normal NBA operations (2021-22) affect stock performance?
 
 #### 2. Seasonality in Financial Markets
 
-**NBA Season Effects on Stock Prices**:
-- Test whether DKNG returns are higher during NBA playoffs (April-June)
-- Examine whether DIS stock shows seasonal patterns tied to NBA Finals viewership
+**NBA Season Effects on Stock Prices:**
+- Test whether sports betting stocks show higher returns during NBA playoffs (April-June)
+- Examine whether Disney stock shows seasonal patterns tied to NBA Finals viewership
 - Compare volatility during NBA season vs. off-season
 
 **Methods**: SARIMA models, seasonal decomposition (STL), Fourier analysis
 
 #### 3. Long-Term Industry Growth (DIS: 1980-2025)
 
-**Correlation with NBA Evolution**:
+**Correlation with NBA Evolution:**
 - Did Disney stock benefit from NBA's analytics-era popularity surge?
 - Relationship between league-wide efficiency (ORtg) and media company valuations
 - Impact of major NBA TV deal renewals on DIS stock price
 
-#### 4. Volatility Modeling (GARCH)
+#### 4. Volatility Modeling
 
-**Financial Time-Series Methods**:
-- **GARCH(1,1)** models to capture volatility clustering in DKNG returns
-- Test whether sports disruptions (COVID, lockouts) created structural breaks in volatility
-- Compare GARCH parameters pre/post analytics revolution
+**Financial Time-Series Methods:**
+- ARIMA and SARIMA models for sports betting stock returns
+- Weekly aggregation to capture seasonal patterns (52 weeks per year)
+- Test whether sports disruptions (COVID, lockouts) created structural breaks
 
-#### 5. Cross-Market Analysis (VAR Models)
+#### 5. Cross-Market Analysis
 
-**Bidirectional Relationships**:
-- Does NBA attendance Granger-cause DKNG stock returns?
-- Do sports betting stock movements predict changes in NBA game pace/strategy?
+**Bidirectional Relationships:**
+- Does NBA attendance correlate with sports betting stock returns?
+- Do sports betting stock movements predict changes in NBA viewership?
+- Comparative analysis across multiple betting operators (DKNG, PENN, MGM, CZR)
 
-**Time Series Variables Extracted**:
-- DKNG daily returns (2020-2025): ~1,180 observations
-- DKNG 20-day volatility (2020-2025)
-- DIS daily returns (1980-2025): ~11,000 observations
-- DIS monthly returns aggregated by NBA season
-
-### Integration with NBA Data
-
-**Multi-Source Time Series Framework**:
-
-```
-NBA Data (Annual)          Financial Data (Daily)
-─────────────────          ──────────────────────
-ORtg (1980-2025)     ←──→  DIS Returns (1980-2025)
-Attendance (2000-25) ←──→  DKNG Returns (2020-25)
-3PAr (1980-2025)     ←──→  DIS Volatility (long-term trends)
-```
-
-**Analytical Connections**:
-1. **Aggregate financial data to seasonal/annual frequency** to match NBA data
-2. **Use event study methodology** - examine DKNG returns around major NBA announcements
-3. **Correlation analysis** - relationship between attendance and sports betting stock performance
-4. **Lead-lag analysis** - does market anticipate NBA trends before they materialize in stats?
+**Time Series Variables Extracted:**
+- DKNG daily/weekly returns (2020-2025): ~1,180+ trading days
+- PENN daily/weekly returns (2020-2025): ~1,180+ trading days
+- MGM daily/weekly returns (2020-2025): ~1,180+ trading days
+- CZR daily/weekly returns (2020-2025): ~1,180+ trading days
+- DIS daily/weekly returns (1980-2025): ~11,000+ trading days
 
 ---
 
@@ -426,29 +211,41 @@ The NBA provides **natural seasonality** across multiple timescales:
    - Playoffs: April - June
    - Off-season: July - September
 
-2. **Time Series Exhibiting Seasonality**:
-   - **Attendance**: Peaks during playoffs (April-June), drops in off-season (July-September)
+2. **Time Series Exhibiting Seasonality:**
+   - **Attendance**: Peaks during playoffs (April-June), minimal in off-season
    - **Pace**: May vary by month as teams rest starters late-season
    - **3PT Attempt Rate**: Potential playoff vs regular season differences
-   - **Stock Returns (DKNG, DIS)**: Sports betting and media stocks show seasonal patterns tied to NBA season
+   - **Sports Betting Stocks (DKNG, PENN, MGM, CZR)**:
+     - Weekly aggregation (frequency = 52) shows seasonal patterns
      - Higher volatility during playoffs
      - Trading volume spikes around NBA Finals
-     - Earnings announcements coincide with season milestones
+     - Earnings tied to NBA season milestones
 
-3. **Seasonal Decomposition Methods**:
-   - **STL decomposition** of monthly attendance data (2000-2025)
-   - **SARIMA models** for pace and efficiency with annual seasonal component (S=12 for monthly data)
-   - **Fourier analysis** of shot selection patterns within season
-   - **Seasonal dummy variables** for DKNG returns during playoff periods vs regular season
+3. **Seasonal Decomposition Methods:**
+   - **SARIMA models** for weekly sports betting stock returns (S=52)
+   - **STL decomposition** of attendance data (annual seasonality)
+   - **Seasonal dummy variables** for playoff periods vs regular season
 
 ### Financial Time Series Coverage
 
-- **DKNG (DraftKings)**: Daily returns, 2020-04-23 to 2025-01-01 (~1,180 trading days)
-  - Exhibits volatility clustering (GARCH effects)
+- **DKNG (DraftKings)**: Daily/Weekly returns, 2020-04-23 to present (~1,180+ days)
+  - Exhibits volatility clustering
   - Natural seasonality tied to NBA/sports calendar
   - COVID-era natural experiment
 
-- **DIS (Disney/ESPN)**: Daily returns, 1980-01-01 to 2025-01-01 (~11,000 trading days)
+- **PENN (Penn Entertainment)**: Daily/Weekly returns, 2020-01-01 to present (~1,250+ days)
+  - Transition from Barstool to ESPN BET partnership
+  - Seasonal patterns from sports betting activity
+
+- **MGM (MGM Resorts)**: Daily/Weekly returns, 2020-01-01 to present (~1,250+ days)
+  - Integrated casino/sportsbook operations
+  - Sports season effects on revenue
+
+- **CZR (Caesars)**: Daily/Weekly returns, 2020-01-01 to present (~1,250+ days)
+  - Major sportsbook competitor
+  - Seasonal betting patterns
+
+- **DIS (Disney/ESPN)**: Daily/Weekly returns, 1980-01-01 to present (~11,000+ days)
   - Long-term trends correlate with NBA popularity growth
   - Seasonal patterns from NBA broadcasting schedule
   - Major TV deal announcements create structural breaks
@@ -458,23 +255,23 @@ The NBA provides **natural seasonality** across multiple timescales:
 ## Data Quality and Limitations
 
 ### Strengths
-✓ **Comprehensive temporal coverage**: 45 years team stats, 21 years spatial data
-✓ **Official sources**: Basketball Reference (trusted), NBA.com API (authoritative)
-✓ **Granular detail**: Shot-level data enables precise spatial analysis
+✓ **Comprehensive temporal coverage**: 45 years of NBA team statistics (1980-2025)
+✓ **Official sources**: Basketball Reference (trusted), Yahoo Finance (authoritative)
+✓ **Multiple financial instruments**: 5 stocks provide robust sports betting/entertainment sector coverage
 ✓ **Fully documented**: All extraction methods and sources provided for replication
 
 ### Limitations
-⚠ **Shot location data starts 2004**: Spatial analysis limited to post-2004 era
-  - *Mitigation*: 2004-2025 still captures full analytics revolution (~2012+)
-
-⚠ **Manual data collection**: Basketball Reference lacks API, requires manual download
+⚠ **Manual data collection for NBA stats**: Basketball Reference lacks API, requires manual download
   - *Mitigation*: Documented step-by-step process ensures replicability
 
 ⚠ **Team-level aggregation only**: No individual player tracking
   - *Mitigation*: Team-level appropriate for league-wide structural change study
 
-⚠ **DKNG data limited to 2020+**: DraftKings IPO in April 2020 means no pre-COVID baseline
-  - *Mitigation*: Disney (DIS) provides long-term sports media stock perspective (1980+)
+⚠ **Sports betting stocks limited to 2020+**: Market didn't exist before 2018
+  - *Mitigation*: 2020-2025 captures COVID disruption and market maturation phases
+
+⚠ **Annual frequency for NBA data**: Limits some time series techniques
+  - *Mitigation*: 45 observations sufficient for ARIMA; financial data provides high-frequency component
 
 ---
 
@@ -483,25 +280,20 @@ The NBA provides **natural seasonality** across multiple timescales:
 ```
 josh-portfolio/
 │
-└── data/
-    ├── adv_stats/
-    │   ├── 1980-81_adv_stats.csv
-    │   ├── 1981-82_adv_stats.csv
-    │   └── ... (45 CSV files through 2024-25)
-    │
-    ├── total_stats/
-    │   ├── 1980-81_total_stats.csv
-    │   ├── 1981-82_total_stats.csv
-    │   └── ... (45 CSV files through 2024-25)
-    │
-    ├── shot_location/
-    │   ├── NBA_2004_Shots.csv
-    │   ├── NBA_2005_Shots.csv
-    │   └── ... (22 CSV files through 2025)
-    │
-    └── financial/
-        ├── DKNG_daily.csv
-        └── DIS_daily.csv
+├── data/
+│   ├── adv_stats/
+│   │   ├── 1980-81_adv_stats.csv
+│   │   ├── 1981-82_adv_stats.csv
+│   │   └── ... (45 CSV files through 2024-25)
+│   │
+│   └── financial/
+│       ├── DKNG_daily.csv
+│       ├── PENN_daily.csv
+│       ├── MGM_daily.csv
+│       ├── CZR_daily.csv
+│       └── DIS_daily.csv
+│
+└── download_financial_data.py  # Script to download financial data
 ```
 
 ---
@@ -510,183 +302,88 @@ josh-portfolio/
 
 To fully replicate this data collection:
 
-### 1. Basketball Reference Data (Team Stats)
+### 1. Basketball Reference Data (Team Advanced Stats)
 
 **Manual Download** (required due to lack of API):
 
 ```bash
 # For each season from 1980-81 to 2024-25:
 # 1. Navigate to: https://www.basketball-reference.com/leagues/NBA_[YEAR].html
-# 2. Scroll to "Team Per Game Stats" or "Advanced Stats" table
+# 2. Scroll to "Advanced Stats" table
 # 3. Click "Share & Export" → "Get table as CSV (for Excel)"
-# 4. Download the file (may be saved as .xls but contains HTML)
-# 5. Repeat for all 45 seasons for both Advanced and Total stats
+# 4. Save the file to data/adv_stats/[YEAR]_adv_stats.csv
+# 5. Repeat for all 45 seasons
 ```
 
-**Convert HTML to CSV** (using provided script):
-```python
-import pandas as pd
-import glob
+**Read CSV files in R:**
+```r
+library(tidyverse)
 
-# Convert all advanced stats files
-for xls_file in glob.glob('data/adv_stats/*.xls'):
-    df = pd.read_html(xls_file)[0]
+# Read all advanced stats files
+all_adv_files <- list.files("data/adv_stats", pattern = "*.csv", full.names = TRUE)
 
-    # Handle multi-level columns if present
-    if isinstance(df.columns, pd.MultiIndex):
-        df.columns = ['_'.join(str(c).strip() for c in col if c)
-                     for col in df.columns.values]
+# Combine all seasons
+all_adv_data <- map_df(all_adv_files, function(file) {
+    season_str <- str_extract(basename(file), "\\d{4}-\\d{2}")
+    season_year <- as.numeric(str_sub(season_str, 1, 4)) + 1
 
-    # Save as CSV
-    csv_file = xls_file.replace('.xls', '.csv')
-    df.to_csv(csv_file, index=False)
+    df <- read_csv(file, show_col_types = FALSE)
+    df$Season <- season_year
+    return(df)
+})
+
+# Calculate league averages
+league_avg <- all_adv_data %>%
+    group_by(Season) %>%
+    summarise(
+        ORtg = mean(`Unnamed: 10_level_0_ORtg`, na.rm = TRUE),
+        DRtg = mean(`Unnamed: 11_level_0_DRtg`, na.rm = TRUE),
+        Pace = mean(`Unnamed: 13_level_0_Pace`, na.rm = TRUE),
+        `3PAr` = mean(`Unnamed: 15_level_0_3PAr`, na.rm = TRUE),
+        `TS%` = mean(`Unnamed: 16_level_0_TS%`, na.rm = TRUE),
+        .groups = "drop"
+    )
 ```
 
-**Read CSV files**:
-```python
-import pandas as pd
-import glob
+### 2. Financial Data (Yahoo Finance)
 
-# Read single season
-df_adv = pd.read_csv('data/adv_stats/2023-24_adv_stats.csv')
-df_total = pd.read_csv('data/total_stats/2023-24_total_stats.csv')
-
-# Read all seasons
-all_adv = []
-for file in sorted(glob.glob('data/adv_stats/*.csv')):
-    df = pd.read_csv(file)
-    season = file.split('/')[-1].split('_')[0]
-    df['Season'] = season
-    all_adv.append(df)
-
-combined_adv = pd.concat(all_adv, ignore_index=True)
-```
-
-### 2. Shot Location Data
-
-**Step 1: Download from GitHub**:
+**Step 1: Install yfinance**
 ```bash
-git clone https://github.com/DomSamangy/NBA_Shots_04_25.git
+pip install yfinance pandas numpy
 ```
 
-**Step 2: Extract ZIP files to data/shot_location/**:
-```python
-import zipfile
-import glob
-import os
-from pathlib import Path
-
-# Create shot_location directory
-Path('data/shot_location').mkdir(parents=True, exist_ok=True)
-
-# Extract all ZIP files
-zip_files = glob.glob('NBA_Shots_04_25-main/NBA_*_Shots.csv.zip')
-for zip_path in sorted(zip_files):
-    with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-        # Extract CSV to data/shot_location/
-        csv_name = zip_ref.namelist()[0]
-        zip_ref.extract(csv_name, 'data/shot_location/')
-    print(f"Extracted: {csv_name}")
-```
-
-**Step 3: Read CSV files**:
-```python
-import pandas as pd
-import glob
-
-# Read single season
-shots_2023 = pd.read_csv('data/shot_location/NBA_2023_Shots.csv')
-
-# Read all seasons
-all_shots = []
-for file in sorted(glob.glob('data/shot_location/NBA_*_Shots.csv')):
-    df = pd.read_csv(file)
-    all_shots.append(df)
-
-combined_shots = pd.concat(all_shots, ignore_index=True)
-
-# Aggregate to season-level metrics
-midrange_pct = (shots_2023['BASIC_ZONE'] == 'Midrange').mean() * 100
-print(f"2023 Midrange Shot %: {midrange_pct:.2f}%")
-```
-
-### 3. Financial Data (Yahoo Finance)
-
-**Step 1: Install yfinance**:
+**Step 2: Run the download script**
 ```bash
-pip install yfinance
+python download_financial_data.py
 ```
 
-**Step 2: Download and save stock data**:
-```python
-import yfinance as yf
-import pandas as pd
-import os
+This script (`download_financial_data.py`) automatically:
+- Downloads all 5 stocks (DKNG, PENN, MGM, CZR, DIS)
+- Calculates returns, log returns, and volatility metrics
+- Saves CSV files to `data/financial/`
+- Prints summary statistics
 
-# Create financial data directory
-os.makedirs('data/financial', exist_ok=True)
+**Step 3: Read in R**
+```r
+library(tidyverse)
+library(lubridate)
 
-# Download DraftKings data (COVID-era analysis)
-print("Downloading DKNG data...")
-dkng = yf.download('DKNG', start='2020-04-23', end='2025-01-01', progress=False)
-dkng.to_csv('data/financial/DKNG_daily.csv')
-print(f"DKNG: {len(dkng)} trading days saved")
+# Read DKNG data
+dkng <- read_csv("data/financial/DKNG_daily.csv") %>%
+    mutate(Date = ymd(Date))
 
-# Download Disney data (long-term analysis)
-print("Downloading DIS data...")
-dis = yf.download('DIS', start='1980-01-01', end='2025-01-01', progress=False)
-dis.to_csv('data/financial/DIS_daily.csv')
-print(f"DIS: {len(dis)} trading days saved")
+# Convert to weekly for SARIMA (seasonality = 52)
+dkng_weekly <- dkng %>%
+    mutate(Week = floor_date(Date, "week")) %>%
+    group_by(Week) %>%
+    summarise(
+        Adj_Close = last(`Adj Close`),
+        Weekly_Return = (last(`Adj Close`) - first(Open)) / first(Open),
+        .groups = "drop"
+    )
 
-# Calculate returns and volatility
-dkng['Returns'] = dkng['Adj Close'].pct_change()
-dkng['Log_Returns'] = np.log(dkng['Adj Close'] / dkng['Adj Close'].shift(1))
-dkng['Volatility_20d'] = dkng['Returns'].rolling(window=20).std()
-dkng['Cumulative_Returns'] = (1 + dkng['Returns']).cumprod() - 1
-
-# Save enhanced version
-dkng.to_csv('data/financial/DKNG_daily_enhanced.csv')
-```
-
-**Step 3: Verify data quality**:
-```python
-# Check for missing values
-print(f"DKNG missing values: {dkng.isnull().sum().sum()}")
-
-# Summary statistics
-print("\nDKNG Daily Returns Summary:")
-print(dkng['Returns'].describe())
-
-# Visualize returns distribution
-import matplotlib.pyplot as plt
-dkng['Returns'].hist(bins=50, figsize=(10, 6))
-plt.title('DKNG Daily Returns Distribution')
-plt.xlabel('Daily Return')
-plt.ylabel('Frequency')
-plt.savefig('data/financial/DKNG_returns_histogram.png')
+# Create time series object
+ts_dkng_weekly <- ts(dkng_weekly$Weekly_Return, frequency = 52)
 ```
 
 ---
-
-## Summary: Time Series Inventory
-
-| Dataset | Variables | Coverage | Frequency | Seasonality | Financial |
-|---------|-----------|----------|-----------|-------------|-----------|
-| Basketball Reference Advanced | ORtg, Pace, 3PAr, TS%, Attendance | 1980-2025 | Annual (45 seasons) | ✓ (NBA cycle) | ✗ |
-| Basketball Reference Total | 3PA, FGA, PTS, AST, TOV | 1980-2025 | Annual (45 seasons) | ✓ (NBA cycle) | ✗ |
-| NBA Shot Location | Midrange %, Shot Distance, Zone eFG% | 2004-2025 | Daily→Annual (22 seasons) | ✓ (NBA cycle) | ✗ |
-| **DKNG Stock** | **Daily returns, volatility, volume** | **2020-2025** | **Daily (~1,180 days)** | **✓ (playoff effects)** | **✓** |
-| **DIS Stock** | **Daily returns, volatility, volume** | **1980-2025** | **Daily (~11,000 days)** | **✓ (NBA season)** | **✓** |
-
-**Total Univariate Time Series Available**: 15+ variables (exceeds 3-4 requirement per section)
-
-**Key Time Series for Analysis**:
-1. League-average ORtg (1980-2025): 45 observations
-2. League-average Pace (1980-2025): 45 observations
-3. League-average 3PAr (1980-2025): 45 observations
-4. Midrange shot % (2004-2025): 22 observations
-5. Total Attendance (1980-2025): 45 observations
-6. DKNG daily returns (2020-2025): ~1,180 observations
-7. DIS daily returns (1980-2025): ~11,000 observations
-
-All data sources, extraction methods, and replication code documented for full transparency.
