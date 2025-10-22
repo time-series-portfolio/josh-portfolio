@@ -235,8 +235,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#source-information" id="toc-source-information" class="nav-link" data-scroll-target="#source-information">Source Information</a></li>
   <li><a href="#extraction-method" id="toc-extraction-method" class="nav-link" data-scroll-target="#extraction-method">Extraction Method</a></li>
   <li><a href="#data-dictionary" id="toc-data-dictionary" class="nav-link" data-scroll-target="#data-dictionary">Data Dictionary</a></li>
-  <li><a href="#sample-data-illustration" id="toc-sample-data-illustration" class="nav-link" data-scroll-target="#sample-data-illustration">Sample Data Illustration</a></li>
-  <li><a href="#relevance-to-project" id="toc-relevance-to-project" class="nav-link" data-scroll-target="#relevance-to-project">Relevance to Project</a></li>
   </ul></li>
   <li><a href="#sports-betting-entertainment-stock-data-2020-2025" id="toc-sports-betting-entertainment-stock-data-2020-2025" class="nav-link" data-scroll-target="#sports-betting-entertainment-stock-data-2020-2025">2. Sports Betting &amp; Entertainment Stock Data (2020-2025)</a>
   <ul class="collapse">
@@ -244,8 +242,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#selected-tickers" id="toc-selected-tickers" class="nav-link" data-scroll-target="#selected-tickers">Selected Tickers</a></li>
   <li><a href="#extraction-method-1" id="toc-extraction-method-1" class="nav-link" data-scroll-target="#extraction-method-1">Extraction Method</a></li>
   <li><a href="#data-dictionary-1" id="toc-data-dictionary-1" class="nav-link" data-scroll-target="#data-dictionary-1">Data Dictionary</a></li>
-  <li><a href="#sample-data-illustration-1" id="toc-sample-data-illustration-1" class="nav-link" data-scroll-target="#sample-data-illustration-1">Sample Data Illustration</a></li>
-  <li><a href="#relevance-to-project-1" id="toc-relevance-to-project-1" class="nav-link" data-scroll-target="#relevance-to-project-1">Relevance to Project</a></li>
   </ul></li>
   <li><a href="#seasonality-and-financial-time-series-coverage" id="toc-seasonality-and-financial-time-series-coverage" class="nav-link" data-scroll-target="#seasonality-and-financial-time-series-coverage">Seasonality and Financial Time Series Coverage</a>
   <ul class="collapse">
@@ -263,7 +259,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#basketball-reference-data-team-advanced-stats" id="toc-basketball-reference-data-team-advanced-stats" class="nav-link" data-scroll-target="#basketball-reference-data-team-advanced-stats">1. Basketball Reference Data (Team Advanced Stats)</a></li>
   <li><a href="#financial-data-yahoo-finance" id="toc-financial-data-yahoo-finance" class="nav-link" data-scroll-target="#financial-data-yahoo-finance">2. Financial Data (Yahoo Finance)</a></li>
   </ul></li>
-  <li><a href="#summary-time-series-inventory" id="toc-summary-time-series-inventory" class="nav-link" data-scroll-target="#summary-time-series-inventory">Summary: Time Series Inventory</a></li>
   </ul></li>
   </ul>
 </nav>
@@ -276,8 +271,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <section id="data-sources" class="level1">
 <h1>Data Sources</h1>
-<p>This project analyzes NBA team performance and sports betting market dynamics using two primary data sources spanning 1980-2025. All data collection methods are documented below for full reproducibility.</p>
-<hr>
 <section id="basketball-reference-team-advanced-statistics-1980-2025" class="level2">
 <h2 class="anchored" data-anchor-id="basketball-reference-team-advanced-statistics-1980-2025">1. Basketball Reference: Team Advanced Statistics (1980-2025)</h2>
 <section id="source-information" class="level3">
@@ -289,8 +282,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li>Example: <a href="https://www.basketball-reference.com/leagues/NBA_2024.html">2023-24 Advanced Stats</a></li>
 </ul></li>
 <li><strong>Coverage</strong>: 45 seasons (1980-81 through 2024-25)</li>
-<li><strong>Format</strong>: CSV files</li>
-<li><strong>Location in Project</strong>: <code>data/adv_stats/[YEAR]_adv_stats.csv</code></li>
 </ul>
 </section>
 <section id="extraction-method" class="level3">
@@ -390,27 +381,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </tbody>
 </table>
 </section>
-<section id="sample-data-illustration" class="level3">
-<h3 class="anchored" data-anchor-id="sample-data-illustration">Sample Data Illustration</h3>
-<p><strong>File</strong>: <code>data/adv_stats/2023-24_adv_stats.csv</code> (31 teams × 31 variables)</p>
-<pre><code>Rk,Team,Age,W,L,PW,PL,MOV,SOS,SRS,ORtg,DRtg,NRtg,Pace,FTr,3PAr,TS%,...
-1,Boston Celtics*,28.2,64,18,66,16,11.34,-0.6,10.75,123.2,111.6,11.6,97.2,0.224,0.471,0.609,...
-2,Oklahoma City Thunder*,23.4,57,25,58,24,7.41,-0.05,7.36,119.5,112.1,7.4,99.8,0.24,0.383,0.608,...
-3,Minnesota Timberwolves*,27.2,56,26,57,25,6.45,-0.07,6.39,115.6,109.0,6.6,97.1,0.27,0.384,0.594,...</code></pre>
-</section>
-<section id="relevance-to-project" class="level3">
-<h3 class="anchored" data-anchor-id="relevance-to-project">Relevance to Project</h3>
-<p>This dataset provides the <strong>foundational time series</strong> for:</p>
-<ol type="1">
-<li><strong>Long-run analysis (1980-2025)</strong>: Modeling <code>ORtg</code>, <code>Pace</code>, and <code>3PAr</code> as univariate time series to detect structural breaks and trends</li>
-<li><strong>Analytics revolution dating</strong>: Using <code>3PAr</code> time series to objectively identify when the analytics era began (~2012)</li>
-<li><strong>COVID impact quantification</strong>: Analyzing <code>Attendance</code> and scoring volatility before/during/after 2020</li>
-<li><strong>Multivariate modeling</strong>: Examining dynamic relationships between <code>Pace</code>, <code>3PAr</code>, and <code>ORtg</code> using VAR models</li>
-<li><strong>Efficiency evolution</strong>: Tracking how offensive efficiency (<code>ORtg</code>) has changed over 45 years</li>
-</ol>
-<p><strong>Time Series Variables Extracted:</strong> - League-average <code>ORtg</code> by season (1980-2025): 45 observations - League-average <code>Pace</code> by season (1980-2025): 45 observations - League-average <code>3PAr</code> by season (1980-2025): 45 observations - League-average <code>TS%</code> by season (1980-2025): 45 observations - Total <code>Attendance</code> by season (1980-2025): 45 observations</p>
-<hr>
-</section>
 </section>
 <section id="sports-betting-entertainment-stock-data-2020-2025" class="level2">
 <h2 class="anchored" data-anchor-id="sports-betting-entertainment-stock-data-2020-2025">2. Sports Betting &amp; Entertainment Stock Data (2020-2025)</h2>
@@ -438,39 +408,29 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <ul>
 <li><strong>Symbol</strong>: DKNG (Nasdaq)</li>
 <li><strong>IPO Date</strong>: April 23, 2020</li>
-<li><strong>Industry</strong>: Sports Betting &amp; Gaming</li>
-<li><strong>Relevance</strong>: Went public during COVID-19 pandemic, primary sports betting stock</li>
 </ul></li>
 <li><strong>PENN (Penn Entertainment / ESPN BET)</strong>
 <ul>
 <li><strong>Symbol</strong>: PENN (Nasdaq)</li>
 <li><strong>Start Date</strong>: January 2020</li>
-<li><strong>Industry</strong>: Gaming &amp; Sports Betting (Barstool → ESPN BET)</li>
-<li><strong>Relevance</strong>: Traditional casino company transitioning to sports betting</li>
 </ul></li>
 <li><strong>MGM (MGM Resorts / MGM BET)</strong>
 <ul>
 <li><strong>Symbol</strong>: MGM (NYSE)</li>
 <li><strong>Start Date</strong>: January 2020</li>
-<li><strong>Industry</strong>: Casino &amp; Hospitality + Sports Betting</li>
-<li><strong>Relevance</strong>: Integrated casino/sportsbook operator</li>
 </ul></li>
 <li><strong>CZR (Caesars Entertainment / Caesars Sportsbook)</strong>
 <ul>
 <li><strong>Symbol</strong>: CZR (Nasdaq)</li>
 <li><strong>Start Date</strong>: January 2020</li>
-<li><strong>Industry</strong>: Gaming &amp; Sports Betting</li>
-<li><strong>Relevance</strong>: Major competitor in sports betting market</li>
 </ul></li>
 </ol>
 <p><strong>Entertainment Baseline:</strong></p>
-<ol start="5" type="1">
+<ol type="1">
 <li><strong>DIS (The Walt Disney Company)</strong>
 <ul>
 <li><strong>Symbol</strong>: DIS (NYSE)</li>
 <li><strong>Established</strong>: Trading since 1957</li>
-<li><strong>Industry</strong>: Media &amp; Entertainment (owns ESPN, holds NBA broadcasting rights)</li>
-<li><strong>Relevance</strong>: Long-term data (1980+) to correlate with entire NBA evolution</li>
 </ul></li>
 </ol>
 </section>
@@ -478,37 +438,37 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="extraction-method-1">Extraction Method</h3>
 <p>Yahoo Finance provides free access to historical stock data via the <code>yfinance</code> Python library:</p>
 <p><strong>Step 1: Install yfinance</strong></p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install yfinance</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install yfinance</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p><strong>Step 2: Download Stock Data</strong></p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> yfinance <span class="im">as</span> yf</span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> os</span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Create financial data directory</span></span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>os.makedirs(<span class="st">'data/financial'</span>, exist_ok<span class="op">=</span><span class="va">True</span>)</span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Define stocks</span></span>
-<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>stocks <span class="op">=</span> {</span>
-<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>    <span class="st">'DKNG'</span>: {<span class="st">'name'</span>: <span class="st">'DraftKings'</span>, <span class="st">'start'</span>: <span class="st">'2020-04-23'</span>},</span>
-<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>    <span class="st">'PENN'</span>: {<span class="st">'name'</span>: <span class="st">'Penn Entertainment'</span>, <span class="st">'start'</span>: <span class="st">'2020-01-01'</span>},</span>
-<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>    <span class="st">'MGM'</span>: {<span class="st">'name'</span>: <span class="st">'MGM Resorts'</span>, <span class="st">'start'</span>: <span class="st">'2020-01-01'</span>},</span>
-<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>    <span class="st">'CZR'</span>: {<span class="st">'name'</span>: <span class="st">'Caesars Entertainment'</span>, <span class="st">'start'</span>: <span class="st">'2020-01-01'</span>},</span>
-<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>    <span class="st">'DIS'</span>: {<span class="st">'name'</span>: <span class="st">'Disney (ESPN)'</span>, <span class="st">'start'</span>: <span class="st">'1980-01-01'</span>}</span>
-<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a><span class="co"># Download and process each stock</span></span>
-<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> ticker, info <span class="kw">in</span> stocks.items():</span>
-<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>    df <span class="op">=</span> yf.download(ticker, start<span class="op">=</span>info[<span class="st">'start'</span>], end<span class="op">=</span><span class="st">'2025-01-01'</span>, progress<span class="op">=</span><span class="va">False</span>)</span>
-<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Calculate returns and volatility</span></span>
-<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a>    df[<span class="st">'Returns'</span>] <span class="op">=</span> df[<span class="st">'Adj Close'</span>].pct_change()</span>
-<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a>    df[<span class="st">'Log_Returns'</span>] <span class="op">=</span> np.log(df[<span class="st">'Adj Close'</span>] <span class="op">/</span> df[<span class="st">'Adj Close'</span>].shift(<span class="dv">1</span>))</span>
-<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a>    df[<span class="st">'Volatility_20d'</span>] <span class="op">=</span> df[<span class="st">'Returns'</span>].rolling(window<span class="op">=</span><span class="dv">20</span>).std()</span>
-<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a>    df[<span class="st">'Cumulative_Returns'</span>] <span class="op">=</span> (<span class="dv">1</span> <span class="op">+</span> df[<span class="st">'Returns'</span>]).cumprod() <span class="op">-</span> <span class="dv">1</span></span>
-<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Save to CSV</span></span>
-<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a>    df.to_csv(<span class="ss">f'data/financial/</span><span class="sc">{</span>ticker<span class="sc">}</span><span class="ss">_daily.csv'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> yfinance <span class="im">as</span> yf</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> os</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Create financial data directory</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>os.makedirs(<span class="st">'data/financial'</span>, exist_ok<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Define stocks</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>stocks <span class="op">=</span> {</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>    <span class="st">'DKNG'</span>: {<span class="st">'name'</span>: <span class="st">'DraftKings'</span>, <span class="st">'start'</span>: <span class="st">'2020-04-23'</span>},</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>    <span class="st">'PENN'</span>: {<span class="st">'name'</span>: <span class="st">'Penn Entertainment'</span>, <span class="st">'start'</span>: <span class="st">'2020-01-01'</span>},</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>    <span class="st">'MGM'</span>: {<span class="st">'name'</span>: <span class="st">'MGM Resorts'</span>, <span class="st">'start'</span>: <span class="st">'2020-01-01'</span>},</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>    <span class="st">'CZR'</span>: {<span class="st">'name'</span>: <span class="st">'Caesars Entertainment'</span>, <span class="st">'start'</span>: <span class="st">'2020-01-01'</span>},</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>    <span class="st">'DIS'</span>: {<span class="st">'name'</span>: <span class="st">'Disney (ESPN)'</span>, <span class="st">'start'</span>: <span class="st">'1980-01-01'</span>}</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a><span class="co"># Download and process each stock</span></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> ticker, info <span class="kw">in</span> stocks.items():</span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>    df <span class="op">=</span> yf.download(ticker, start<span class="op">=</span>info[<span class="st">'start'</span>], end<span class="op">=</span><span class="st">'2025-01-01'</span>, progress<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Calculate returns and volatility</span></span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>    df[<span class="st">'Returns'</span>] <span class="op">=</span> df[<span class="st">'Adj Close'</span>].pct_change()</span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>    df[<span class="st">'Log_Returns'</span>] <span class="op">=</span> np.log(df[<span class="st">'Adj Close'</span>] <span class="op">/</span> df[<span class="st">'Adj Close'</span>].shift(<span class="dv">1</span>))</span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a>    df[<span class="st">'Volatility_20d'</span>] <span class="op">=</span> df[<span class="st">'Returns'</span>].rolling(window<span class="op">=</span><span class="dv">20</span>).std()</span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a>    df[<span class="st">'Cumulative_Returns'</span>] <span class="op">=</span> (<span class="dv">1</span> <span class="op">+</span> df[<span class="st">'Returns'</span>]).cumprod() <span class="op">-</span> <span class="dv">1</span></span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Save to CSV</span></span>
+<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a>    df.to_csv(<span class="ss">f'data/financial/</span><span class="sc">{</span>ticker<span class="sc">}</span><span class="ss">_daily.csv'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </section>
 <section id="data-dictionary-1" class="level3">
 <h3 class="anchored" data-anchor-id="data-dictionary-1">Data Dictionary</h3>
@@ -601,19 +561,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </tr>
 </tbody>
 </table>
-</section>
-<section id="sample-data-illustration-1" class="level3">
-<h3 class="anchored" data-anchor-id="sample-data-illustration-1">Sample Data Illustration</h3>
-<p><strong>File</strong>: <code>DKNG_daily.csv</code> (1,180+ trading days × 11 variables)</p>
-<pre><code>Date,Open,High,Low,Close,Adj Close,Volume,Returns,Log_Returns,Volatility_20d,Cumulative_Returns
-2020-04-23,19.00,21.28,17.62,18.97,18.97,52458300,NaN,NaN,NaN,NaN
-2020-04-24,20.10,20.70,18.31,18.82,18.82,18584800,-0.0079,-0.0079,NaN,-0.0079
-2020-04-27,19.39,19.67,18.20,18.89,18.89,10713600,0.0037,0.0037,NaN,-0.0042
-...</code></pre>
-</section>
-<section id="relevance-to-project-1" class="level3">
-<h3 class="anchored" data-anchor-id="relevance-to-project-1">Relevance to Project</h3>
-<p>This financial data provides the <strong>required financial time-series component</strong> while creating meaningful connections to NBA dynamics:</p>
 <section id="covid-19-disruption-analysis" class="level4">
 <h4 class="anchored" data-anchor-id="covid-19-disruption-analysis">1. COVID-19 Disruption Analysis</h4>
 <p><strong>Sports Betting Stocks as Natural Experiment:</strong> - Multiple stocks went public or became relevant during COVID-19 (2020) - Stock prices reflect real-time market expectations of sports industry recovery - Correlation with NBA attendance recovery and season disruptions</p>
@@ -748,149 +695,71 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="basketball-reference-data-team-advanced-stats" class="level3">
 <h3 class="anchored" data-anchor-id="basketball-reference-data-team-advanced-stats">1. Basketball Reference Data (Team Advanced Stats)</h3>
 <p><strong>Manual Download</strong> (required due to lack of API):</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># For each season from 1980-81 to 2024-25:</span></span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="co"># 1. Navigate to: https://www.basketball-reference.com/leagues/NBA_[YEAR].html</span></span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="co"># 2. Scroll to "Advanced Stats" table</span></span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="co"># 3. Click "Share &amp; Export" → "Get table as CSV (for Excel)"</span></span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="co"># 4. Save the file to data/adv_stats/[YEAR]_adv_stats.csv</span></span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="co"># 5. Repeat for all 45 seasons</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># For each season from 1980-81 to 2024-25:</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="co"># 1. Navigate to: https://www.basketball-reference.com/leagues/NBA_[YEAR].html</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="co"># 2. Scroll to "Advanced Stats" table</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="co"># 3. Click "Share &amp; Export" → "Get table as CSV (for Excel)"</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="co"># 4. Save the file to data/adv_stats/[YEAR]_adv_stats.csv</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="co"># 5. Repeat for all 45 seasons</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p><strong>Read CSV files in R:</strong></p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Read all advanced stats files</span></span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>all_adv_files <span class="ot">&lt;-</span> <span class="fu">list.files</span>(<span class="st">"data/adv_stats"</span>, <span class="at">pattern =</span> <span class="st">"*.csv"</span>, <span class="at">full.names =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Combine all seasons</span></span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>all_adv_data <span class="ot">&lt;-</span> <span class="fu">map_df</span>(all_adv_files, <span class="cf">function</span>(file) {</span>
-<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>    season_str <span class="ot">&lt;-</span> <span class="fu">str_extract</span>(<span class="fu">basename</span>(file), <span class="st">"</span><span class="sc">\\</span><span class="st">d{4}-</span><span class="sc">\\</span><span class="st">d{2}"</span>)</span>
-<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>    season_year <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(<span class="fu">str_sub</span>(season_str, <span class="dv">1</span>, <span class="dv">4</span>)) <span class="sc">+</span> <span class="dv">1</span></span>
-<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>    df <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(file, <span class="at">show_col_types =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>    df<span class="sc">$</span>Season <span class="ot">&lt;-</span> season_year</span>
-<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(df)</span>
-<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>})</span>
-<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Calculate league averages</span></span>
-<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>league_avg <span class="ot">&lt;-</span> all_adv_data <span class="sc">%&gt;%</span></span>
-<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>    <span class="fu">group_by</span>(Season) <span class="sc">%&gt;%</span></span>
-<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>    <span class="fu">summarise</span>(</span>
-<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>        <span class="at">ORtg =</span> <span class="fu">mean</span>(<span class="st">`</span><span class="at">Unnamed: 10_level_0_ORtg</span><span class="st">`</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
-<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>        <span class="at">DRtg =</span> <span class="fu">mean</span>(<span class="st">`</span><span class="at">Unnamed: 11_level_0_DRtg</span><span class="st">`</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
-<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>        <span class="at">Pace =</span> <span class="fu">mean</span>(<span class="st">`</span><span class="at">Unnamed: 13_level_0_Pace</span><span class="st">`</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
-<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>        <span class="st">`</span><span class="at">3PAr</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">mean</span>(<span class="st">`</span><span class="at">Unnamed: 15_level_0_3PAr</span><span class="st">`</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
-<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a>        <span class="st">`</span><span class="at">TS%</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">mean</span>(<span class="st">`</span><span class="at">Unnamed: 16_level_0_TS%</span><span class="st">`</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
-<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a>        <span class="at">.groups =</span> <span class="st">"drop"</span></span>
-<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a>    )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Read all advanced stats files</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>all_adv_files <span class="ot">&lt;-</span> <span class="fu">list.files</span>(<span class="st">"data/adv_stats"</span>, <span class="at">pattern =</span> <span class="st">"*.csv"</span>, <span class="at">full.names =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Combine all seasons</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>all_adv_data <span class="ot">&lt;-</span> <span class="fu">map_df</span>(all_adv_files, <span class="cf">function</span>(file) {</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>    season_str <span class="ot">&lt;-</span> <span class="fu">str_extract</span>(<span class="fu">basename</span>(file), <span class="st">"</span><span class="sc">\\</span><span class="st">d{4}-</span><span class="sc">\\</span><span class="st">d{2}"</span>)</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>    season_year <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(<span class="fu">str_sub</span>(season_str, <span class="dv">1</span>, <span class="dv">4</span>)) <span class="sc">+</span> <span class="dv">1</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>    df <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(file, <span class="at">show_col_types =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>    df<span class="sc">$</span>Season <span class="ot">&lt;-</span> season_year</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(df)</span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Calculate league averages</span></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>league_avg <span class="ot">&lt;-</span> all_adv_data <span class="sc">%&gt;%</span></span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>    <span class="fu">group_by</span>(Season) <span class="sc">%&gt;%</span></span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>    <span class="fu">summarise</span>(</span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>        <span class="at">ORtg =</span> <span class="fu">mean</span>(<span class="st">`</span><span class="at">Unnamed: 10_level_0_ORtg</span><span class="st">`</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>        <span class="at">DRtg =</span> <span class="fu">mean</span>(<span class="st">`</span><span class="at">Unnamed: 11_level_0_DRtg</span><span class="st">`</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>        <span class="at">Pace =</span> <span class="fu">mean</span>(<span class="st">`</span><span class="at">Unnamed: 13_level_0_Pace</span><span class="st">`</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>        <span class="st">`</span><span class="at">3PAr</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">mean</span>(<span class="st">`</span><span class="at">Unnamed: 15_level_0_3PAr</span><span class="st">`</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a>        <span class="st">`</span><span class="at">TS%</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">mean</span>(<span class="st">`</span><span class="at">Unnamed: 16_level_0_TS%</span><span class="st">`</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a>        <span class="at">.groups =</span> <span class="st">"drop"</span></span>
+<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a>    )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </section>
 <section id="financial-data-yahoo-finance" class="level3">
 <h3 class="anchored" data-anchor-id="financial-data-yahoo-finance">2. Financial Data (Yahoo Finance)</h3>
 <p><strong>Step 1: Install yfinance</strong></p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install yfinance pandas numpy</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install yfinance pandas numpy</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p><strong>Step 2: Run the download script</strong></p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> download_financial_data.py</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> download_financial_data.py</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>This script (<code>download_financial_data.py</code>) automatically: - Downloads all 5 stocks (DKNG, PENN, MGM, CZR, DIS) - Calculates returns, log returns, and volatility metrics - Saves CSV files to <code>data/financial/</code> - Prints summary statistics</p>
 <p><strong>Step 3: Read in R</strong></p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(lubridate)</span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Read DKNG data</span></span>
-<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>dkng <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="st">"data/financial/DKNG_daily.csv"</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">Date =</span> <span class="fu">ymd</span>(Date))</span>
-<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Convert to weekly for SARIMA (seasonality = 52)</span></span>
-<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>dkng_weekly <span class="ot">&lt;-</span> dkng <span class="sc">%&gt;%</span></span>
-<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">Week =</span> <span class="fu">floor_date</span>(Date, <span class="st">"week"</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>    <span class="fu">group_by</span>(Week) <span class="sc">%&gt;%</span></span>
-<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>    <span class="fu">summarise</span>(</span>
-<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>        <span class="at">Adj_Close =</span> <span class="fu">last</span>(<span class="st">`</span><span class="at">Adj Close</span><span class="st">`</span>),</span>
-<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>        <span class="at">Weekly_Return =</span> (<span class="fu">last</span>(<span class="st">`</span><span class="at">Adj Close</span><span class="st">`</span>) <span class="sc">-</span> <span class="fu">first</span>(Open)) <span class="sc">/</span> <span class="fu">first</span>(Open),</span>
-<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>        <span class="at">.groups =</span> <span class="st">"drop"</span></span>
-<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a><span class="co"># Create time series object</span></span>
-<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a>ts_dkng_weekly <span class="ot">&lt;-</span> <span class="fu">ts</span>(dkng_weekly<span class="sc">$</span>Weekly_Return, <span class="at">frequency =</span> <span class="dv">52</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(lubridate)</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Read DKNG data</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>dkng <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="st">"data/financial/DKNG_daily.csv"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">Date =</span> <span class="fu">ymd</span>(Date))</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Convert to weekly for SARIMA (seasonality = 52)</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>dkng_weekly <span class="ot">&lt;-</span> dkng <span class="sc">%&gt;%</span></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">Week =</span> <span class="fu">floor_date</span>(Date, <span class="st">"week"</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>    <span class="fu">group_by</span>(Week) <span class="sc">%&gt;%</span></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>    <span class="fu">summarise</span>(</span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>        <span class="at">Adj_Close =</span> <span class="fu">last</span>(<span class="st">`</span><span class="at">Adj Close</span><span class="st">`</span>),</span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>        <span class="at">Weekly_Return =</span> (<span class="fu">last</span>(<span class="st">`</span><span class="at">Adj Close</span><span class="st">`</span>) <span class="sc">-</span> <span class="fu">first</span>(Open)) <span class="sc">/</span> <span class="fu">first</span>(Open),</span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>        <span class="at">.groups =</span> <span class="st">"drop"</span></span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a><span class="co"># Create time series object</span></span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a>ts_dkng_weekly <span class="ot">&lt;-</span> <span class="fu">ts</span>(dkng_weekly<span class="sc">$</span>Weekly_Return, <span class="at">frequency =</span> <span class="dv">52</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <hr>
-</section>
-</section>
-<section id="summary-time-series-inventory" class="level2">
-<h2 class="anchored" data-anchor-id="summary-time-series-inventory">Summary: Time Series Inventory</h2>
-<table class="caption-top table">
-<colgroup>
-<col style="width: 13%">
-<col style="width: 16%">
-<col style="width: 15%">
-<col style="width: 16%">
-<col style="width: 20%">
-<col style="width: 16%">
-</colgroup>
-<thead>
-<tr class="header">
-<th>Dataset</th>
-<th>Variables</th>
-<th>Coverage</th>
-<th>Frequency</th>
-<th>Seasonality</th>
-<th>Financial</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td><strong>Basketball Reference Advanced</strong></td>
-<td>ORtg, Pace, 3PAr, TS%, Attendance</td>
-<td>1980-2025</td>
-<td>Annual (45 seasons)</td>
-<td>✓ (NBA cycle)</td>
-<td>✗</td>
-</tr>
-<tr class="even">
-<td><strong>DKNG Stock</strong></td>
-<td>Daily/weekly returns, volatility</td>
-<td>2020-2025</td>
-<td>Daily/Weekly</td>
-<td>✓ (sports season)</td>
-<td>✓</td>
-</tr>
-<tr class="odd">
-<td><strong>PENN Stock</strong></td>
-<td>Daily/weekly returns, volatility</td>
-<td>2020-2025</td>
-<td>Daily/Weekly</td>
-<td>✓ (sports season)</td>
-<td>✓</td>
-</tr>
-<tr class="even">
-<td><strong>MGM Stock</strong></td>
-<td>Daily/weekly returns, volatility</td>
-<td>2020-2025</td>
-<td>Daily/Weekly</td>
-<td>✓ (sports season)</td>
-<td>✓</td>
-</tr>
-<tr class="odd">
-<td><strong>CZR Stock</strong></td>
-<td>Daily/weekly returns, volatility</td>
-<td>2020-2025</td>
-<td>Daily/Weekly</td>
-<td>✓ (sports season)</td>
-<td>✓</td>
-</tr>
-<tr class="even">
-<td><strong>DIS Stock</strong></td>
-<td>Daily/weekly returns, volatility</td>
-<td>1980-2025</td>
-<td>Daily/Weekly</td>
-<td>✓ (NBA season)</td>
-<td>✓</td>
-</tr>
-</tbody>
-</table>
-<p><strong>Total Univariate Time Series Available</strong>: 10+ primary variables</p>
-<p><strong>Key Time Series for Analysis:</strong></p>
-<p><em>NBA Data (Annual frequency):</em> 1. League-average ORtg (1980-2025): 45 observations 2. League-average Pace (1980-2025): 45 observations 3. League-average 3PAr (1980-2025): 45 observations 4. Total Attendance (1980-2025): 45 observations</p>
-<p><em>Financial Data (Daily/Weekly frequency):</em> 5. DKNG returns (2020-2025): ~1,180 daily, ~245 weekly observations 6. PENN returns (2020-2025): ~1,250 daily, ~260 weekly observations 7. MGM returns (2020-2025): ~1,250 daily, ~260 weekly observations 8. CZR returns (2020-2025): ~1,250 daily, ~260 weekly observations 9. DIS returns (1980-2025): ~11,000 daily, ~2,340 weekly observations</p>
-<p>All data sources, extraction methods, and replication code documented for full transparency.</p>
 
 
+</section>
 </section>
 </section>
 
