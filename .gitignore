@@ -1,1 +1,5 @@
 /.quarto/
+.env
+.Renviron
+.claude
+data/

@@ -6,8 +6,9 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
+<meta name="author" content="Josh Lin">
 
-<title>intro – Portfolio</title>
+<title>The Era of Efficiency: Analytics, COVID, and the Modern NBA – Portfolio</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -215,112 +216,129 @@ div.csl-indent {
   <ul>
   <li><a href="#introduction" id="toc-introduction" class="nav-link active" data-scroll-target="#introduction">Introduction</a>
   <ul class="collapse">
-  <li><a href="#exploring-prediction-markets-through-sports-betting-and-financial-time-series" id="toc-exploring-prediction-markets-through-sports-betting-and-financial-time-series" class="nav-link" data-scroll-target="#exploring-prediction-markets-through-sports-betting-and-financial-time-series">Exploring Prediction Markets Through Sports Betting and Financial Time Series</a></li>
-  <li><a href="#the-big-picture" id="toc-the-big-picture" class="nav-link" data-scroll-target="#the-big-picture">The Big Picture</a>
+  <li><a href="#the-big-picture" id="toc-the-big-picture" class="nav-link" data-scroll-target="#the-big-picture">The Big Picture</a></li>
+  <li><a href="#literature-review" id="toc-literature-review" class="nav-link" data-scroll-target="#literature-review">Literature Review</a>
   <ul class="collapse">
-  <li><a href="#central-question" id="toc-central-question" class="nav-link" data-scroll-target="#central-question">Central Question:</a></li>
+  <li><a href="#shot-selection-optimization" id="toc-shot-selection-optimization" class="nav-link" data-scroll-target="#shot-selection-optimization">Shot-Selection Optimization</a></li>
+  <li><a href="#pace-and-spacing-economics" id="toc-pace-and-spacing-economics" class="nav-link" data-scroll-target="#pace-and-spacing-economics">Pace and Spacing Economics</a></li>
+  <li><a href="#covid-era-performance-shifts" id="toc-covid-era-performance-shifts" class="nav-link" data-scroll-target="#covid-era-performance-shifts">COVID-Era Performance Shifts</a></li>
+  <li><a href="#extending-prior-work-through-longitudinal-modeling" id="toc-extending-prior-work-through-longitudinal-modeling" class="nav-link" data-scroll-target="#extending-prior-work-through-longitudinal-modeling">Extending Prior Work Through Longitudinal Modeling</a></li>
   </ul></li>
-  <li><a href="#literature-review" id="toc-literature-review" class="nav-link" data-scroll-target="#literature-review">Literature Review</a></li>
+  </ul></li>
   <li><a href="#guiding-questions" id="toc-guiding-questions" class="nav-link" data-scroll-target="#guiding-questions">Guiding Questions</a></li>
-  </ul></li>
   </ul>
 </nav>
     </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">The Era of Efficiency: Analytics, COVID, and the Modern NBA</h1>
+</div>
 
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>Josh Lin </p>
+          </div>
+  </div>
+    
+  
+    
+  </div>
+  
+
+
+</header>
 
 
 <section id="introduction" class="level1">
 <h1>Introduction</h1>
-<section id="exploring-prediction-markets-through-sports-betting-and-financial-time-series" class="level2">
-<h2 class="anchored" data-anchor-id="exploring-prediction-markets-through-sports-betting-and-financial-time-series">Exploring Prediction Markets Through Sports Betting and Financial Time Series</h2>
-<p>Prediction markets aggregate information into prices that reflect collective forecasts of future events. Sports betting is one of the most active and transparent prediction markets, with odds functioning as “prices” on game outcomes. Like stocks or options, these odds respond dynamically to new information—injuries, weather, sharp bettor activity—and often exhibit predictable volatility and seasonality.</p>
-<p>In recent years, the legalization and digitization of sports betting has transformed it into a multi-billion-dollar industry, creating a live laboratory for studying market efficiency, volatility clustering, and information flow. Data providers such as Sportradar now offer real-time feeds of odds, play-by-play data, and settlements, enabling precise measurement of how betting markets process information. At the same time, the growth of publicly traded sportsbook companies (e.g., DraftKings, Caesars, Flutter) has created a direct connection between prediction markets and the financial markets, as investor sentiment and equity valuations reflect underlying betting dynamics.</p>
-<p>This project analyzes sports betting markets as financial time series, applying models such as ARIMA, GARCH, VAR, and LSTM. By pairing Sportradar odds with sportsbook equity data, it seeks to demonstrate how sports betting operates as a structured prediction market, with implications for both bettors and financial market participants.</p>
-</section>
+<p>Over the last two decades, the National Basketball Association (NBA) has undergone a historic transformation in how the game is played and measured. The rise of analytics has redefined decision-making, from shot selection to player valuation, creating a league increasingly optimized for pace, spacing, and efficiency. Traditional mid-range play has given way to data-driven offenses that favor the three-point shot and fast-break opportunities<span class="citation" data-cites="franks2015characterizing"><sup><a href="#ref-franks2015characterizing" role="doc-biblioref">1</a></sup></span>. Yet this evolution has not been linear: external shocks such as the COVID-19 pandemic and rule changes have periodically disrupted the sport’s equilibrium.</p>
+<p>This project seeks to quantify and contextualize the NBA’s evolution toward efficiency; particularly how the league’s statistical DNA has shifted under the influence of analytics, and how sudden disruptions like the 2020 “bubble” season temporarily rewired its dynamics. Using time-series analysis, the study traces the interplay between pace, three-point attempt rate, and offensive efficiency to reveal both long-term structural change and short-term volatility.</p>
 <section id="the-big-picture" class="level2">
 <h2 class="anchored" data-anchor-id="the-big-picture">The Big Picture</h2>
-<section id="central-question" class="level3">
-<h3 class="anchored" data-anchor-id="central-question">Central Question:</h3>
-<p><strong>How do sports prediction markets exhibit seasonality, volatility, and inefficiency, and how are these dynamics tied to broader financial markets?</strong></p>
-<p><img src="images/flowchart.png" class="img-fluid"></p>
-<p>Analytical Angles:</p>
-<ol type="1">
-<li>Odds Movements &amp; Line Dynamics (Sportradar odds)</li>
-</ol>
-<ul>
-<li>Opening vs live odds, consensus shifts, line velocity.</li>
-<li>Insights into how quickly prediction markets absorb information.</li>
-</ul>
-<ol start="2" type="1">
-<li>Market Efficiency &amp; Volatility Clustering (Sportradar odds + GARCH models)</li>
-</ol>
-<ul>
-<li>Measuring persistence of arbitrage opportunities and EV (expected value) windows.</li>
-<li>Volatility spikes during high-stakes events.</li>
-</ul>
-<ol start="3" type="1">
-<li>Latency &amp; Information Flow (Sportradar timestamps)</li>
-</ol>
-<ul>
-<li>Time lag from injury news → odds adjustment → settlement.</li>
-<li>Operational inefficiencies in prediction markets.</li>
-</ul>
-<ol start="4" type="1">
-<li>Financial Spillovers (Equities/ETF data)</li>
-</ol>
-<ul>
-<li>DraftKings/Betting ETF returns and volatility.</li>
-<li>How sportsbook equities mirror prediction market shocks.</li>
-</ul>
-<p>This framework provides a structured view of prediction markets as financial ecosystems, connecting micro-level betting markets with macro-level financial instruments.</p>
-</section>
+<p>Basketball today is not merely an athletic competition but a living laboratory of applied data science. The league’s embrace of analytics mirrors a broader transformation in modern industries: decisions increasingly rest on quantitative evidence rather than intuition. The shift from mid-range isolation to high efficiency, high variance offense encapsulates how optimization, technology, and information access shape human behavior, specifically in sports.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="images/flowchart.png" class="img-fluid figure-img"></p>
+<figcaption>The Big Picture</figcaption>
+</figure>
+</div>
+<p>With the framework above, I aim to tell the story of how basketball’s offensive efficiency evolved under the dual pressures of analytics and disruption. The analysis begins with a long-run view of the game’s transformation: tracing how three-point attempts, shot selection, and pace redefined offensive output from 1980 through 2025. By examining league wide efficiency, field-goal percentages, and possessions per 48 minutes, I hope to capture how the modern NBA diverged from its slower, mid-range past into a data-optimized era of high variance offense.</p>
+<p>From there, the focus shifts to the Analytics Revolution, a period beginning around 2012 when front offices embraced quantitative models and player-tracking data. Here, patterns in shot distance, efficiency metrics, and team-level statistics reveal how strategy and roster construction began to align with mathematical optimization. These structural changes not only reshaped offensive philosophy but also institutionalized analytics as a core component of competitive advantage.</p>
+<p>The next chapter explores the COVID-19 shock, a natural experiment that disrupted decades of rhythm. Empty arenas, travel restrictions, and condensed schedules created conditions to test how context, apart from talent or tactics, influences performance. Comparing attendance patterns, scoring volatility, and pace before, during, and after the pandemic provides a rare window into basketball’s psychological and environmental dimensions.</p>
+<p>Finally, the analysis turns toward the future. By modeling post-2023 trends using both traditional and modern time-series methods, the goal is to forecast whether the league has stabilized in a new equilibrium or continues to evolve. From evolution and optimization to disruption and re-emergence the project aims to capture how data, environment, and adaptation intertwine to define the modern game.</p>
 </section>
 <section id="literature-review" class="level2">
 <h2 class="anchored" data-anchor-id="literature-review">Literature Review</h2>
-<p>Research on sports betting markets highlights both efficiency and areas of exploitable inefficiency. Early foundational work established that while wagering markets tend to be broadly efficient, they can deviate under certain conditions<span class="citation" data-cites="sauer1998economics"><sup><a href="#ref-sauer1998economics" role="doc-biblioref">1</a></sup></span>. Subsequent studies built on this, showing that efficiency can vary significantly depending on the sport, bet type, or market segment<span class="citation" data-cites="kuypers2000information"><sup><a href="#ref-kuypers2000information" role="doc-biblioref">2</a></sup></span> <span class="citation" data-cites="vlastakis2009efficient"><sup><a href="#ref-vlastakis2009efficient" role="doc-biblioref">3</a></sup></span>.</p>
-<p>One stream of research has focused on <strong>information and efficiency</strong>. Evidence shows that markets usually process information effectively, but inefficiencies emerge when new information—such as injury announcements or sharp bettor activity—causes temporary delays in adjustment<span class="citation" data-cites="croxson2014information"><sup><a href="#ref-croxson2014information" role="doc-biblioref">4</a></sup></span>. Line movement studies demonstrate that odds shifts often carry predictive power, suggesting that not all information is immediately absorbed<span class="citation" data-cites="paul2008line"><sup><a href="#ref-paul2008line" role="doc-biblioref">5</a></sup></span>.</p>
-<p>Another important perspective examines <strong>odds movements and market behavior</strong>. Analyses of line adjustments indicate that markets respond quickly but not instantaneously, leaving short-lived opportunities for expected value capture<span class="citation" data-cites="croxson2014information"><sup><a href="#ref-croxson2014information" role="doc-biblioref">4</a></sup></span>. The dynamics of how odds move over time provide insight into the underlying mechanisms of information flow, sentiment, and market corrections<span class="citation" data-cites="paul2008line"><sup><a href="#ref-paul2008line" role="doc-biblioref">5</a></sup></span>.</p>
-<p>Together, these works confirm that while sports betting markets approximate efficiency, inefficiencies exist in predictable patterns<span class="citation" data-cites="vlastakis2009efficient"><sup><a href="#ref-vlastakis2009efficient" role="doc-biblioref">3</a></sup></span>. What remains less explored is the <strong>temporal persistence of these inefficiencies and the role of latency</strong> in whether bettors or systems can capture them—precisely the gap this project addresses with time series analysis of SportsRadar data.</p>
+<p>Early quantitative basketball research established the foundation for efficiency metrics such as <em>effective field goal percentage</em> (<code>eFG%</code>) and <em>true shooting percentage</em> (<code>TS%</code>)<span class="citation" data-cites="poropudas2023dean"><sup><a href="#ref-poropudas2023dean" role="doc-biblioref">2</a></sup></span>. Subsequent work formalized advanced statistics including offensive rating and pace-adjusted metrics that underpin today’s analytics frameworks<span class="citation" data-cites="kubatko2007starting"><sup><a href="#ref-kubatko2007starting" role="doc-biblioref">3</a></sup></span>. <strong>These established metrics serve as the dependent variables in this study’s time-series models</strong>, enabling longitudinal analysis of how efficiency has evolved across 45 NBA seasons (1980-2025).</p>
+<p>Academic and industry studies since the 2010s have documented three key developments that inform this project’s analytical framework:</p>
+<section id="shot-selection-optimization" class="level3">
+<h3 class="anchored" data-anchor-id="shot-selection-optimization">Shot-Selection Optimization</h3>
+<p>Spatial analysis research demonstrated that perimeter-oriented offenses generate higher expected value than traditional mid-range approaches<span class="citation" data-cites="skinner2012problem"><sup><a href="#ref-skinner2012problem" role="doc-biblioref">4</a></sup></span>. Studies using shot location data revealed systematic differences in shot efficiency by court zone, with corner three-pointers and restricted area shots offering superior returns compared to mid-range attempts.</p>
+<p><strong>Time-Series Application</strong>: Building on these cross-sectional findings, this project uses structural break tests (Chow tests, CUSUM) to identify <em>when</em> shot selection patterns fundamentally shifted. By modeling the percentage of mid-range attempts as a time series (2004-2025), the analysis can pinpoint inflection points in the analytics revolution and distinguish gradual adaptation from discrete strategic shifts. ARIMA models will then forecast whether shot selection has reached equilibrium or continues to evolve toward further optimization.</p>
 </section>
-<section id="guiding-questions" class="level2">
-<h2 class="anchored" data-anchor-id="guiding-questions">Guiding Questions</h2>
+<section id="pace-and-spacing-economics" class="level3">
+<h3 class="anchored" data-anchor-id="pace-and-spacing-economics">Pace and Spacing Economics</h3>
+<p>Research quantifying the relationship between ball movement, spacing, and offensive efficiency established that faster pace correlates with higher scoring efficiency in modern basketball<span class="citation" data-cites="franks2015characterizing"><sup><a href="#ref-franks2015characterizing" role="doc-biblioref">1</a></sup></span>. Cross-sectional studies showed teams adopting high-pace, spacing-oriented systems achieved competitive advantages.</p>
+<p><strong>Time-Series Application</strong>: Rather than treating pace and efficiency as static correlates, this study employs <strong>Vector Autoregression (VAR)</strong> models to examine dynamic relationships. The VAR framework allows testing whether changes in pace <em>Granger-cause</em> changes in offensive rating, or vice versa, revealing the temporal ordering of strategic adoption. Additionally, <strong>rolling correlation analysis</strong> tracks how the pace-efficiency relationship has strengthened or weakened across different eras (pre-analytics vs.&nbsp;analytics era), providing evidence of regime change in how pace affects outcomes.</p>
+</section>
+<section id="covid-era-performance-shifts" class="level3">
+<h3 class="anchored" data-anchor-id="covid-era-performance-shifts">COVID-Era Performance Shifts</h3>
+<p>Recent analyses documented sharp declines in home-court advantage during empty-arena games in 2020, attributing differences to psychological and crowd-driven effects. These studies primarily used season-to-season comparisons or aggregated 2020 data.</p>
+<p><strong>Time-Series Application</strong>: This project extends COVID-era research through <strong>intervention analysis</strong>, treating the 2020 bubble season as an exogenous shock in time-series models of pace, efficiency, and scoring variance. By incorporating dummy variables and pulse functions in ARIMA models, the analysis quantifies not just the immediate disruption but also the <strong>persistence and recovery dynamics</strong> post-COVID. Comparing forecast errors from models trained on pre-2020 data against actual 2020-2022 performance reveals whether the pandemic created temporary volatility or permanent structural change—a question prior cross-sectional studies could not address.</p>
+</section>
+<section id="extending-prior-work-through-longitudinal-modeling" class="level3">
+<h3 class="anchored" data-anchor-id="extending-prior-work-through-longitudinal-modeling">Extending Prior Work Through Longitudinal Modeling</h3>
+<p>While existing research has established <em>what</em> changed (shot selection, pace strategies, COVID effects), most studies rely on cross-sectional comparisons or short-term analyses. Few have integrated time-series methods to model <em>how</em> these changes unfolded over time, <em>when</em> transitions occurred, or whether effects persist. This project fills that gap by:</p>
+<ul>
+<li>Using <strong>structural break detection</strong> to objectively date the analytics revolution</li>
+<li>Applying <strong>Granger causality tests</strong> to determine whether 3-point volume preceded or followed efficiency gains</li>
+<li>Employing <strong>ARIMA and VAR models</strong> to capture autocorrelation and feedback loops that cross-sectional designs miss</li>
+<li>Conducting <strong>intervention analysis</strong> to separate transient COVID shocks from permanent regime shifts</li>
+</ul>
+<p>By treating efficiency, pace, and shot selection as interconnected time series rather than independent observations, this study reveals the <em>temporal dynamics</em> underlying the NBA’s transformation.</p>
+</section>
+</section>
+</section>
+<section id="guiding-questions" class="level1">
+<h1>Guiding Questions</h1>
 <ol type="1">
-<li>How do sports odds behave as financial time series?</li>
-<li>What seasonal or cyclical patterns emerge in odds and equity prices?</li>
-<li>How quickly do odds incorporate new information?</li>
-<li>How persistent are arbitrage/EV opportunities</li>
-<li>What role does latency play in market efficiency?</li>
-<li>Do odds exhibit volatility clustering similar to equities?</li>
-<li>How do COVID and major shocks affect both odds and equity markets?</li>
-<li>Are there consistent day-of-week or playoff-related volatility effects?</li>
-<li>How correlated are betting market inefficiencies with sportsbook stock returns?</li>
-<li>What forecasting models (ARIMA, GARCH, LSTM) best capture prediction market behavior?</li>
+<li>How has the NBA’s offensive efficiency evolved since 1980?</li>
+<li>When did measurable statistical evidence of the analytics revolution emerge?</li>
+<li>Did the rise in 3-point attempt rate precede or follow improvements in efficiency?</li>
+<li>To what extent does game pace amplify or mediate the impact of shot selection?</li>
+<li>How did the 2020 “bubble” season disrupt established offensive and defensive patterns?</li>
+<li>How have attendance levels and arena dynamics evolved post-COVID?</li>
+<li>Are the relationships between 3-point volume, pace, and ORtg stable across eras?</li>
+<li>Do we observe permanent structural changes or temporary shocks surrounding COVID?</li>
+<li>Can time-series forecasts predict whether efficiency will continue to climb or plateau?</li>
+<li>What broader lessons about analytics-driven optimization can be drawn from the NBA’s evolution?</li>
 </ol>
-<p>Main Reference: Gamage, P. (2026). Applied Time Series for Data Science</p>
+<p><strong>Main Referrence: Gamage, P. (2026). Applied Time Series for Data Science</strong></p>
 
 
 
-</section>
 </section>
 
 <div id="quarto-appendix" class="default"><section class="quarto-appendix-contents" role="doc-bibliography" id="quarto-bibliography"><h2 class="anchored quarto-appendix-heading">References</h2><div id="refs" class="references csl-bib-body" data-entry-spacing="0" data-line-spacing="2" role="list">
-<div id="ref-sauer1998economics" class="csl-entry" role="listitem">
-<div class="csl-left-margin">1. </div><div class="csl-right-inline">Sauer, R. D. The economics of wagering markets. <em>Journal of economic Literature</em> <strong>36</strong>, 2021–2064 (1998).</div>
+<div id="ref-franks2015characterizing" class="csl-entry" role="listitem">
+<div class="csl-left-margin">1. </div><div class="csl-right-inline">Franks, A., Miller, A., Bornn, L. &amp; Goldsberry, K. Characterizing the spatial structure of defensive skill in professional basketball. (2015).</div>
 </div>
-<div id="ref-kuypers2000information" class="csl-entry" role="listitem">
-<div class="csl-left-margin">2. </div><div class="csl-right-inline">Kuypers, T. Information and efficiency: An empirical study of a fixed odds betting market. <em>Applied Economics</em> <strong>32</strong>, 1353–1363 (2000).</div>
+<div id="ref-poropudas2023dean" class="csl-entry" role="listitem">
+<div class="csl-left-margin">2. </div><div class="csl-right-inline">Poropudas, J. &amp; Halme, T. Dean oliver’s four factors revisited. <em>arXiv preprint arXiv:2305.13032</em> (2023).</div>
 </div>
-<div id="ref-vlastakis2009efficient" class="csl-entry" role="listitem">
-<div class="csl-left-margin">3. </div><div class="csl-right-inline">Vlastakis, N., Dotsis, G. &amp; Markellos, R. N. How efficient is the european football betting market? Evidence from arbitrage and trading strategies. <em>Journal of Forecasting</em> <strong>28</strong>, 426–444 (2009).</div>
+<div id="ref-kubatko2007starting" class="csl-entry" role="listitem">
+<div class="csl-left-margin">3. </div><div class="csl-right-inline">Kubatko, J., Oliver, D., Pelton, K. &amp; Rosenbaum, D. T. A starting point for analyzing basketball statistics. <em>Journal of quantitative analysis in sports</em> <strong>3</strong>, (2007).</div>
 </div>
-<div id="ref-croxson2014information" class="csl-entry" role="listitem">
-<div class="csl-left-margin">4. </div><div class="csl-right-inline">Croxson, K. &amp; James Reade, J. Information and efficiency: Goal arrival in soccer betting. <em>The Economic Journal</em> <strong>124</strong>, 62–91 (2014).</div>
-</div>
-<div id="ref-paul2008line" class="csl-entry" role="listitem">
-<div class="csl-left-margin">5. </div><div class="csl-right-inline">Paul, R. J. &amp; Weinbach, A. P. Line movements and market timing in the baseball gambling market. <em>Journal of Sports Economics</em> <strong>9</strong>, 371–386 (2008).</div>
+<div id="ref-skinner2012problem" class="csl-entry" role="listitem">
+<div class="csl-left-margin">4. </div><div class="csl-right-inline">Skinner, B. The problem of shot selection in basketball. <em>PloS one</em> <strong>7</strong>, e30776 (2012).</div>
 </div>
 </div></section></div></main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
