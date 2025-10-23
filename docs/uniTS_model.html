@@ -466,7 +466,6 @@ window.Quarto = {
 <div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
-<p><strong>Comment</strong>: First-order differencing removes the upward trend. The differenced series fluctuates around zero with no obvious trend, suggesting stationarity has been achieved.</p>
 </section>
 <section id="c-adf-test-on-differenced-series" class="level4">
 <h4 class="anchored" data-anchor-id="c-adf-test-on-differenced-series">(c) ADF Test on Differenced Series</h4>
@@ -1762,11 +1761,11 @@ Note: PENN's extreme volatility (Barstool→ESPN BET transition) makes forecasti
 </div>
 <p>The weekly stock series use SARIMA with s=52. Prices are classic random walks with drift and volatility that scales with level, so multiplicative thinking fits. DKNG typically supports a modest seasonal AR/MA overlay and outperforms seasonal-naive on a rolling test; PENN’s extreme volatility forces simpler specifications and yields narrower skill gains, showing how business instability limits forecastability.</p>
 <p>Overall, the modeling confirms:</p>
-<ul>
+<ol type="1">
 <li>NBA annual metrics are well handled by low-order ARIMA with d=1 and additive interpretation</li>
 <li>Weekly equities benefit from SARIMA and multiplicative structure</li>
 <li>Analytics-era improvements in ORtg are forecast to persist, while Pace and COVID-sensitive attendance inject asymmetric uncertainty.</li>
-</ul>
+</ol>
 
 
 </section>

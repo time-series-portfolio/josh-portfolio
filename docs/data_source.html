@@ -243,22 +243,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#extraction-method-1" id="toc-extraction-method-1" class="nav-link" data-scroll-target="#extraction-method-1">Extraction Method</a></li>
   <li><a href="#data-dictionary-1" id="toc-data-dictionary-1" class="nav-link" data-scroll-target="#data-dictionary-1">Data Dictionary</a></li>
   </ul></li>
-  <li><a href="#seasonality-and-financial-time-series-coverage" id="toc-seasonality-and-financial-time-series-coverage" class="nav-link" data-scroll-target="#seasonality-and-financial-time-series-coverage">Seasonality and Financial Time Series Coverage</a>
-  <ul class="collapse">
-  <li><a href="#seasonality-requirements" id="toc-seasonality-requirements" class="nav-link" data-scroll-target="#seasonality-requirements">Seasonality Requirements</a></li>
-  <li><a href="#financial-time-series-coverage" id="toc-financial-time-series-coverage" class="nav-link" data-scroll-target="#financial-time-series-coverage">Financial Time Series Coverage</a></li>
-  </ul></li>
-  <li><a href="#data-quality-and-limitations" id="toc-data-quality-and-limitations" class="nav-link" data-scroll-target="#data-quality-and-limitations">Data Quality and Limitations</a>
-  <ul class="collapse">
-  <li><a href="#strengths" id="toc-strengths" class="nav-link" data-scroll-target="#strengths">Strengths</a></li>
-  <li><a href="#limitations" id="toc-limitations" class="nav-link" data-scroll-target="#limitations">Limitations</a></li>
-  </ul></li>
-  <li><a href="#file-structure" id="toc-file-structure" class="nav-link" data-scroll-target="#file-structure">File Structure</a></li>
-  <li><a href="#replication-instructions" id="toc-replication-instructions" class="nav-link" data-scroll-target="#replication-instructions">Replication Instructions</a>
-  <ul class="collapse">
-  <li><a href="#basketball-reference-data-team-advanced-stats" id="toc-basketball-reference-data-team-advanced-stats" class="nav-link" data-scroll-target="#basketball-reference-data-team-advanced-stats">1. Basketball Reference Data (Team Advanced Stats)</a></li>
-  <li><a href="#financial-data-yahoo-finance" id="toc-financial-data-yahoo-finance" class="nav-link" data-scroll-target="#financial-data-yahoo-finance">2. Financial Data (Yahoo Finance)</a></li>
-  </ul></li>
   </ul></li>
   </ul>
 </nav>
@@ -273,6 +257,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h1>Data Sources</h1>
 <section id="basketball-reference-team-advanced-statistics-1980-2025" class="level2">
 <h2 class="anchored" data-anchor-id="basketball-reference-team-advanced-statistics-1980-2025">1. Basketball Reference: Team Advanced Statistics (1980-2025)</h2>
+<p><img src="images/ball_ref.webp" class="img-fluid"></p>
 <section id="source-information" class="level3">
 <h3 class="anchored" data-anchor-id="source-information">Source Information</h3>
 <ul>
@@ -384,6 +369,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="sports-betting-entertainment-stock-data-2020-2025" class="level2">
 <h2 class="anchored" data-anchor-id="sports-betting-entertainment-stock-data-2020-2025">2. Sports Betting &amp; Entertainment Stock Data (2020-2025)</h2>
+<p><img src="images/yahoo_logo.jpg" class="img-fluid"></p>
 <section id="source-information-1" class="level3">
 <h3 class="anchored" data-anchor-id="source-information-1">Source Information</h3>
 <ul>
@@ -561,202 +547,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </tr>
 </tbody>
 </table>
-<section id="covid-19-disruption-analysis" class="level4">
-<h4 class="anchored" data-anchor-id="covid-19-disruption-analysis">1. COVID-19 Disruption Analysis</h4>
-<p><strong>Sports Betting Stocks as Natural Experiment:</strong> - Multiple stocks went public or became relevant during COVID-19 (2020) - Stock prices reflect real-time market expectations of sports industry recovery - Correlation with NBA attendance recovery and season disruptions</p>
-<p><strong>Research Questions:</strong> - How did sports betting stocks react to NBA bubble season announcement (July 2020)? - Did stock volatility correlate with NBA attendance volatility? - How did return to normal NBA operations (2021-22) affect stock performance?</p>
-</section>
-<section id="seasonality-in-financial-markets" class="level4">
-<h4 class="anchored" data-anchor-id="seasonality-in-financial-markets">2. Seasonality in Financial Markets</h4>
-<p><strong>NBA Season Effects on Stock Prices:</strong> - Test whether sports betting stocks show higher returns during NBA playoffs (April-June) - Examine whether Disney stock shows seasonal patterns tied to NBA Finals viewership - Compare volatility during NBA season vs.&nbsp;off-season</p>
-<p><strong>Methods</strong>: SARIMA models, seasonal decomposition (STL), Fourier analysis</p>
-</section>
-<section id="long-term-industry-growth-dis-1980-2025" class="level4">
-<h4 class="anchored" data-anchor-id="long-term-industry-growth-dis-1980-2025">3. Long-Term Industry Growth (DIS: 1980-2025)</h4>
-<p><strong>Correlation with NBA Evolution:</strong> - Did Disney stock benefit from NBA’s analytics-era popularity surge? - Relationship between league-wide efficiency (ORtg) and media company valuations - Impact of major NBA TV deal renewals on DIS stock price</p>
-</section>
-<section id="volatility-modeling" class="level4">
-<h4 class="anchored" data-anchor-id="volatility-modeling">4. Volatility Modeling</h4>
-<p><strong>Financial Time-Series Methods:</strong> - ARIMA and SARIMA models for sports betting stock returns - Weekly aggregation to capture seasonal patterns (52 weeks per year) - Test whether sports disruptions (COVID, lockouts) created structural breaks</p>
-</section>
-<section id="cross-market-analysis" class="level4">
-<h4 class="anchored" data-anchor-id="cross-market-analysis">5. Cross-Market Analysis</h4>
-<p><strong>Bidirectional Relationships:</strong> - Does NBA attendance correlate with sports betting stock returns? - Do sports betting stock movements predict changes in NBA viewership? - Comparative analysis across multiple betting operators (DKNG, PENN, MGM, CZR)</p>
-<p><strong>Time Series Variables Extracted:</strong> - DKNG daily/weekly returns (2020-2025): ~1,180+ trading days - PENN daily/weekly returns (2020-2025): ~1,180+ trading days - MGM daily/weekly returns (2020-2025): ~1,180+ trading days - CZR daily/weekly returns (2020-2025): ~1,180+ trading days - DIS daily/weekly returns (1980-2025): ~11,000+ trading days</p>
-<hr>
-</section>
-</section>
-</section>
-<section id="seasonality-and-financial-time-series-coverage" class="level2">
-<h2 class="anchored" data-anchor-id="seasonality-and-financial-time-series-coverage">Seasonality and Financial Time Series Coverage</h2>
-<section id="seasonality-requirements" class="level3">
-<h3 class="anchored" data-anchor-id="seasonality-requirements">Seasonality Requirements</h3>
-<p>The NBA provides <strong>natural seasonality</strong> across multiple timescales:</p>
-<ol type="1">
-<li><strong>Annual Seasonality</strong> (82-game regular season + playoffs):
-<ul>
-<li>Regular season: October - April</li>
-<li>Playoffs: April - June</li>
-<li>Off-season: July - September</li>
-</ul></li>
-<li><strong>Time Series Exhibiting Seasonality:</strong>
-<ul>
-<li><strong>Attendance</strong>: Peaks during playoffs (April-June), minimal in off-season</li>
-<li><strong>Pace</strong>: May vary by month as teams rest starters late-season</li>
-<li><strong>3PT Attempt Rate</strong>: Potential playoff vs regular season differences</li>
-<li><strong>Sports Betting Stocks (DKNG, PENN, MGM, CZR)</strong>:
-<ul>
-<li>Weekly aggregation (frequency = 52) shows seasonal patterns</li>
-<li>Higher volatility during playoffs</li>
-<li>Trading volume spikes around NBA Finals</li>
-<li>Earnings tied to NBA season milestones</li>
-</ul></li>
-</ul></li>
-<li><strong>Seasonal Decomposition Methods:</strong>
-<ul>
-<li><strong>SARIMA models</strong> for weekly sports betting stock returns (S=52)</li>
-<li><strong>STL decomposition</strong> of attendance data (annual seasonality)</li>
-<li><strong>Seasonal dummy variables</strong> for playoff periods vs regular season</li>
-</ul></li>
-</ol>
-</section>
-<section id="financial-time-series-coverage" class="level3">
-<h3 class="anchored" data-anchor-id="financial-time-series-coverage">Financial Time Series Coverage</h3>
-<ul>
-<li><strong>DKNG (DraftKings)</strong>: Daily/Weekly returns, 2020-04-23 to present (~1,180+ days)
-<ul>
-<li>Exhibits volatility clustering</li>
-<li>Natural seasonality tied to NBA/sports calendar</li>
-<li>COVID-era natural experiment</li>
-</ul></li>
-<li><strong>PENN (Penn Entertainment)</strong>: Daily/Weekly returns, 2020-01-01 to present (~1,250+ days)
-<ul>
-<li>Transition from Barstool to ESPN BET partnership</li>
-<li>Seasonal patterns from sports betting activity</li>
-</ul></li>
-<li><strong>MGM (MGM Resorts)</strong>: Daily/Weekly returns, 2020-01-01 to present (~1,250+ days)
-<ul>
-<li>Integrated casino/sportsbook operations</li>
-<li>Sports season effects on revenue</li>
-</ul></li>
-<li><strong>CZR (Caesars)</strong>: Daily/Weekly returns, 2020-01-01 to present (~1,250+ days)
-<ul>
-<li>Major sportsbook competitor</li>
-<li>Seasonal betting patterns</li>
-</ul></li>
-<li><strong>DIS (Disney/ESPN)</strong>: Daily/Weekly returns, 1980-01-01 to present (~11,000+ days)
-<ul>
-<li>Long-term trends correlate with NBA popularity growth</li>
-<li>Seasonal patterns from NBA broadcasting schedule</li>
-<li>Major TV deal announcements create structural breaks</li>
-</ul></li>
-</ul>
-<hr>
-</section>
-</section>
-<section id="data-quality-and-limitations" class="level2">
-<h2 class="anchored" data-anchor-id="data-quality-and-limitations">Data Quality and Limitations</h2>
-<section id="strengths" class="level3">
-<h3 class="anchored" data-anchor-id="strengths">Strengths</h3>
-<p>✓ <strong>Comprehensive temporal coverage</strong>: 45 years of NBA team statistics (1980-2025) ✓ <strong>Official sources</strong>: Basketball Reference (trusted), Yahoo Finance (authoritative) ✓ <strong>Multiple financial instruments</strong>: 5 stocks provide robust sports betting/entertainment sector coverage ✓ <strong>Fully documented</strong>: All extraction methods and sources provided for replication</p>
-</section>
-<section id="limitations" class="level3">
-<h3 class="anchored" data-anchor-id="limitations">Limitations</h3>
-<p>⚠ <strong>Manual data collection for NBA stats</strong>: Basketball Reference lacks API, requires manual download - <em>Mitigation</em>: Documented step-by-step process ensures replicability</p>
-<p>⚠ <strong>Team-level aggregation only</strong>: No individual player tracking - <em>Mitigation</em>: Team-level appropriate for league-wide structural change study</p>
-<p>⚠ <strong>Sports betting stocks limited to 2020+</strong>: Market didn’t exist before 2018 - <em>Mitigation</em>: 2020-2025 captures COVID disruption and market maturation phases</p>
-<p>⚠ <strong>Annual frequency for NBA data</strong>: Limits some time series techniques - <em>Mitigation</em>: 45 observations sufficient for ARIMA; financial data provides high-frequency component</p>
-<hr>
-</section>
-</section>
-<section id="file-structure" class="level2">
-<h2 class="anchored" data-anchor-id="file-structure">File Structure</h2>
-<pre><code>josh-portfolio/
-│
-├── data/
-│   ├── adv_stats/
-│   │   ├── 1980-81_adv_stats.csv
-│   │   ├── 1981-82_adv_stats.csv
-│   │   └── ... (45 CSV files through 2024-25)
-│   │
-│   └── financial/
-│       ├── DKNG_daily.csv
-│       ├── PENN_daily.csv
-│       ├── MGM_daily.csv
-│       ├── CZR_daily.csv
-│       └── DIS_daily.csv
-│
-└── download_financial_data.py  # Script to download financial data</code></pre>
-<hr>
-</section>
-<section id="replication-instructions" class="level2">
-<h2 class="anchored" data-anchor-id="replication-instructions">Replication Instructions</h2>
-<p>To fully replicate this data collection:</p>
-<section id="basketball-reference-data-team-advanced-stats" class="level3">
-<h3 class="anchored" data-anchor-id="basketball-reference-data-team-advanced-stats">1. Basketball Reference Data (Team Advanced Stats)</h3>
-<p><strong>Manual Download</strong> (required due to lack of API):</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># For each season from 1980-81 to 2024-25:</span></span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="co"># 1. Navigate to: https://www.basketball-reference.com/leagues/NBA_[YEAR].html</span></span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="co"># 2. Scroll to "Advanced Stats" table</span></span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="co"># 3. Click "Share &amp; Export" → "Get table as CSV (for Excel)"</span></span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="co"># 4. Save the file to data/adv_stats/[YEAR]_adv_stats.csv</span></span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="co"># 5. Repeat for all 45 seasons</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<p><strong>Read CSV files in R:</strong></p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Read all advanced stats files</span></span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>all_adv_files <span class="ot">&lt;-</span> <span class="fu">list.files</span>(<span class="st">"data/adv_stats"</span>, <span class="at">pattern =</span> <span class="st">"*.csv"</span>, <span class="at">full.names =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Combine all seasons</span></span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>all_adv_data <span class="ot">&lt;-</span> <span class="fu">map_df</span>(all_adv_files, <span class="cf">function</span>(file) {</span>
-<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>    season_str <span class="ot">&lt;-</span> <span class="fu">str_extract</span>(<span class="fu">basename</span>(file), <span class="st">"</span><span class="sc">\\</span><span class="st">d{4}-</span><span class="sc">\\</span><span class="st">d{2}"</span>)</span>
-<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>    season_year <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(<span class="fu">str_sub</span>(season_str, <span class="dv">1</span>, <span class="dv">4</span>)) <span class="sc">+</span> <span class="dv">1</span></span>
-<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>    df <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(file, <span class="at">show_col_types =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>    df<span class="sc">$</span>Season <span class="ot">&lt;-</span> season_year</span>
-<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(df)</span>
-<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>})</span>
-<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Calculate league averages</span></span>
-<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>league_avg <span class="ot">&lt;-</span> all_adv_data <span class="sc">%&gt;%</span></span>
-<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>    <span class="fu">group_by</span>(Season) <span class="sc">%&gt;%</span></span>
-<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>    <span class="fu">summarise</span>(</span>
-<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>        <span class="at">ORtg =</span> <span class="fu">mean</span>(<span class="st">`</span><span class="at">Unnamed: 10_level_0_ORtg</span><span class="st">`</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
-<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>        <span class="at">DRtg =</span> <span class="fu">mean</span>(<span class="st">`</span><span class="at">Unnamed: 11_level_0_DRtg</span><span class="st">`</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
-<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>        <span class="at">Pace =</span> <span class="fu">mean</span>(<span class="st">`</span><span class="at">Unnamed: 13_level_0_Pace</span><span class="st">`</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
-<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>        <span class="st">`</span><span class="at">3PAr</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">mean</span>(<span class="st">`</span><span class="at">Unnamed: 15_level_0_3PAr</span><span class="st">`</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
-<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a>        <span class="st">`</span><span class="at">TS%</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">mean</span>(<span class="st">`</span><span class="at">Unnamed: 16_level_0_TS%</span><span class="st">`</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
-<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a>        <span class="at">.groups =</span> <span class="st">"drop"</span></span>
-<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a>    )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</section>
-<section id="financial-data-yahoo-finance" class="level3">
-<h3 class="anchored" data-anchor-id="financial-data-yahoo-finance">2. Financial Data (Yahoo Finance)</h3>
-<p><strong>Step 1: Install yfinance</strong></p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install yfinance pandas numpy</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<p><strong>Step 2: Run the download script</strong></p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> download_financial_data.py</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<p>This script (<code>download_financial_data.py</code>) automatically: - Downloads all 5 stocks (DKNG, PENN, MGM, CZR, DIS) - Calculates returns, log returns, and volatility metrics - Saves CSV files to <code>data/financial/</code> - Prints summary statistics</p>
-<p><strong>Step 3: Read in R</strong></p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(lubridate)</span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Read DKNG data</span></span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>dkng <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="st">"data/financial/DKNG_daily.csv"</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">Date =</span> <span class="fu">ymd</span>(Date))</span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Convert to weekly for SARIMA (seasonality = 52)</span></span>
-<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>dkng_weekly <span class="ot">&lt;-</span> dkng <span class="sc">%&gt;%</span></span>
-<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">Week =</span> <span class="fu">floor_date</span>(Date, <span class="st">"week"</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>    <span class="fu">group_by</span>(Week) <span class="sc">%&gt;%</span></span>
-<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>    <span class="fu">summarise</span>(</span>
-<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>        <span class="at">Adj_Close =</span> <span class="fu">last</span>(<span class="st">`</span><span class="at">Adj Close</span><span class="st">`</span>),</span>
-<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>        <span class="at">Weekly_Return =</span> (<span class="fu">last</span>(<span class="st">`</span><span class="at">Adj Close</span><span class="st">`</span>) <span class="sc">-</span> <span class="fu">first</span>(Open)) <span class="sc">/</span> <span class="fu">first</span>(Open),</span>
-<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>        <span class="at">.groups =</span> <span class="st">"drop"</span></span>
-<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a><span class="co"># Create time series object</span></span>
-<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a>ts_dkng_weekly <span class="ot">&lt;-</span> <span class="fu">ts</span>(dkng_weekly<span class="sc">$</span>Weekly_Return, <span class="at">frequency =</span> <span class="dv">52</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<hr>
 
 
 </section>

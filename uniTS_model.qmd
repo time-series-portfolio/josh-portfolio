@@ -103,8 +103,6 @@ plot(diff_ortg_1, main = "First-Order Differenced ORtg", ylab = "Change in ORtg"
 par(mfrow = c(1, 1))
 ```
 
-**Comment**: First-order differencing removes the upward trend. The differenced series fluctuates around zero with no obvious trend, suggesting stationarity has been achieved.
-
 #### (c) ADF Test on Differenced Series
 
 ```{r ortg-diff-adf, warning=FALSE, message=FALSE}
@@ -659,6 +657,6 @@ The weekly stock series use SARIMA with s=52. Prices are classic random walks wi
 
 Overall, the modeling confirms: 
 
-- NBA annual metrics are well handled by low-order ARIMA with d=1 and additive interpretation
-- Weekly equities benefit from SARIMA and multiplicative structure
-- Analytics-era improvements in ORtg are forecast to persist, while Pace and COVID-sensitive attendance inject asymmetric uncertainty.
+1. NBA annual metrics are well handled by low-order ARIMA with d=1 and additive interpretation
+2. Weekly equities benefit from SARIMA and multiplicative structure
+3. Analytics-era improvements in ORtg are forecast to persist, while Pace and COVID-sensitive attendance inject asymmetric uncertainty.

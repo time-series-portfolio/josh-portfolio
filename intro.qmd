@@ -4,6 +4,8 @@ author: "Josh Lin"
 ---
 # Introduction
 
+![](images/nba_logo.jpg)
+
 Over the last two decades, the National Basketball Association (NBA) has undergone a historic transformation in how the game is played and measured. The rise of analytics has redefined decision-making, from shot selection to player valuation, creating a league increasingly optimized for pace, spacing, and efficiency. Traditional mid-range play has given way to data-driven offenses that favor the three-point shot and fast-break opportunities @franks2015characterizing. Yet this evolution has not been linear: external shocks such as the COVID-19 pandemic and rule changes have periodically disrupted the sport’s equilibrium.
 
 This project seeks to quantify and contextualize the NBA’s evolution toward efficiency; particularly how the league’s statistical DNA has shifted under the influence of analytics, and how sudden disruptions like the 2020 “bubble” season temporarily rewired its dynamics. Using time-series analysis, the study traces the interplay between pace, three-point attempt rate, and offensive efficiency to reveal both long-term structural change and short-term volatility.
