@@ -558,18 +558,17 @@ attendance_plot <- ggplot(attendance_data, aes(x = Season, y = Total_Attendance 
     ) +
     scale_y_continuous(labels = scales::comma, limits = c(0, 25))
 
-dkng_plot <- ggplot(dkng_yearly, aes(x = Year, y = Avg_Close)) +
-    geom_line(color = "#f58426", size = 1.5) +
-    geom_point(color = "#f58426", size = 3) +
+dkng_plot <- ggplot(dkng, aes(x = Date, y = `Adj Close`)) +
+    geom_line(color = "#f58426", size = 0.8) +
     annotate("text",
-        x = 2020, y = 35,
+        x = as.Date("2020-04-23"), y = 16,
         label = "DKNG IPO",
-        size = 3.5, fontface = "bold", color = "#f58426", vjust = 1
+        size = 2.5, fontface = "bold", color = "#f58426", vjust = 1
     ) +
     labs(
-        title = "DraftKings (DKNG) Stock Price",
-        x = "Year",
-        y = "Average Adj Close Price ($)"
+        title = "DraftKings (DKNG) Stock Price (Daily)",
+        x = "Date",
+        y = "Adj Close Price ($)"
     ) +
     theme_minimal(base_size = 12) +
     theme(

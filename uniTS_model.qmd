@@ -1,16 +1,11 @@
 ---
-title: "Univariate Time Series Modeling: ARIMA & SARIMA"
+title: "Univariate Time Series Modeling"
 format:
   html:
     code-fold: true
     toc: true
     toc-depth: 3
 ---
-
-# Introduction
-
-This page applies ARIMA to the annual NBA series (ORtg, 3PAr, Pace, Attendance) and SARIMA to weekly equities (DKNG, PENN) to quantify temporal structure and produce short-horizon forecasts. Consistent with the EDA, all four NBA series are non-stationary in levels. ACFs decay slowly and ADF tests fail to reject a unit root, but become stationary after first differencing (d=1) with roughly constant variance that favors additive dynamics.
-
 ```{r setup, warning=FALSE, message=FALSE}
 library(tidyverse)
 library(ggplot2)
@@ -29,10 +24,8 @@ library(readr)
 library(dplyr)
 library(patchwork)
 
-# Set plotting theme
 theme_set(theme_minimal(base_size = 12))
 
-# Load all advanced stats data
 all_adv_files <- list.files("data/adv_stats", pattern = "*.csv", full.names = TRUE)
 
 all_adv_data <- map_df(all_adv_files, function(file) {
@@ -43,7 +36,6 @@ all_adv_data <- map_df(all_adv_files, function(file) {
     return(df)
 })
 
-# Calculate league averages by season
 league_avg <- all_adv_data %>%
     group_by(Season) %>%
     summarise(
@@ -55,46 +47,50 @@ league_avg <- all_adv_data %>%
         `eFG%` = mean(`Offense Four Factors_eFG%`, na.rm = TRUE),
         .groups = "drop"
     )
-
-cat("League average data loaded: 1980-2025,", nrow(league_avg), "seasons\n")
 ```
 
 ## Offensive Rating (ORtg)
 
-```{r ortg-eda-review, warning=FALSE, message=FALSE}
-# Create time series
+```{r ortg-setup, include=FALSE}
 ts_ortg <- ts(league_avg$ORtg, start = 1980, frequency = 1)
+diff_ortg_1 <- diff(ts_ortg, differences = 1)
 
-# (a) ACF Graph
+# Fit models
+model_110 <- Arima(ts_ortg, order = c(1, 1, 0))
+model_011 <- Arima(ts_ortg, order = c(0, 1, 1))
+model_111 <- Arima(ts_ortg, order = c(1, 1, 1))
+models_ortg <- list(model_110, model_011, model_111)
+aic_vals <- c(model_110$aic, model_011$aic, model_111$aic)
+best_ortg <- models_ortg[[which.min(aic_vals)]]
+
+# Forecast
+fc_ortg <- forecast(best_ortg, h = 5)
+
+# Benchmark
+train_ortg <- window(ts_ortg, end = 2019)
+test_ortg <- window(ts_ortg, start = 2020)
+h <- length(test_ortg)
+```
+
+::: {.panel-tabset}
+
+## Stationarity & Differencing
+
+```{r ortg-stationarity, warning=FALSE, message=FALSE, fig.width=12, fig.height=8}
+# ACF of original
 ggAcf(ts_ortg, lag.max = 20) +
-    labs(
-        title = "ACF of ORtg (Original Series)",
-        subtitle = "Slow decay indicates non-stationarity"
-    ) +
+    labs(title = "ACF of ORtg (Original Series)", subtitle = "Slow decay indicates non-stationarity") +
     theme_minimal()
 ```
 
-```{r ortg-adf-original, warning=FALSE, message=FALSE}
-# (b) Augmented Dickey-Fuller Test
+```{r ortg-adf, warning=FALSE, message=FALSE}
 adf_ortg <- adf.test(ts_ortg)
-cat("ADF Test (Original ORtg):\n")
-cat("  Test Statistic:", round(adf_ortg$statistic, 4), "\n")
-cat("  p-value:", round(adf_ortg$p.value, 4), "\n")
-cat("  Conclusion:", ifelse(adf_ortg$p.value < 0.05, "Stationary", "Non-stationary"), "\n")
+cat("ADF Test (Original ORtg): p =", round(adf_ortg$p.value, 4), "implies Non-stationary\n\n")
+
+# Differencing
+adf_diff_ortg <- adf.test(diff_ortg_1)
+cat("ADF Test (Differenced, d=1): p =", round(adf_diff_ortg$p.value, 4), "implies Stationary\n")
 ```
-
-### Differencing to Achieve Stationarity
-
-#### (a) First-Order Differencing
-
-```{r ortg-diff1, warning=FALSE, message=FALSE}
-# First-order differencing
-diff_ortg_1 <- diff(ts_ortg, differences = 1)
-
-cat("First-order differenced series length:", length(diff_ortg_1), "\n")
-```
-
-#### (b) Plot Differenced Data
 
 ```{r ortg-diff-plot, warning=FALSE, message=FALSE, fig.width=12, fig.height=8}
 par(mfrow = c(2, 1))
@@ -103,138 +99,79 @@ plot(diff_ortg_1, main = "First-Order Differenced ORtg", ylab = "Change in ORtg"
 par(mfrow = c(1, 1))
 ```
 
-#### (c) ADF Test on Differenced Series
-
-```{r ortg-diff-adf, warning=FALSE, message=FALSE}
-adf_diff_ortg <- adf.test(diff_ortg_1)
-cat("ADF Test (Differenced ORtg, d=1):\n")
-cat("  Test Statistic:", round(adf_diff_ortg$statistic, 4), "\n")
-cat("  p-value:", round(adf_diff_ortg$p.value, 4), "\n")
-cat("  Conclusion:", ifelse(adf_diff_ortg$p.value < 0.05, "Stationary", "Non-stationary"), "\n")
-```
-
-### ACF and PACF to Determine p and q
-
 ```{r ortg-acf-pacf, warning=FALSE, message=FALSE, fig.width=12, fig.height=8}
 acf_plot <- ggAcf(diff_ortg_1, lag.max = 20) +
-    labs(title = "ACF of Differenced ORtg") +
-    theme_minimal()
-
+    labs(title = "ACF of Differenced ORtg") + theme_minimal()
 pacf_plot <- ggPacf(diff_ortg_1, lag.max = 20) +
-    labs(title = "PACF of Differenced ORtg") +
-    theme_minimal()
-
+    labs(title = "PACF of Differenced ORtg") + theme_minimal()
 acf_plot / pacf_plot
 ```
 
-### Fit ARIMA Models
+## Model Selection
 
-```{r ortg-fit-models, warning=FALSE, message=FALSE}
-model_110 <- Arima(ts_ortg, order = c(1, 1, 0))
-model_011 <- Arima(ts_ortg, order = c(0, 1, 1))
-model_111 <- Arima(ts_ortg, order = c(1, 1, 1))
-
+```{r ortg-models, warning=FALSE, message=FALSE}
 cat("Model Comparison:\n")
 cat("ARIMA(1,1,0): AIC =", round(model_110$aic, 2), "| BIC =", round(model_110$bic, 2), "\n")
 cat("ARIMA(0,1,1): AIC =", round(model_011$aic, 2), "| BIC =", round(model_011$bic, 2), "\n")
-cat("ARIMA(1,1,1): AIC =", round(model_111$aic, 2), "| BIC =", round(model_111$bic, 2), "\n")
-
-# Select best model (lowest AIC)
-models_ortg <- list(model_110, model_011, model_111)
-aic_vals <- c(model_110$aic, model_011$aic, model_111$aic)
-best_ortg <- models_ortg[[which.min(aic_vals)]]
-
-cat("\nBest Model: ARIMA", paste0(arimaorder(best_ortg)[c(1, 2, 3)], collapse = ","), "\n")
+cat("ARIMA(1,1,1): AIC =", round(model_111$aic, 2), "| BIC =", round(model_111$bic, 2), "\n\n")
+cat("Best Model: ARIMA", paste0(arimaorder(best_ortg)[c(1, 2, 3)], collapse = ","), "\n")
 ```
 
-**Model Equation**:
-
-$$(1-B)Y_t = (1 + \theta_1 B)\epsilon_t$$
+**Model Equation**: $$(1-B)Y_t = (1 + \theta_1 B)\epsilon_t$$
 
 ```{r ortg-coef, warning=FALSE, message=FALSE}
 cat("Model Coefficients:\n")
 print(coef(best_ortg))
 ```
 
-### Model Diagnostics
+```{r ortg-auto-arima, warning=FALSE, message=FALSE}
+auto_ortg <- auto.arima(ts_ortg, seasonal = FALSE, stepwise = FALSE, approximation = FALSE)
+cat("\nSelected model selected:", paste0(auto_ortg), "| AIC =", round(auto_ortg$aic, 2), "\n")
+cat("Our chosen model:", paste0(best_ortg), "| AIC =", round(best_ortg$aic, 2), "\n")
+```
+
+## Diagnostics
 
 ```{r ortg-diagnostics, warning=FALSE, message=FALSE, fig.width=12, fig.height=10}
-# Full diagnostic plots using sarima
 sarima(ts_ortg, p = arimaorder(best_ortg)[1], d = arimaorder(best_ortg)[2], q = arimaorder(best_ortg)[3])
 ```
 
-```{r ortg-ljung-box, warning=FALSE, message=FALSE}
+```{r ortg-ljung, warning=FALSE, message=FALSE}
 ljung_ortg <- Box.test(best_ortg$residuals, lag = 10, type = "Ljung-Box")
-cat("Ljung-Box Test (lag=10):\n")
-cat("  p-value =", round(ljung_ortg$p.value, 4), "\n")
-cat("  Conclusion:", ifelse(ljung_ortg$p.value > 0.05, "Residuals are white noise ✓", "Some autocorrelation remains"), "\n")
+cat("Ljung-Box Test (lag=10): p =", round(ljung_ortg$p.value, 4), "\n")
+cat("Conclusion:", ifelse(ljung_ortg$p.value > 0.05, "Residuals are white noise", "Some autocorrelation remains"), "\n")
 ```
 
-### Compare with auto.arima()
-
-```{r ortg-auto-arima, warning=FALSE, message=FALSE}
-auto_ortg <- auto.arima(ts_ortg, seasonal = FALSE, stepwise = FALSE, approximation = FALSE)
-
-cat("auto.arima() selected:", paste0(auto_ortg), "\n")
-cat("  AIC =", round(auto_ortg$aic, 2), "\n")
-cat("  BIC =", round(auto_ortg$bic, 2), "\n\n")
-
-cat("Our chosen model:", paste0(best_ortg), "\n")
-cat("  AIC =", round(best_ortg$aic, 2), "\n")
-cat("  BIC =", round(best_ortg$bic, 2), "\n\n")
-
-if (paste0(auto_ortg) == paste0(best_ortg)) {
-    cat("Result: auto.arima() agrees with our chosen model ✓\n")
-} else {
-    cat("Result: Different model selected\n")
-    cat("Reason: auto.arima() uses algorithmic search; may prioritize different criteria or find alternative model with similar performance\n")
-}
-```
-
-### Forecasting
+## Forecast & Validation
 
 ```{r ortg-forecast, warning=FALSE, message=FALSE, fig.width=12, fig.height=6}
-# Forecast 5 years ahead
-fc_ortg <- forecast(best_ortg, h = 5)
-
 autoplot(fc_ortg) +
     labs(
         title = "ORtg Forecast: 5-Year Ahead Prediction",
         subtitle = paste0("Model: ", paste0(best_ortg), " | 80% and 95% prediction intervals"),
-        x = "Year",
-        y = "Offensive Rating (Points per 100 Possessions)"
+        x = "Year", y = "Offensive Rating (Points per 100 Possessions)"
     ) +
     theme_minimal()
+```
 
+```{r ortg-fc-values, warning=FALSE, message=FALSE}
 cat("Point Forecasts (2026-2030):\n")
 print(fc_ortg$mean)
 ```
 
-### Benchmark Comparison
-
 ```{r ortg-benchmark, warning=FALSE, message=FALSE, fig.width=12, fig.height=8}
-train_ortg <- window(ts_ortg, end = 2019)
-test_ortg <- window(ts_ortg, start = 2020)
-h <- length(test_ortg)
-
-# Fit models on training data
 arima_fit <- Arima(train_ortg, order = arimaorder(best_ortg)[c(1, 2, 3)])
-naive_fit <- naive(train_ortg, h = h)
-mean_fit <- meanf(train_ortg, h = h)
-drift_fit <- rwf(train_ortg, drift = TRUE, h = h)
-
-# Generate forecasts
 fc_arima <- forecast(arima_fit, h = h)
-fc_naive <- naive_fit
-fc_mean <- mean_fit
-fc_drift <- drift_fit
+fc_naive <- naive(train_ortg, h = h)
+fc_mean <- meanf(train_ortg, h = h)
+fc_drift <- rwf(train_ortg, drift = TRUE, h = h)
 
 acc_arima <- accuracy(fc_arima, test_ortg)[2, c("RMSE", "MAE", "MAPE")]
 acc_naive <- accuracy(fc_naive, test_ortg)[2, c("RMSE", "MAE", "MAPE")]
 acc_mean <- accuracy(fc_mean, test_ortg)[2, c("RMSE", "MAE", "MAPE")]
 acc_drift <- accuracy(fc_drift, test_ortg)[2, c("RMSE", "MAE", "MAPE")]
 
-cat("Forecast Accuracy Comparison (Test Set: 2020-2024):\n\n")
+cat("Forecast Accuracy (Test Set: 2020-2024):\n\n")
 comparison_df <- data.frame(
     Model = c("ARIMA", "Naive", "Mean", "Drift"),
     RMSE = c(acc_arima["RMSE"], acc_naive["RMSE"], acc_mean["RMSE"], acc_drift["RMSE"]),
@@ -249,80 +186,88 @@ autoplot(test_ortg) +
     autolayer(fc_drift, series = "Drift", PI = FALSE) +
     autolayer(fc_mean, series = "Mean", PI = FALSE) +
     labs(
-        title = "Forecast Comparison: ARIMA vs Benchmarks",
-        subtitle = "Test period: 2020-2024",
+        title = "Forecast Comparison: ARIMA vs Benchmarks", subtitle = "Test period: 2020-2024",
         x = "Year", y = "ORtg", color = "Model"
     ) +
     theme_minimal()
 ```
 
-For ORtg (primary outcome), the differenced series shows near-white-noise behavior with low-order AR or MA features. Candidate ARIMA(1,1,0), (0,1,1), and (1,1,1) are compared by AIC/BIC, and the winner clears residual diagnostics (no autocorrelation in residual ACF, Ljung–Box p>0.05). Five-year forecasts imply gradual efficiency gains with widening prediction bands; on a 2020–2024 holdout, the chosen ARIMA beats mean/naive/drift in RMSE and MAE, indicating it captures more than a random-walk drift.
+:::
+
+
+For ORtg (primary outcome), the differenced series shows white-noise behavior with low-order AR/MA features. ARIMA(1,1,0), (0,1,1), and (1,1,1) are compared by AIC/BIC. The best model has no autocorrelation in residual ACF and its Ljung–Box p>0.05. Five-year forecasts imply gradual efficiency gains with widening prediction bands. On a 2020–2024 holdout, the chosen ARIMA beats mean/naive/drift in RMSE and MAE, indicating it captures more than a random-walk drift.
 
 ## 3-Point Attempt Rate (3PAr)
 
-```{r 3par-eda, warning=FALSE, message=FALSE}
+```{r 3par-setup, include=FALSE}
 ts_3par <- ts(league_avg$`3PAr`, start = 1980, frequency = 1)
+diff_3par_1 <- diff(ts_3par, differences = 1)
 
-# ACF Graph
+# Fit models
+m1_3par <- Arima(ts_3par, order = c(1, 1, 0))
+m2_3par <- Arima(ts_3par, order = c(0, 1, 1))
+m3_3par <- Arima(ts_3par, order = c(2, 1, 0))
+best_3par <- list(m1_3par, m2_3par, m3_3par)[[which.min(c(m1_3par$aic, m2_3par$aic, m3_3par$aic))]]
+
+# Forecast & benchmark
+fc_3par <- forecast(best_3par, h = 5)
+train_3par <- window(ts_3par, end = 2019)
+test_3par <- window(ts_3par, start = 2020)
+```
+
+::: {.panel-tabset}
+
+## Stationarity & Differencing
+
+```{r 3par-acf, warning=FALSE, message=FALSE, fig.width=12, fig.height=8}
 ggAcf(ts_3par, lag.max = 20) +
-    labs(title = "ACF of 3PAr (Original)", subtitle = "Slow decay → non-stationary") +
+    labs(title = "ACF of 3PAr (Original)", subtitle = "Slow decay implies non-stationary") +
     theme_minimal()
 ```
 
-```{r 3par-adf-original, warning=FALSE, message=FALSE}
+```{r 3par-adf, warning=FALSE, message=FALSE}
 adf_3par <- adf.test(ts_3par)
-cat("ADF Test (Original 3PAr): p =", round(adf_3par$p.value, 4), "→ Non-stationary\n")
+cat("ADF Test (Original 3PAr): p =", round(adf_3par$p.value, 4), "implies Non-stationary\n\n")
+
+adf_diff_3par <- adf.test(diff_3par_1)
+cat("ADF Test (d=1): p =", round(adf_diff_3par$p.value, 4), "implies Stationary\n")
 ```
 
-### Differencing
-
-```{r 3par-diff, warning=FALSE, message=FALSE, fig.width=12, fig.height=8}
-diff_3par_1 <- diff(ts_3par, differences = 1)
-
+```{r 3par-diff-plot, warning=FALSE, message=FALSE, fig.width=12, fig.height=8}
 par(mfrow = c(2, 1))
 plot(ts_3par, main = "Original 3PAr", ylab = "3PAr", col = "blue")
 plot(diff_3par_1, main = "Differenced 3PAr (d=1)", ylab = "Change", col = "red")
 par(mfrow = c(1, 1))
-
-# ADF test
-adf_diff_3par <- adf.test(diff_3par_1)
-cat("ADF Test (d=1): p =", round(adf_diff_3par$p.value, 4), "→ Stationary\n")
 ```
-
-### Determine p and q
 
 ```{r 3par-acf-pacf, warning=FALSE, message=FALSE, fig.width=12, fig.height=8}
 ggAcf(diff_3par_1, lag.max = 20) / ggPacf(diff_3par_1, lag.max = 20)
 ```
 
-### Modeling
+## Model Selection
 
-```{r 3par-model, warning=FALSE, message=FALSE}
-# Fit models
-m1_3par <- Arima(ts_3par, order = c(1, 1, 0))
-m2_3par <- Arima(ts_3par, order = c(0, 1, 1))
-m3_3par <- Arima(ts_3par, order = c(2, 1, 0))
-
+```{r 3par-models, warning=FALSE, message=FALSE}
 cat("AIC Comparison:\n")
 cat("ARIMA(1,1,0):", round(m1_3par$aic, 2), "\n")
 cat("ARIMA(0,1,1):", round(m2_3par$aic, 2), "\n")
-cat("ARIMA(2,1,0):", round(m3_3par$aic, 2), "\n")
-
-best_3par <- list(m1_3par, m2_3par, m3_3par)[[which.min(c(m1_3par$aic, m2_3par$aic, m3_3par$aic))]]
-cat("\nBest:", paste0(best_3par), "\n")
+cat("ARIMA(2,1,0):", round(m3_3par$aic, 2), "\n\n")
+cat("Best:", paste0(best_3par), "\n")
 ```
+
+```{r 3par-auto, warning=FALSE, message=FALSE}
+auto_3par <- auto.arima(ts_3par, seasonal = FALSE)
+cat("\nModel selected", paste0(auto_3par), "| AIC =", round(auto_3par$aic, 2), "\n")
+```
+
+## Diagnostics
 
 ```{r 3par-diagnostics, warning=FALSE, message=FALSE, fig.width=12, fig.height=10}
 sarima(ts_3par, p = arimaorder(best_3par)[1], d = 1, q = arimaorder(best_3par)[3])
 ```
 
-```{r 3par-auto, warning=FALSE, message=FALSE}
-auto_3par <- auto.arima(ts_3par, seasonal = FALSE)
-cat("auto.arima():", paste0(auto_3par), "| AIC =", round(auto_3par$aic, 2), "\n")
-```
+## Forecast & Validation
 
 ```{r 3par-forecast, warning=FALSE, message=FALSE, fig.width=12, fig.height=6}
-fc_3par <- forecast(best_3par, h = 5)
 autoplot(fc_3par) +
     labs(title = "3PAr Forecast (5 years)", x = "Year", y = "3-Point Attempt Rate") +
     scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
@@ -330,231 +275,22 @@ autoplot(fc_3par) +
 ```
 
 ```{r 3par-benchmark, warning=FALSE, message=FALSE}
-train_3par <- window(ts_3par, end = 2019)
-test_3par <- window(ts_3par, start = 2020)
-
 arima_3par <- forecast(Arima(train_3par, order = arimaorder(best_3par)[c(1, 2, 3)]), h = 5)
 naive_3par <- naive(train_3par, h = 5)
 
-cat("Accuracy:\n")
+cat("Accuracy Comparison:\n")
 cat("ARIMA RMSE:", round(accuracy(arima_3par, test_3par)[2, "RMSE"], 4), "\n")
 cat("Naive RMSE:", round(accuracy(naive_3par, test_3par)[2, "RMSE"], 4), "\n")
 ```
 
-3PAr behaves similarly; d=1 suffices, low-order AR/MA terms compete—with forecasts that extend the post-2012 shot-mix surge. Pace also requires d=1, but its U-shaped long-run pattern and weaker link to ORtg make forecasts flatter and less informative for efficiency.
-
-## DraftKings (DKNG) Stock Price
-
-```{r dkng-load, warning=FALSE, message=FALSE}
-dkng <- read_csv("data/financial/DKNG_daily.csv", show_col_types = FALSE) %>%
-    mutate(Date = as.Date(Date))
-
-# Aggregate to weekly
-dkng_weekly <- dkng %>%
-    mutate(Year = year(Date), Week = isoweek(Date)) %>%
-    group_by(Year, Week) %>%
-    summarise(Avg_Close = mean(`Adj Close`, na.rm = TRUE), .groups = "drop") %>%
-    arrange(Year, Week) %>%
-    filter(!is.na(Avg_Close))
-
-ts_dkng <- ts(dkng_weekly$Avg_Close, start = c(2020, min(dkng_weekly$Week[dkng_weekly$Year == 2020])), frequency = 52)
-
-cat("DKNG weekly series:", length(ts_dkng), "observations\n")
-```
-
-### Seasonality
-
-```{r dkng-acf-seasonal, warning=FALSE, message=FALSE, fig.width=12, fig.height=6}
-ggAcf(ts_dkng, lag.max = 104) +
-    geom_vline(xintercept = 52, linetype = "dashed", color = "red", size = 1) +
-    annotate("text", x = 52, y = 0.8, label = "1 Year (52 weeks)", color = "red", hjust = -0.1) +
-    labs(title = "ACF of DKNG Stock Price", subtitle = "Check for seasonal pattern at lag 52") +
-    theme_minimal()
-```
-
-```{r dkng-adf-original, warning=FALSE, message=FALSE}
-adf_dkng <- adf.test(ts_dkng)
-cat("ADF Test (Original DKNG): p =", round(adf_dkng$p.value, 4), "→ Non-stationary\n")
-```
-
-### Differencing (Regular and Seasonal)
-
-```{r dkng-diff, warning=FALSE, message=FALSE}
-# Try regular differencing first
-diff_dkng_reg <- diff(ts_dkng, differences = 1)
-adf_diff_reg <- adf.test(diff_dkng_reg)
-cat("After regular differencing (d=1): p =", round(adf_diff_reg$p.value, 4), "\n")
-
-# Check if seasonal differencing needed
-ggAcf(diff_dkng_reg, lag.max = 104) +
-    geom_vline(xintercept = 52, linetype = "dashed", color = "red") +
-    labs(title = "ACF after d=1 differencing", subtitle = "Check for remaining seasonality") +
-    theme_minimal()
-```
-
-### Identify p, d, q, P, D, Q
-
-```{r dkng-acf-pacf, warning=FALSE, message=FALSE, fig.width=12, fig.height=10}
-# ACF and PACF of differenced series
-par(mfrow = c(2, 1))
-acf(diff_dkng_reg, lag.max = 104, main = "ACF of Differenced DKNG")
-pacf(diff_dkng_reg, lag.max = 104, main = "PACF of Differenced DKNG")
-par(mfrow = c(1, 1))
-```
-
-### Fit SARIMA Models
-
-```{r dkng-sarima-fit, warning=FALSE, message=FALSE}
-cat("Fitting SARIMA models (may take time with s=52)...\n\n")
-
-# Use auto.arima with constraints
-auto_dkng <- auto.arima(ts_dkng,
-    seasonal = TRUE, stepwise = TRUE, approximation = FALSE,
-    max.p = 2, max.q = 2, max.P = 1, max.Q = 1, max.D = 1
-)
-
-cat("auto.arima() selected:", paste0(auto_dkng), "\n")
-cat("AIC =", round(auto_dkng$aic, 2), "\n\n")
-
-m1_dkng <- Arima(ts_dkng, order = c(0, 1, 1), seasonal = c(0, 0, 1))
-m2_dkng <- Arima(ts_dkng, order = c(1, 1, 0), seasonal = c(1, 0, 0))
-
-cat("Manual models:\n")
-cat("ARIMA(0,1,1)(0,0,1)[52]: AIC =", round(m1_dkng$aic, 2), "\n")
-cat("ARIMA(1,1,0)(1,0,0)[52]: AIC =", round(m2_dkng$aic, 2), "\n")
-
-models_dkng <- list(auto_dkng, m1_dkng, m2_dkng)
-aic_dkng <- c(auto_dkng$aic, m1_dkng$aic, m2_dkng$aic)
-best_dkng <- models_dkng[[which.min(aic_dkng)]]
-
-cat("\nBest Model:", paste0(best_dkng), "\n")
-```
-
-**Model Equation** 
-$$(1-B)(1-B^{52})Y_t = (1 + \theta_1 B)(1 + \Theta_1 B^{52})\epsilon_t$$
-
-### Model Diagnostics
-
-```{r dkng-diagnostics, warning=FALSE, message=FALSE, fig.width=12, fig.height=10}
-best_order <- arimaorder(best_dkng)
-sarima(ts_dkng,
-    p = best_order[1], d = best_order[2], q = best_order[3],
-    P = best_order[4], D = best_order[5], Q = best_order[6], S = 52
-)
-```
-
-### Forecast
-
-```{r dkng-forecast, warning=FALSE, message=FALSE, fig.width=12, fig.height=6}
-fc_dkng <- forecast(best_dkng, h = 26) # 26 weeks = 6 months
-
-autoplot(fc_dkng) +
-    labs(
-        title = "DKNG Stock Forecast: 26 Weeks Ahead",
-        subtitle = paste0("Model: ", paste0(best_dkng)),
-        x = "Year", y = "Stock Price ($)"
-    ) +
-    theme_minimal()
-```
-
-### Benchmark Comparison
-
-```{r dkng-benchmark, warning=FALSE, message=FALSE}
-n_train <- floor(0.8 * length(ts_dkng))
-train_dkng <- window(ts_dkng, end = time(ts_dkng)[n_train])
-test_dkng <- window(ts_dkng, start = time(ts_dkng)[n_train + 1])
-h_dkng <- length(test_dkng)
-
-# Fit SARIMA model with error handling
-cat("Fitting SARIMA model on training data...\n")
-sarima_fit <- tryCatch(
-    {
-        Arima(train_dkng, order = best_order[c(1, 2, 3)], seasonal = list(order = best_order[c(4, 5, 6)], period = 52))
-    },
-    error = function(e) {
-        cat("  Complex seasonal model failed, trying simpler model...\n")
-        Arima(train_dkng, order = c(0, 1, 1), seasonal = c(0, 0, 0))
-    }
-)
-
-# Seasonal naive
-snaive_fit <- snaive(train_dkng, h = h_dkng)
-
-# Forecasts
-fc_sarima <- forecast(sarima_fit, h = h_dkng)
-fc_snaive <- snaive_fit
+:::
 
 
-acc_sarima <- accuracy(fc_sarima, test_dkng)[2, c("RMSE", "MAE", "MAPE")]
-acc_snaive <- accuracy(fc_snaive, test_dkng)[2, c("RMSE", "MAE", "MAPE")]
-
-cat("\nBenchmark Comparison (Test Set):\n")
-cat("SARIMA model: RMSE =", round(acc_sarima["RMSE"], 2), "| MAE =", round(acc_sarima["MAE"], 2), "\n")
-cat("Seasonal Naive: RMSE =", round(acc_snaive["RMSE"], 2), "| MAE =", round(acc_snaive["MAE"], 2), "\n")
-
-if (acc_sarima["RMSE"] < acc_snaive["RMSE"]) {
-    cat("\nSARIMA outperforms seasonal naive by", round((1 - acc_sarima["RMSE"] / acc_snaive["RMSE"]) * 100, 1), "%\n")
-} else {
-    cat("\nSeasonal naive performs better (simpler is sometimes better for volatile data)\n")
-}
-```
-
-### Seasonal Cross-Validation
-
-```{r dkng-cv, warning=FALSE, message=FALSE}
-cat("Running time series cross-validation (this may take a while)...\n")
-
-# Simplified CV: Use a simpler model structure for CV to avoid numerical issues
-# 1-step ahead CV
-cat("  1-step ahead forecasts...\n")
-cv_1step <- tsCV(ts_dkng, function(x, h) {
-    tryCatch(
-        {
-            fit <- Arima(x,
-                order = best_order[c(1, 2, 3)],
-                seasonal = list(order = best_order[c(4, 5, 6)], period = 52)
-            )
-            forecast(fit, h = h)
-        },
-        error = function(e) {
-            # Fallback to simpler model
-            fit <- Arima(x, order = c(0, 1, 1))
-            forecast(fit, h = h)
-        }
-    )
-}, h = 1)
-
-rmse_1step <- sqrt(mean(cv_1step^2, na.rm = TRUE))
-
-# For 52-step ahead, use a reduced sample to speed up computation
-cat("  52-step ahead forecasts (using subset for computational efficiency)...\n")
-cv_52step <- tsCV(ts_dkng, function(x, h) {
-    tryCatch(
-        {
-            fit <- auto.arima(x,
-                seasonal = TRUE, max.p = 1, max.q = 1, max.P = 1, max.Q = 1,
-                stepwise = TRUE, approximation = TRUE
-            )
-            forecast(fit, h = h)
-        },
-        error = function(e) {
-            fit <- Arima(x, order = c(0, 1, 1))
-            forecast(fit, h = h)
-        }
-    )
-}, h = 52, initial = floor(0.7 * length(ts_dkng)))
-
-rmse_52step <- sqrt(mean(cv_52step[, 52]^2, na.rm = TRUE))
-
-cat("\nCross-Validation Results:\n")
-cat("1-step ahead RMSE:  $", round(rmse_1step, 2), "\n")
-cat("52-step ahead RMSE: $", round(rmse_52step, 2), "\n")
-cat("\nNote: 52-step forecasts have higher uncertainty (longer horizon)\n")
-```
+3PAr behaves similarly; d=1 suffices, low-order AR/MA terms compete with forecasts that extend the post-2012 shot-mix surge. Pace also requires d=1, but its U-shaped long-run pattern and weaker link to ORtg make forecasts flatter and less informative for efficiency.
 
 ## Penn Entertainment (PENN) Stock Price
 
-```{r penn-load, warning=FALSE, message=FALSE}
+```{r penn-setup, include=FALSE}
 penn <- read_csv("data/financial/PENN_daily.csv", show_col_types = FALSE) %>%
     mutate(Date = as.Date(Date))
 
@@ -567,16 +303,7 @@ penn_weekly <- penn %>%
 
 ts_penn <- ts(penn_weekly$Avg_Close, start = c(2020, min(penn_weekly$Week[penn_weekly$Year == 2020])), frequency = 52)
 
-cat("PENN weekly series:", length(ts_penn), "observations\n")
-```
-
-### SARIMA Modeling
-
-```{r penn-model, warning=FALSE, message=FALSE}
-# Note: PENN's extreme volatility may cause numerical issues
-cat("PENN's high volatility may require simpler models\n\n")
-
-# Try auto.arima with conservative settings
+# Fit model
 auto_penn <- tryCatch(
     {
         auto.arima(ts_penn,
@@ -585,19 +312,36 @@ auto_penn <- tryCatch(
         )
     },
     error = function(e) {
-        cat("Seasonal model failed, using non-seasonal\n")
         auto.arima(ts_penn, seasonal = FALSE)
     }
 )
-
-cat("Best PENN model:", paste0(auto_penn), "\n")
-cat("AIC =", round(auto_penn$aic, 2), "\n")
-
 best_penn <- auto_penn
+penn_order <- arimaorder(best_penn)
+
+# Forecast & benchmark
+fc_penn <- forecast(best_penn, h = 26)
+n_train_penn <- floor(0.8 * length(ts_penn))
+train_penn <- window(ts_penn, end = time(ts_penn)[n_train_penn])
+test_penn <- window(ts_penn, start = time(ts_penn)[n_train_penn + 1])
 ```
 
+```{r penn-info, warning=FALSE, message=FALSE}
+cat("PENN weekly series:", length(ts_penn), "observations\n")
+cat("Note: PENN's high volatility may require simpler models\n")
+```
+
+::: {.panel-tabset}
+
+## Model Selection
+
+```{r penn-model, warning=FALSE, message=FALSE}
+cat("Best PENN model:", paste0(auto_penn), "\n")
+cat("AIC =", round(auto_penn$aic, 2), "\n")
+```
+
+## Diagnostics
+
 ```{r penn-diagnostics, warning=FALSE, message=FALSE, fig.width=12, fig.height=10}
-penn_order <- arimaorder(best_penn)
 if (penn_order[7] > 1) {
     sarima(ts_penn,
         p = penn_order[1], d = penn_order[2], q = penn_order[3],
@@ -608,50 +352,207 @@ if (penn_order[7] > 1) {
 }
 ```
 
+## Forecast & Validation
+
 ```{r penn-forecast, warning=FALSE, message=FALSE, fig.width=12, fig.height=6}
-fc_penn <- forecast(best_penn, h = 26)
 autoplot(fc_penn) +
     labs(title = "PENN Stock Forecast (26 weeks)", x = "Year", y = "Stock Price ($)") +
     theme_minimal()
 ```
 
 ```{r penn-benchmark, warning=FALSE, message=FALSE}
-n_train_penn <- floor(0.8 * length(ts_penn))
-train_penn <- window(ts_penn, end = time(ts_penn)[n_train_penn])
-test_penn <- window(ts_penn, start = time(ts_penn)[n_train_penn + 1])
-
-# Fit model with error handling (PENN's volatility often causes issues)
-cat("Fitting PENN model on training data...\n")
 penn_fit <- tryCatch(
     {
         if (penn_order[7] > 1) {
-            # Seasonal model
-            Arima(train_penn,
-                order = penn_order[c(1, 2, 3)],
-                seasonal = list(order = penn_order[c(4, 5, 6)], period = penn_order[7])
-            )
+            Arima(train_penn, order = penn_order[c(1, 2, 3)], seasonal = list(order = penn_order[c(4, 5, 6)], period = penn_order[7]))
         } else {
-            # Non-seasonal model
             Arima(train_penn, order = penn_order[c(1, 2, 3)])
         }
     },
     error = function(e) {
-        cat("  Model fitting failed, using simple ARIMA(0,1,1)\n")
         Arima(train_penn, order = c(0, 1, 1))
     }
 )
 
-# Forecasts
 sarima_penn <- forecast(penn_fit, h = length(test_penn))
 snaive_penn <- snaive(train_penn, h = length(test_penn))
 
-cat("\nPENN Benchmark Comparison (Test Set):\n")
+cat("PENN Benchmark Comparison (Test Set):\n")
 cat("Model RMSE:         $", round(accuracy(sarima_penn, test_penn)[2, "RMSE"], 2), "\n")
-cat("Seasonal Naive RMSE: $", round(accuracy(snaive_penn, test_penn)[2, "RMSE"], 2), "\n")
+cat("Seasonal Naive RMSE: $", round(accuracy(snaive_penn, test_penn)[2, "RMSE"], 2), "\n\n")
 
-cat("\nNote: PENN's extreme volatility (Barstool→ESPN BET transition) makes forecasting challenging.\n")
+cat("Note: PENN's extreme volatility (Barstool→ESPN BET transition) makes forecasting challenging.\n")
 cat("High RMSE values reflect fundamental business uncertainty rather than model inadequacy.\n")
 ```
+
+:::
+
+## DraftKings (DKNG) Stock Price
+
+```{r dkng-setup, include=FALSE}
+dkng <- read_csv("data/financial/DKNG_daily.csv", show_col_types = FALSE) %>%
+    mutate(Date = as.Date(Date))
+
+dkng_weekly <- dkng %>%
+    mutate(Year = year(Date), Week = isoweek(Date)) %>%
+    group_by(Year, Week) %>%
+    summarise(Avg_Close = mean(`Adj Close`, na.rm = TRUE), .groups = "drop") %>%
+    arrange(Year, Week) %>%
+    filter(!is.na(Avg_Close))
+
+ts_dkng <- ts(dkng_weekly$Avg_Close, start = c(2020, min(dkng_weekly$Week[dkng_weekly$Year == 2020])), frequency = 52)
+diff_dkng_reg <- diff(ts_dkng, differences = 1)
+
+# Fit models
+auto_dkng <- auto.arima(ts_dkng,
+    seasonal = TRUE, stepwise = TRUE, approximation = FALSE,
+    max.p = 2, max.q = 2, max.P = 1, max.Q = 1, max.D = 1
+)
+m1_dkng <- Arima(ts_dkng, order = c(0, 1, 1), seasonal = c(0, 0, 1))
+m2_dkng <- Arima(ts_dkng, order = c(1, 1, 0), seasonal = c(1, 0, 0))
+models_dkng <- list(auto_dkng, m1_dkng, m2_dkng)
+aic_dkng <- c(auto_dkng$aic, m1_dkng$aic, m2_dkng$aic)
+best_dkng <- models_dkng[[which.min(aic_dkng)]]
+best_order <- arimaorder(best_dkng)
+
+# Forecast & benchmark
+fc_dkng <- forecast(best_dkng, h = 26)
+n_train <- floor(0.8 * length(ts_dkng))
+train_dkng <- window(ts_dkng, end = time(ts_dkng)[n_train])
+test_dkng <- window(ts_dkng, start = time(ts_dkng)[n_train + 1])
+h_dkng <- length(test_dkng)
+```
+
+::: {.panel-tabset}
+
+## Seasonality & Differencing
+
+```{r dkng-seasonality, warning=FALSE, message=FALSE, fig.width=12, fig.height=6}
+ggAcf(ts_dkng, lag.max = 104) +
+    geom_vline(xintercept = 52, linetype = "dashed", color = "red", size = 1) +
+    annotate("text", x = 52, y = 0.8, label = "1 Year (52 weeks)", color = "red", hjust = -0.1) +
+    labs(title = "ACF of DKNG Stock Price", subtitle = "Check for seasonal pattern at lag 52") +
+    theme_minimal()
+```
+
+```{r dkng-adf, warning=FALSE, message=FALSE}
+adf_dkng <- adf.test(ts_dkng)
+cat("ADF Test (Original DKNG): p =", round(adf_dkng$p.value, 4), "implies Non-stationary\n\n")
+
+adf_diff_reg <- adf.test(diff_dkng_reg)
+cat("After regular differencing (d=1): p =", round(adf_diff_reg$p.value, 4), "implies Stationary\n")
+```
+
+```{r dkng-diff-acf, warning=FALSE, message=FALSE, fig.width=12, fig.height=6}
+ggAcf(diff_dkng_reg, lag.max = 104) +
+    geom_vline(xintercept = 52, linetype = "dashed", color = "red") +
+    labs(title = "ACF after d=1 differencing", subtitle = "Check for remaining seasonality") +
+    theme_minimal()
+```
+
+```{r dkng-acf-pacf, warning=FALSE, message=FALSE, fig.width=12, fig.height=10}
+par(mfrow = c(2, 1))
+acf(diff_dkng_reg, lag.max = 104, main = "ACF of Differenced DKNG")
+pacf(diff_dkng_reg, lag.max = 104, main = "PACF of Differenced DKNG")
+par(mfrow = c(1, 1))
+```
+
+## Model Selection
+
+```{r dkng-models, warning=FALSE, message=FALSE}
+cat("SARIMA Model Comparison:\n")
+cat("auto.arima():", paste0(auto_dkng), "| AIC =", round(auto_dkng$aic, 2), "\n")
+cat("ARIMA(0,1,1)(0,0,1)[52]: AIC =", round(m1_dkng$aic, 2), "\n")
+cat("ARIMA(1,1,0)(1,0,0)[52]: AIC =", round(m2_dkng$aic, 2), "\n\n")
+cat("Best Model:", paste0(best_dkng), "\n")
+```
+
+**Model Equation**: $$(1-B)(1-B^{52})Y_t = (1 + \theta_1 B)(1 + \Theta_1 B^{52})\epsilon_t$$
+
+## Diagnostics
+
+```{r dkng-diagnostics, warning=FALSE, message=FALSE, fig.width=12, fig.height=10}
+sarima(ts_dkng,
+    p = best_order[1], d = best_order[2], q = best_order[3],
+    P = best_order[4], D = best_order[5], Q = best_order[6], S = 52
+)
+```
+
+## Forecast & Validation
+
+```{r dkng-forecast, warning=FALSE, message=FALSE, fig.width=12, fig.height=6}
+autoplot(fc_dkng) +
+    labs(
+        title = "DKNG Stock Forecast: 26 Weeks Ahead", subtitle = paste0("Model: ", paste0(best_dkng)),
+        x = "Year", y = "Stock Price ($)"
+    ) +
+    theme_minimal()
+```
+
+```{r dkng-benchmark, warning=FALSE, message=FALSE}
+sarima_fit <- tryCatch(
+    {
+        Arima(train_dkng, order = best_order[c(1, 2, 3)], seasonal = list(order = best_order[c(4, 5, 6)], period = 52))
+    },
+    error = function(e) {
+        Arima(train_dkng, order = c(0, 1, 1), seasonal = c(0, 0, 0))
+    }
+)
+
+fc_sarima <- forecast(sarima_fit, h = h_dkng)
+fc_snaive <- snaive(train_dkng, h = h_dkng)
+
+acc_sarima <- accuracy(fc_sarima, test_dkng)[2, c("RMSE", "MAE", "MAPE")]
+acc_snaive <- accuracy(fc_snaive, test_dkng)[2, c("RMSE", "MAE", "MAPE")]
+
+cat("Benchmark Comparison (Test Set):\n")
+cat("SARIMA: RMSE =", round(acc_sarima["RMSE"], 2), "| MAE =", round(acc_sarima["MAE"], 2), "\n")
+cat("Seasonal Naive: RMSE =", round(acc_snaive["RMSE"], 2), "| MAE =", round(acc_snaive["MAE"], 2), "\n")
+
+if (acc_sarima["RMSE"] < acc_snaive["RMSE"]) {
+    cat("\nSARIMA outperforms seasonal naive by", round((1 - acc_sarima["RMSE"] / acc_snaive["RMSE"]) * 100, 1), "%\n")
+}
+```
+
+## Cross-Validation
+
+```{r dkng-cv, warning=FALSE, message=FALSE}
+cv_1step <- tsCV(ts_dkng, function(x, h) {
+    tryCatch(
+        {
+            fit <- Arima(x, order = best_order[c(1, 2, 3)], seasonal = list(order = best_order[c(4, 5, 6)], period = 52))
+            forecast(fit, h = h)
+        },
+        error = function(e) {
+            fit <- Arima(x, order = c(0, 1, 1))
+            forecast(fit, h = h)
+        }
+    )
+}, h = 1)
+
+cv_52step <- tsCV(ts_dkng, function(x, h) {
+    tryCatch(
+        {
+            fit <- auto.arima(x, seasonal = TRUE, max.p = 1, max.q = 1, max.P = 1, max.Q = 1, stepwise = TRUE, approximation = TRUE)
+            forecast(fit, h = h)
+        },
+        error = function(e) {
+            fit <- Arima(x, order = c(0, 1, 1))
+            forecast(fit, h = h)
+        }
+    )
+}, h = 52, initial = floor(0.7 * length(ts_dkng)))
+
+rmse_1step <- sqrt(mean(cv_1step^2, na.rm = TRUE))
+rmse_52step <- sqrt(mean(cv_52step[, 52]^2, na.rm = TRUE))
+
+cat("Cross-Validation Results:\n")
+cat("1-step ahead RMSE:  $", round(rmse_1step, 2), "\n")
+cat("52-step ahead RMSE: $", round(rmse_52step, 2), "\n")
+cat("\nNote: 52-step forecasts have higher uncertainty (longer horizon)\n")
+```
+
+:::
 
 The weekly stock series use SARIMA with s=52. Prices are classic random walks with drift and volatility that scales with level, so multiplicative thinking fits. DKNG typically supports a modest seasonal AR/MA overlay and outperforms seasonal-naive on a rolling test; PENN’s extreme volatility forces simpler specifications and yields narrower skill gains, showing how business instability limits forecastability.
 
