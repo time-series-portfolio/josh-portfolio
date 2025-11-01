@@ -542,7 +542,7 @@ p3 <- autoplot(ts_pace_sub) +
 p1 / (p2 | p3)
 ```
 
-The attendance plot tells a stark before-and-after story: from 2000-2019, the NBA showed remarkable stability around 22 million attendees per season as a reliable entertainment product. In 2020, attendance collapsed to essentially zero due to empty arenas, the bubble, and capacity restrictions. From 2021-2025, gradual recovery began but with visible scars. Meanwhile, ORtg and Pace continued their upward trends during COVID—games were still played, analytics still mattered, but no one was there to watch.
+The attendance plot tells a stark before-and-after story: from 2000-2019, the NBA showed remarkable stability around 22 million attendees per season as a reliable entertainment product. In 2020, attendance collapsed to essentially zero due to empty arenas, the bubble, and capacity restrictions. From 2021-2025, gradual recovery began but with visible scars. Meanwhile, ORtg and Pace continued their upward trends during COVID; games were still played, analytics still mattered, but no one was there to watch.
 
 ## Model Fitting
 
