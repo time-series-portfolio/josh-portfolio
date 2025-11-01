@@ -52,15 +52,13 @@ league_avg <- all_adv_data %>%
     )
 ```
 
-# 1. Offensive Rating (ORtg)
+## Offensive Rating (ORtg)
 
-## 1.1 Time Series Visualization
-
-```{r ortg-plot, warning=FALSE, message=FALSE, fig.width=12, fig.height=6}
+```{r ortg-setup, include=FALSE}
 # Convert to time series object
 ts_ortg <- ts(league_avg$ORtg, start = 1980, frequency = 1)
 
-# Create visualization
+# Create visualization data frame
 df_ortg <- data.frame(
     Year = league_avg$Season,
     Value = league_avg$ORtg,
@@ -71,6 +69,27 @@ df_ortg <- data.frame(
     )
 )
 
+# First difference
+diff_ortg <- diff(ts_ortg, differences = 1)
+
+# Decomposition data
+df_ortg_decomp <- data.frame(
+    Year = time(ts_ortg),
+    Value = as.numeric(ts_ortg)
+)
+df_ortg_decomp$Trend <- predict(loess(Value ~ Year, data = df_ortg_decomp, span = 0.3))
+df_ortg_decomp$Irregular <- df_ortg_decomp$Value - df_ortg_decomp$Trend
+
+# Stationarity tests
+adf_ortg <- adf.test(ts_ortg)
+adf_diff_ortg <- adf.test(diff_ortg)
+```
+
+::: {.panel-tabset}
+
+## Time Series Plot
+
+```{r ortg-plot, warning=FALSE, message=FALSE, fig.width=12, fig.height=6}
 ggplot(df_ortg, aes(x = Year, y = Value, color = Era)) +
     geom_line(size = 1.2) +
     geom_point(size = 3) +
@@ -103,7 +122,7 @@ ggplot(df_ortg, aes(x = Year, y = Value, color = Era)) +
     )
 ```
 
-## 1.2 Lag Plots
+## Lag Plots
 
 ```{r ortg-lag, warning=FALSE, message=FALSE, fig.width=10, fig.height=8}
 gglagplot(ts_ortg, do.lines = FALSE, lags = 9) +
@@ -111,7 +130,7 @@ gglagplot(ts_ortg, do.lines = FALSE, lags = 9) +
     theme_minimal()
 ```
 
-## 1.3 ACF and PACF Analysis
+## ACF & PACF
 
 ```{r ortg-acf, warning=FALSE, message=FALSE, fig.width=10, fig.height=8}
 acf_ortg <- ggAcf(ts_ortg, lag.max = 20) +
@@ -125,27 +144,15 @@ pacf_ortg <- ggPacf(ts_ortg, lag.max = 20) +
 acf_ortg / pacf_ortg
 ```
 
-## 1.4 Augmented Dickey-Fuller Test
+## Stationarity Tests
 
 ```{r ortg-adf, warning=FALSE, message=FALSE}
-adf_ortg <- adf.test(ts_ortg)
 print(adf_ortg)
 ```
 
-## 1.5 Trend Decomposition - Additive Model
+## Trend Decomposition
 
 ```{r ortg-decomp, warning=FALSE, message=FALSE, fig.width=12, fig.height=10}
-# Create data frame for decomposition
-df_ortg_decomp <- data.frame(
-    Year = time(ts_ortg),
-    Value = as.numeric(ts_ortg)
-)
-
-# Fit LOESS smooth to extract trend (additive decomposition)
-df_ortg_decomp$Trend <- predict(loess(Value ~ Year, data = df_ortg_decomp, span = 0.3))
-df_ortg_decomp$Irregular <- df_ortg_decomp$Value - df_ortg_decomp$Trend # Additive: residual = observed - trend
-
-# Visualize components
 p1 <- ggplot(df_ortg_decomp, aes(x = Year)) +
     geom_line(aes(y = Value, color = "Original"), size = 1) +
     geom_line(aes(y = Trend, color = "Trend"), size = 1.2) +
@@ -164,12 +171,9 @@ p2 <- ggplot(df_ortg_decomp, aes(x = Year, y = Irregular)) +
 p1 / p2
 ```
 
-## 1.6 Differencing for Stationarity
+## Differencing
 
 ```{r ortg-diff, warning=FALSE, message=FALSE, fig.width=12, fig.height=8}
-# First difference
-diff_ortg <- diff(ts_ortg, differences = 1)
-
 par(mfrow = c(2, 1))
 plot(ts_ortg, main = "Original ORtg Series", ylab = "ORtg", xlab = "Year")
 plot(diff_ortg, main = "First Differenced ORtg Series", ylab = "Change in ORtg", xlab = "Year")
@@ -188,25 +192,44 @@ acf_diff_ortg / pacf_diff_ortg
 ```
 
 ```{r ortg-diff-adf, warning=FALSE, message=FALSE}
-adf_diff_ortg <- adf.test(diff_ortg)
 print(adf_diff_ortg)
 ```
 
+:::
+
 ORtg, points per 100 possessions, is the primary outcome. The long-run trend is unambiguously upward but non-linear. A slow climb through the 1980s–2000s, then a pronounced step-up beginning around 2012, and continued gains into the post-COVID years. Autocorrelation patterns (slow ACF decay and PACF spike at lag 1) and an ADF test confirm ORtg is non-stationary in levels but becomes stationary after first-differencing; variance is roughly constant, so an additive structure fits. A simple LOESS trend explains nearly all variation, with small residuals. This implies that the story is primarily about a structural trend rather than short-cycle oscillations.
 
-# 2. Mediating Variable: Pace
+## Pace
 
-## 2.1 Time Series Visualization
-
-```{r pace-plot, warning=FALSE, message=FALSE, fig.width=12, fig.height=6}
+```{r pace-setup, include=FALSE}
+# Time series object
 ts_pace <- ts(league_avg$Pace, start = 1980, frequency = 1)
 
+# Visualization data
 df_pace <- data.frame(
     Year = league_avg$Season,
     Value = league_avg$Pace,
     Era = df_ortg$Era
 )
 
+# Differencing
+diff_pace <- diff(ts_pace, differences = 1)
+
+# Moving averages
+ma_pace_3 <- ma(ts_pace, order = 3)
+ma_pace_5 <- ma(ts_pace, order = 5)
+ma_pace_10 <- ma(ts_pace, order = 10)
+
+# Stationarity tests
+adf_pace <- adf.test(ts_pace)
+adf_diff_pace <- adf.test(diff_pace)
+```
+
+::: {.panel-tabset}
+
+## Time Series Plot
+
+```{r pace-plot, warning=FALSE, message=FALSE, fig.width=12, fig.height=6}
 ggplot(df_pace, aes(x = Year, y = Value, color = Era)) +
     geom_line(size = 1.2) +
     geom_point(size = 3) +
@@ -230,7 +253,7 @@ ggplot(df_pace, aes(x = Year, y = Value, color = Era)) +
     )
 ```
 
-## 2.2 Lag Plots
+## Lag Plots
 
 ```{r pace-lag, warning=FALSE, message=FALSE, fig.width=10, fig.height=8}
 gglagplot(ts_pace, do.lines = FALSE, lags = 9) +
@@ -238,7 +261,7 @@ gglagplot(ts_pace, do.lines = FALSE, lags = 9) +
     theme_minimal()
 ```
 
-## 2.3 ACF and PACF Analysis
+## ACF & PACF
 
 ```{r pace-acf, warning=FALSE, message=FALSE, fig.width=10, fig.height=8}
 acf_pace <- ggAcf(ts_pace, lag.max = 20) +
@@ -252,16 +275,15 @@ pacf_pace <- ggPacf(ts_pace, lag.max = 20) +
 acf_pace / pacf_pace
 ```
 
-## 2.3 Stationarity Testing
+## Stationarity Tests
 
 ```{r pace-adf, warning=FALSE, message=FALSE}
-adf_pace <- adf.test(ts_pace)
 print(adf_pace)
 ```
 
-```{r pace-diff, warning=FALSE, message=FALSE, fig.width=12, fig.height=8}
-diff_pace <- diff(ts_pace, differences = 1)
+## Differencing
 
+```{r pace-diff, warning=FALSE, message=FALSE, fig.width=12, fig.height=8}
 par(mfrow = c(2, 1))
 plot(ts_pace, main = "Original Pace Series", ylab = "Pace", xlab = "Year")
 plot(diff_pace, main = "First Differenced Pace Series", ylab = "Change in Pace", xlab = "Year")
@@ -280,17 +302,12 @@ acf_diff_pace / pacf_diff_pace
 ```
 
 ```{r pace-diff-adf, warning=FALSE, message=FALSE}
-adf_diff_pace <- adf.test(diff_pace)
 print(adf_diff_pace)
 ```
 
-## 2.4 Moving Average Smoothing
+## Moving Average Smoothing
 
 ```{r pace-ma-smoothing, warning=FALSE, message=FALSE, fig.width=12, fig.height=8}
-ma_pace_3 <- ma(ts_pace, order = 3) # 3-year window (short-term)
-ma_pace_5 <- ma(ts_pace, order = 5) # 5-year window (medium-term)
-ma_pace_10 <- ma(ts_pace, order = 10) # 10-year window (long-term)
-
 autoplot(ts_pace, series = "Original") +
     autolayer(ma_pace_3, series = "MA(3)") +
     autolayer(ma_pace_5, series = "MA(5)") +
@@ -319,21 +336,41 @@ autoplot(ts_pace, series = "Original") +
     )
 ```
 
-Pace, the mediator in this story, follows a different trajectory: a classic U-shape. Possessions per 48 minutes decline from fast 1980s basketball to a trough in the mid-2000s, then recover through the 2010s and 2020s. Importantly, the Pace recovery begins before the analytics inflection, suggesting it is not simply a byproduct of analytics. Like ORtg, Pace is non-stationary in levels and stationary in first differences; moving-average smoothers with 5–10 year windows make the U-shape especially clear. This is rather significant as this means efficiency gains do not reduce to “more possessions".
+:::
 
-# 3. Key Independent Variable: 3-Point Attempt Rate (3PAr)
+Pace, the mediator in this story, follows a different trajectory: a classic U-shape. Possessions per 48 minutes decline from fast 1980s basketball to a trough in the mid-2000s, then recover through the 2010s and 2020s. Importantly, the Pace recovery begins before the analytics inflection, suggesting it is not simply a byproduct of analytics. Like ORtg, Pace is non-stationary in levels and stationary in first differences; moving-average smoothers with 5–10 year windows make the U-shape especially clear. This is rather significant as this means efficiency gains do not reduce to "more possessions".
 
-## 3.1 Time Series Visualization
+## 3-Point Attempt Rate (3PAr)
 
-```{r 3par-plot, warning=FALSE, message=FALSE, fig.width=12, fig.height=6}
+```{r 3par-setup, include=FALSE}
+# Time series object
 ts_3par <- ts(league_avg$`3PAr`, start = 1980, frequency = 1)
 
+# Visualization data
 df_3par <- data.frame(
     Year = league_avg$Season,
     Value = league_avg$`3PAr`,
     Era = df_ortg$Era
 )
 
+# Differencing
+diff_3par <- diff(ts_3par, differences = 1)
+
+# Moving averages
+ma_3par_3 <- ma(ts_3par, order = 3)
+ma_3par_5 <- ma(ts_3par, order = 5)
+ma_3par_10 <- ma(ts_3par, order = 10)
+
+# Stationarity tests
+adf_3par <- adf.test(ts_3par)
+adf_diff_3par <- adf.test(diff_3par)
+```
+
+::: {.panel-tabset}
+
+## Time Series Plot
+
+```{r 3par-plot, warning=FALSE, message=FALSE, fig.width=12, fig.height=6}
 ggplot(df_3par, aes(x = Year, y = Value, color = Era)) +
     geom_line(size = 1.2) +
     geom_point(size = 3) +
@@ -363,7 +400,7 @@ ggplot(df_3par, aes(x = Year, y = Value, color = Era)) +
     )
 ```
 
-## 3.2 Lag Plots
+## Lag Plots
 
 ```{r 3par-lag, warning=FALSE, message=FALSE, fig.width=10, fig.height=8}
 gglagplot(ts_3par, do.lines = FALSE, lags = 9) +
@@ -371,7 +408,7 @@ gglagplot(ts_3par, do.lines = FALSE, lags = 9) +
     theme_minimal()
 ```
 
-## 3.3 Stationarity Analysis
+## ACF & PACF
 
 ```{r 3par-acf, warning=FALSE, message=FALSE, fig.width=10, fig.height=8}
 acf_3par <- ggAcf(ts_3par, lag.max = 20) +
@@ -385,14 +422,15 @@ pacf_3par <- ggPacf(ts_3par, lag.max = 20) +
 acf_3par / pacf_3par
 ```
 
+## Stationarity Tests
+
 ```{r 3par-adf, warning=FALSE, message=FALSE}
-adf_3par <- adf.test(ts_3par)
 print(adf_3par)
 ```
 
-```{r 3par-diff, warning=FALSE, message=FALSE, fig.width=12, fig.height=8}
-diff_3par <- diff(ts_3par, differences = 1)
+## Differencing
 
+```{r 3par-diff, warning=FALSE, message=FALSE, fig.width=12, fig.height=8}
 par(mfrow = c(2, 1))
 plot(ts_3par, main = "Original 3PAr Series", ylab = "3PAr", xlab = "Year")
 plot(diff_3par, main = "First Differenced 3PAr Series", ylab = "Change in 3PAr", xlab = "Year")
@@ -411,19 +449,12 @@ acf_diff_3par / pacf_diff_3par
 ```
 
 ```{r 3par-diff-adf, warning=FALSE, message=FALSE}
-adf_diff_3par <- adf.test(diff_3par)
 print(adf_diff_3par)
 ```
 
-## 3.4 Moving Average Smoothing for 3PAr
+## Moving Average Smoothing
 
 ```{r 3par-ma-smoothing, warning=FALSE, message=FALSE, fig.width=12, fig.height=8}
-# Calculate moving averages with different windows
-ma_3par_3 <- ma(ts_3par, order = 3) # 3-year window (short-term)
-ma_3par_5 <- ma(ts_3par, order = 5) # 5-year window (medium-term)
-ma_3par_10 <- ma(ts_3par, order = 10) # 10-year window (long-term)
-
-# Create comparison plot
 autoplot(ts_3par, series = "Original") +
     autolayer(ma_3par_3, series = "MA(3)") +
     autolayer(ma_3par_5, series = "MA(5)") +
@@ -453,13 +484,13 @@ autoplot(ts_3par, series = "Original") +
     )
 ```
 
+:::
+
 The strongest structural break appears in 3PAr, which measures the share of shots taken from three. 3PAr rises modestly for decades and then accelerates sharply around 2012, around the same period where ORtg takes off. Lag plots show strong positive relationships across lags, and ACF/PACF behavior again indicates a trending series (non-stationary levels; stationary first differences). Smoothing highlights two regimes: a gradual era up to around 2012 and a rapid, near-exponential climb thereafter. This timing alignment supports the hypothesis that shot selection modernization (spacing, threes above the break, rim attempts enabled by space) is tightly coupled to league-wide efficiency gains
 
-# 4. Attendance: COVID-19 Impact Analysis
+## Attendance: COVID-19 Impact
 
-## 4.1 Time Series Visualization
-
-```{r attendance-prep, warning=FALSE, message=FALSE}
+```{r attendance-setup, include=FALSE}
 # Calculate league-wide attendance by season
 attendance_data <- all_adv_data %>%
     group_by(Season) %>%
@@ -472,12 +503,11 @@ attendance_data <- all_adv_data %>%
 # Create time series (focusing on modern era 1990-2025)
 attendance_data <- attendance_data %>% filter(Season >= 1990)
 ts_attendance <- ts(attendance_data$Total_Attendance, start = 1990, frequency = 1)
-```
 
-```{r attendance-plot, warning=FALSE, message=FALSE, fig.width=12, fig.height=6}
+# Visualization data
 df_attendance <- data.frame(
     Year = attendance_data$Season,
-    Value = attendance_data$Total_Attendance / 1e6, # Convert to millions
+    Value = attendance_data$Total_Attendance / 1e6,
     Era = case_when(
         attendance_data$Season < 2020 ~ "Pre-COVID",
         attendance_data$Season >= 2020 & attendance_data$Season < 2022 ~ "COVID Era",
@@ -485,6 +515,16 @@ df_attendance <- data.frame(
     )
 )
 
+# Moving averages
+ma_attendance_3 <- ma(ts_attendance, order = 3)
+ma_attendance_5 <- ma(ts_attendance, order = 5)
+```
+
+::: {.panel-tabset}
+
+## Time Series Plot
+
+```{r attendance-plot, warning=FALSE, message=FALSE, fig.width=12, fig.height=6}
 ggplot(df_attendance, aes(x = Year, y = Value, color = Era)) +
     geom_line(size = 1.2) +
     geom_point(size = 3) +
@@ -517,7 +557,7 @@ ggplot(df_attendance, aes(x = Year, y = Value, color = Era)) +
     )
 ```
 
-## 4.2 Lag Plots
+## Lag Plots
 
 ```{r attendance-lag, warning=FALSE, message=FALSE, fig.width=10, fig.height=8}
 gglagplot(ts_attendance, do.lines = FALSE, lags = 9) +
@@ -525,7 +565,7 @@ gglagplot(ts_attendance, do.lines = FALSE, lags = 9) +
     theme_minimal()
 ```
 
-## 4.3 ACF and PACF Analysis
+## ACF & PACF
 
 ```{r attendance-acf, warning=FALSE, message=FALSE, fig.width=10, fig.height=8}
 acf_attendance <- ggAcf(ts_attendance, lag.max = 15) +
@@ -539,14 +579,9 @@ pacf_attendance <- ggPacf(ts_attendance, lag.max = 15) +
 acf_attendance / pacf_attendance
 ```
 
-## 4.4 Moving Average Smoothing for Attendance
+## Moving Average Smoothing
 
 ```{r attendance-ma-smoothing, warning=FALSE, message=FALSE, fig.width=12, fig.height=8}
-# Calculate moving averages
-ma_attendance_3 <- ma(ts_attendance, order = 3)
-ma_attendance_5 <- ma(ts_attendance, order = 5)
-
-# Plot comparison
 autoplot(ts_attendance, series = "Original") +
     autolayer(ma_attendance_3, series = "MA(3)") +
     autolayer(ma_attendance_5, series = "MA(5)") +
@@ -573,23 +608,18 @@ autoplot(ts_attendance, series = "Original") +
     )
 ```
 
+:::
+
 Attendance provides the counterpoint: a stable pre-COVID plateau around ~21–22 million through 2019, a 2020–21 collapse during the bubble/limited-capacity seasons, and a partial recovery that remains below the pre-pandemic ceiling. The sharp, short-window discontinuity is a uncounted for shock rather than a new equilibrium. Even with 3–5 year moving averages, the COVID impact is too large to smooth away
 
-# 5. Financial Data: Sports Betting Stocks - Time Series with Seasonality
+## Sports Betting Stocks
 
-## 5.1 Data Preparation and Time Series Creation
-
-```{r betting-stocks-load, warning=FALSE, message=FALSE}
+```{r betting-stocks-setup, include=FALSE}
 # Load all sports betting stocks
 dkng <- read_csv("data/financial/DKNG_daily.csv", show_col_types = FALSE) %>% mutate(Date = as.Date(Date))
 penn <- read_csv("data/financial/PENN_daily.csv", show_col_types = FALSE) %>% mutate(Date = as.Date(Date))
 mgm <- read_csv("data/financial/MGM_daily.csv", show_col_types = FALSE) %>% mutate(Date = as.Date(Date))
 czr <- read_csv("data/financial/CZR_daily.csv", show_col_types = FALSE) %>% mutate(Date = as.Date(Date))
-
-cat("DKNG:", nrow(dkng), "days |", min(dkng$Date), "to", max(dkng$Date), "\n")
-cat("PENN:", nrow(penn), "days |", min(penn$Date), "to", max(penn$Date), "\n")
-cat("MGM:", nrow(mgm), "days |", min(mgm$Date), "to", max(mgm$Date), "\n")
-cat("CZR:", nrow(czr), "days |", min(czr$Date), "to", max(czr$Date), "\n")
 
 # Create weekly time series for all stocks
 create_weekly_ts <- function(df, ticker) {
@@ -611,12 +641,32 @@ ts_dkng <- create_weekly_ts(dkng, "DKNG")
 ts_penn <- create_weekly_ts(penn, "PENN")
 ts_mgm <- create_weekly_ts(mgm, "MGM")
 ts_czr <- create_weekly_ts(czr, "CZR")
+
+# DKNG decomposition and moving averages
+decomp_dkng <- decompose(ts_dkng, type = "multiplicative")
+ma_dkng_4 <- ma(ts_dkng, order = 4)
+ma_dkng_13 <- ma(ts_dkng, order = 13)
+ma_dkng_52 <- ma(ts_dkng, order = 52)
+
+# PENN decomposition and moving averages
+decomp_penn <- decompose(ts_penn, type = "multiplicative")
+ma_penn_4 <- ma(ts_penn, order = 4)
+ma_penn_13 <- ma(ts_penn, order = 13)
+ma_penn_52 <- ma(ts_penn, order = 52)
 ```
 
-## 5.2 Comparative Visualization: All Four Betting Stocks
+::: {.panel-tabset}
+
+## Comparative Overview
+
+```{r betting-stocks-info, warning=FALSE, message=FALSE}
+cat("DKNG:", nrow(dkng), "days |", min(dkng$Date), "to", max(dkng$Date), "\n")
+cat("PENN:", nrow(penn), "days |", min(penn$Date), "to", max(penn$Date), "\n")
+cat("MGM:", nrow(mgm), "days |", min(mgm$Date), "to", max(mgm$Date), "\n")
+cat("CZR:", nrow(czr), "days |", min(czr$Date), "to", max(czr$Date), "\n")
+```
 
 ```{r betting-stocks-compare, warning=FALSE, message=FALSE, fig.width=12, fig.height=8}
-# Combine all stocks for comparison (normalize to starting price = 100)
 autoplot(ts_dkng / as.numeric(ts_dkng)[1] * 100, series = "DKNG") +
     autolayer(ts_penn / as.numeric(ts_penn)[1] * 100, series = "PENN") +
     autolayer(ts_mgm / as.numeric(ts_mgm)[1] * 100, series = "MGM") +
@@ -631,7 +681,7 @@ autoplot(ts_dkng / as.numeric(ts_dkng)[1] * 100, series = "DKNG") +
     theme(plot.title = element_text(face = "bold"), legend.position = "bottom")
 ```
 
-## 5.3 DKNG Detailed Analysis
+## DKNG: Time Series
 
 ```{r dkng-detail-plot, warning=FALSE, message=FALSE, fig.width=12, fig.height=6}
 autoplot(ts_dkng) +
@@ -646,27 +696,18 @@ autoplot(ts_dkng) +
     theme(plot.title = element_text(face = "bold", size = 14))
 ```
 
-## 5.4 Seasonal Decomposition (DKNG)
+## DKNG: Decomposition
 
 ```{r dkng-decompose, warning=FALSE, message=FALSE, fig.width=12, fig.height=10}
-# Multiplicative decomposition (appropriate for stock prices)
-decomp_dkng <- decompose(ts_dkng, type = "multiplicative")
-
-# Plot decomposition
 autoplot(decomp_dkng) +
     labs(title = "DKNG Stock: Seasonal Decomposition (Multiplicative Model)") +
     theme_minimal() +
     theme(plot.title = element_text(face = "bold", size = 14))
 ```
 
-## 5.5 Moving Average Smoothing (DKNG)
+## DKNG: Moving Averages
 
 ```{r dkng-ma-smoothing, warning=FALSE, message=FALSE, fig.width=12, fig.height=8}
-# Calculate moving averages (using weeks)
-ma_dkng_4 <- ma(ts_dkng, order = 4) # Monthly smoothing (~4 weeks)
-ma_dkng_13 <- ma(ts_dkng, order = 13) # Quarterly smoothing (~13 weeks)
-ma_dkng_52 <- ma(ts_dkng, order = 52) # Annual smoothing (52 weeks)
-
 autoplot(ts_dkng, series = "Original") +
     autolayer(ma_dkng_4, series = "MA(4 weeks)") +
     autolayer(ma_dkng_13, series = "MA(13 weeks)") +
@@ -695,7 +736,7 @@ autoplot(ts_dkng, series = "Original") +
     )
 ```
 
-## 5.6 ACF and Lag Plots (DKNG)
+## DKNG: ACF & PACF
 
 ```{r dkng-acf, warning=FALSE, message=FALSE, fig.width=10, fig.height=8}
 acf_dkng <- ggAcf(ts_dkng, lag.max = 52) +
@@ -709,9 +750,7 @@ pacf_dkng <- ggPacf(ts_dkng, lag.max = 52) +
 acf_dkng / pacf_dkng
 ```
 
-## 5.7 PENN Analysis
-
-### 5.7.1 PENN Time Series Visualization
+## PENN: Time Series
 
 ```{r penn-detail-plot, warning=FALSE, message=FALSE, fig.width=12, fig.height=6}
 autoplot(ts_penn) +
@@ -725,25 +764,18 @@ autoplot(ts_penn) +
     theme(plot.title = element_text(face = "bold", size = 14))
 ```
 
-### 5.7.2 Seasonal Decomposition (PENN)
+## PENN: Decomposition
 
 ```{r penn-decompose, warning=FALSE, message=FALSE, fig.width=12, fig.height=10}
-# Multiplicative decomposition
-decomp_penn <- decompose(ts_penn, type = "multiplicative")
-
 autoplot(decomp_penn) +
     labs(title = "PENN Stock: Seasonal Decomposition (Multiplicative Model)") +
     theme_minimal() +
     theme(plot.title = element_text(face = "bold", size = 14))
 ```
 
-### 5.7.3 Moving Average Smoothing (PENN)
+## PENN: Moving Averages
 
 ```{r penn-ma-smoothing, warning=FALSE, message=FALSE, fig.width=12, fig.height=8}
-ma_penn_4 <- ma(ts_penn, order = 4)
-ma_penn_13 <- ma(ts_penn, order = 13)
-ma_penn_52 <- ma(ts_penn, order = 52)
-
 autoplot(ts_penn, series = "Original") +
     autolayer(ma_penn_4, series = "MA(4 weeks)") +
     autolayer(ma_penn_13, series = "MA(13 weeks)") +
@@ -770,7 +802,7 @@ autoplot(ts_penn, series = "Original") +
     )
 ```
 
-### 5.7.4 ACF and Lag Plots (PENN)
+## PENN: ACF & PACF
 
 ```{r penn-acf, warning=FALSE, message=FALSE, fig.width=10, fig.height=8}
 acf_penn <- ggAcf(ts_penn, lag.max = 52) +
@@ -784,6 +816,8 @@ pacf_penn <- ggPacf(ts_penn, lag.max = 52) +
 acf_penn / pacf_penn
 ```
 
-Because annual NBA series are effectively non-seasonal, I include weekly sports-betting equities to demonstrate seasonality and multiplicative decomposition. DraftKings (DKNG), Penn (PENN), MGM, and Caesars (CZR) all show pandemic-era boom-bust dynamics on weekly data. Prices are non-stationary in levels, stationary in differences, and has volatility that scales with price; implying a multiplicative model is necessary for decomposition. DKNG exhibits a large run-up, correction, and stabilization while PENN shows a sharper hype-driven spike and deeper collapse. 
+:::
+
+Because annual NBA series are effectively non-seasonal, I include weekly sports-betting equities to demonstrate seasonality and multiplicative decomposition. DraftKings (DKNG), Penn (PENN), MGM, and Caesars (CZR) all show pandemic-era boom-bust dynamics on weekly data. Prices are non-stationary in levels, stationary in differences, and has volatility that scales with price; implying a multiplicative model is necessary for decomposition. DKNG exhibits a large run-up, correction, and stabilization while PENN shows a sharper hype-driven spike and deeper collapse.
 
 Pulling the findings together: ORtg, Pace, 3PAr, and Attendance are all non-stationary in levels and become stationary after first differences (d = 1). Therefore, additive decomposition is appropriate for the NBA metrics , while multiplicative decomposition fits the weekly equities. Short and medium moving-average windows clarify regime shifts: the 2012 analytics inflection in ORtg/3PAr, the mid-2000s trough and rebound in Pace, and the COVID intervention in Attendance.
