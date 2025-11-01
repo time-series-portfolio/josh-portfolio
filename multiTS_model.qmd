@@ -199,7 +199,7 @@ $$
 \text{ORtg} = `r beta_intercept` + `r beta_3par` \times \text{3PAr} + `r beta_ts` \times \text{TS\%}
 $$
 
-Here's what this means on the court: a 1 percentage point increase in 3PAr leads to an ORtg increase of **`r beta_3par` points per 100 possessions** (moving from 30% to 31% of shots being threes adds `beta_3par` points to offensive rating). Similarly, a 1 percentage point increase in TS% leads to an ORtg increase of **`r beta_ts` points per 100 possessions** (improving from 55% to 56% True Shooting adds `beta_ts` points), emphasising that shooting accuracy has a stronger impact than shot selection.
+Here's what this means on the court: a 1 percentage point increase in 3PAr leads to an ORtg increase of **`r beta_3par` points per 100 possessions** (moving from 30% to 31% of shots being threes adds `r beta_3par` points to offensive rating). Similarly, a 1 percentage point increase in TS% leads to an ORtg increase of **`r beta_ts` points per 100 possessions** (improving from 55% to 56% True Shooting adds `r beta_ts` points), emphasising that shooting accuracy has a stronger impact than shot selection.
 
 ```{r arimax-manual-arima, warning=FALSE, message=FALSE}
 lm_residuals <- ts(residuals(lm_model), start = 1980, frequency = 1)
