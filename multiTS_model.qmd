@@ -1,5 +1,5 @@
 ---
-title: "Multivariate Time Series Modeling: ARIMAX & VAR"
+title: "Multivariate Time Series Modeling"
 format:
   html:
     code-fold: true
@@ -8,70 +8,46 @@ format:
     embed-resources: true
 ---
 
-# Introduction
+# Theoretical Framework
 
-This section extends univariate ARIMA analysis to **multivariate time series models**, examining how NBA offensive metrics, pace, shot selection, and external factors (COVID-19, financial markets) interact over time. We employ two complementary approaches:
+::: {.panel-tabset}
 
-1. **ARIMAX/SARIMAX**: Models with exogenous predictors, treating one variable as the response and others as external regressors
-2. **VAR (Vector Autoregression)**: Systems where all variables influence each other bidirectionally
+## Literature Review
 
----
+Understanding NBA offensive efficiency requires a framework that separates team performance from game tempo. Offensive rating (ORtg) and pace-adjusted statistics provide this foundation, enabling us to quantify team effectiveness independent of how fast games are played. This distinction is critical for multivariate analysis because pace itself may be a strategic choice rather than a neutral contextual factor @kubatko2007starting.
 
-## Literature Review & Variable Justification
+The relationship between pace, spacing, and offensive efficiency involves bidirectional causality: faster tempo creates spacing opportunities through transition play, while better floor spacing enables teams to control pace more effectively @skinner2012problem. This co-evolution suggests that variables like ORtg, Pace, and 3PAr influence each other over time rather than following a simple cause-and-effect sequence @franks2015characterizing. Additionally, three-point attempts offer higher expected value than mid-range shots when accounting for shooting percentages, providing the mathematical foundation for the shot selection revolution @sliz2017investigation.
 
-### Analytics Revolution & Efficiency Dynamics
+Recent work reveals that teams with higher True Shooting percentage subsequently increased their three-point volume, suggesting reverse causation: success breeds strategy changes. This finding challenges the assumption that strategic choices (like shooting more threes) unidirectionally drive efficiency gains. Instead, teams that shot efficiently were more likely to adopt analytics-driven shot selection in future seasons, creating a feedback loop where strategy and performance reinforce each other @poropudas2023dean.
 
-@franks2015characterizing demonstrated that **pace** and **spacing** jointly determine offensive efficiency, suggesting bidirectional causality: faster pace creates spacing opportunities, while better spacing enables controlled pace. This motivates VAR modeling of `ORtg ~ Pace + 3PAr`.
+These dynamics motivate our multivariate approach. ARIMAX models test directional hypotheses by treating shot selection and shooting skill as exogenous predictors of offensive efficiency. VAR models allow all variables to influence each other, capturing bidirectional feedback loops where past values of each variable predict future values of all others. Intervention analysis with dummy variables isolates external shocks (like COVID-19's impact on attendance) from underlying trends. Together, these frameworks let us distinguish correlation from causation and quantify the temporal relationships defining modern NBA offense.
 
-@goldsberry2019sprawlball documented how **three-point volume** preceded efficiency gains (2012-2016), implying `3PAr` may Granger-cause `ORtg`. However, @poropudas2023dean showed that teams with higher `TS%` subsequently increased 3PA, suggesting reverse causation. ARIMAX models can test directional relationships.
-
-### COVID-19 as Exogenous Shock
-
-@lopez2020performance found that **empty arenas** disrupted home-court advantage and pace-of-play rhythms. Attendance serves as a proxy for game environment, making it suitable as an exogenous variable in ARIMAX models predicting `ORtg` or `Pace`.
-
-### Sports Betting & NBA Dynamics
-
-@rodenberg2011sports established that betting market efficiency correlates with league popularity and viewership. Post-COVID, sports betting stocks (DKNG) may respond to NBA performance metrics and attendance recovery, motivating VAR models linking `DKNG ~ Attendance + ORtg`.
-
----
 
 ## Proposed Models
 
-Based on the literature and our research questions (intro.qmd:60-71), we propose **5 multivariate models**:
+**Note**: **Models 4 and 5** still need to be completed for the final portfolio.
 
 ### Model 1: Efficiency Drivers (VAR)
-**Variables**: `ORtg ~ Pace + 3PAr`
-**Rationale**: Test whether pace and shot selection jointly drive efficiency, or whether efficiency improvements enable strategic changes. VAR captures bidirectional feedback loops.
-**Expected Relationship**: Positive (higher pace + 3PAr � higher ORtg), but directionality uncertain.
+`ORtg ~ Pace & 3PAr`
+
 
 ### Model 2: Shot Selection & Efficiency (ARIMAX)
-**Response**: `ORtg`
-**Exogenous**: `3PAr`, `TS%`
-**Rationale**: Treat shot selection (3PAr) and shooting skill (TS%) as external strategy variables explaining offensive output. ARIMAX assumes these drive ORtg unidirectionally.
-**Expected Relationship**: ORtg = f(3PAr, TS%), with TS% likely stronger predictor.
+**Response**: `ORtg ~ 3PAr + TS%`
 
-### Model 3: COVID Impact on Attendance (ARIMAX with Intervention)
-**Response**: `Attendance`
-**Exogenous**: `ORtg`, `Pace`, COVID dummy (2020-2021)
-**Rationale**: Attendance depends on game quality (ORtg) and entertainment value (Pace), but COVID created structural break. ARIMAX with pulse intervention.
-**Expected Relationship**: Attendance � with ORtg/Pace, but COVID dummy dominates 2020-2021.
+### Model 3: COVID Impact on Attendance (ARIMAX)
+`Attendance ~ ORtg + Pace`
 
 ### Model 4: Pace Dynamics (VAR)
-**Variables**: `Pace ~ 3PAr + eFG%`
-**Rationale**: Fast pace and three-point shooting co-evolved post-2012. VAR tests whether pace changes preceded shot selection shifts or vice versa.
-**Expected Relationship**: Bidirectional positive feedback (3PAr � � Pace � � eFG% �).
+`Pace ~ 3PAr + eFG%`
 
-### Model 5: Sports Betting & NBA Recovery (VAR) - *Weekly Data*
-**Variables**: `DKNG ~ Attendance + ORtg` (aggregated to weekly)
-**Rationale**: Sports betting market (DKNG) responds to NBA attendance recovery and game quality post-COVID.
-**Expected Relationship**: DKNG � with Attendance recovery; ORtg weak/lagged effect.
+### Model 5: Sports Betting & NBA Recovery (VAR)
+**Variables**: `DKNG ~ Attendance + ORtg`
 
-**Note**: For this analysis, we will fit **Models 1, 2, 3** (the requirement is 3 models). Models 4 and 5 will be completed for the final portfolio.
+:::
 
 ---
 
 ```{r setup, warning=FALSE, message=FALSE}
-# Load libraries
 library(tidyverse)
 library(ggplot2)
 library(forecast)
@@ -87,15 +63,13 @@ library(tidyquant)
 library(plotly)
 library(readr)
 library(dplyr)
-library(vars) # For VAR models
-library(patchwork) # For plot layouts
-library(kableExtra) # For formatted tables
-library(gridExtra) # For arranging plots
+library(vars)
+library(patchwork)
+library(kableExtra)
+library(gridExtra)
 
-# Set theme
 theme_set(theme_minimal(base_size = 12))
 
-# Load data
 all_adv_files <- list.files("data/adv_stats", pattern = "*.csv", full.names = TRUE)
 
 all_adv_data <- map_df(all_adv_files, function(file) {
@@ -106,7 +80,6 @@ all_adv_data <- map_df(all_adv_files, function(file) {
     return(df)
 })
 
-# Calculate league averages
 league_avg <- all_adv_data %>%
     group_by(Season) %>%
     summarise(
@@ -123,36 +96,28 @@ league_avg <- all_adv_data %>%
 # Create COVID dummy variable
 league_avg <- league_avg %>%
     mutate(COVID_Dummy = ifelse(Season %in% c(2020, 2021), 1, 0))
-
-cat("Data loaded: 1980-2025,", nrow(league_avg), "seasons\n")
 ```
 
 ---
 
-# Part I: ARIMAX/SARIMAX Models
+# ARIMAX/SARIMAX Models
 
-## Model 2: Shot Selection & Efficiency (ARIMAX)
+## Shot Selection & Efficiency (ARIMAX)
 
-**Response Variable**: `ORtg` (Offensive Rating)
-**Exogenous Variables**: `3PAr` (3-Point Attempt Rate), `TS%` (True Shooting %)
+- **Response Variable**: `ORtg` (Offensive Rating)
+- **Exogenous Variables**: `3PAr` (3-Point Attempt Rate), `TS%` (True Shooting %)
 
-### Step i) Variable Selection & Justification
+This model addresses whether shooting more 3s and shooting accuracy explain offensive efficiency gains. The analytics literature shows 3PT shots have higher expected value than mid-range attempts, so teams adopting 3PT-heavy strategies should score more efficiently. `TS%` measures shooting skill while adjusting for 2PT, 3PT, and free throw contributions, implying higher TS% directly translates to more points per possession. We assume 3PAr and TS% cause ORtg rather than the reverse, interpreting 3PAr as a strategic choice variable and TS% as skill execution that drives offensive output.
 
-**Research Question**: Do strategic choices (shooting more 3s) and skill execution (shooting accuracy) explain offensive efficiency gains?
+::: {.panel-tabset}
 
-**Theoretical Justification**:
-- **3PAr**: Analytics literature shows 3PT shots have higher expected value than mid-range (data_viz.qmd:109). Teams that adopt 3PT-heavy strategies should score more efficiently.
-- **TS%**: Measures shooting skill adjusting for 2PT, 3PT, and FT. Higher TS% directly translates to more points per possession.
-
-**Directional Assumption**: We assume `3PAr` and `TS%` *cause* `ORtg` (not the reverse). This is appropriate if we interpret 3PAr as a strategic choice variable and TS% as skill execution.
+## EDA & Correlation
 
 ```{r arimax-eda, warning=FALSE, message=FALSE, fig.width=12, fig.height=8}
-# Create time series
 ts_ortg <- ts(league_avg$ORtg, start = 1980, frequency = 1)
 ts_3par <- ts(league_avg$`3PAr`, start = 1980, frequency = 1)
 ts_tspct <- ts(league_avg$`TS%`, start = 1980, frequency = 1)
 
-# Plot all three series
 p1 <- autoplot(ts_ortg) + labs(title = "Offensive Rating (ORtg)", y = "ORtg") + theme_minimal()
 p2 <- autoplot(ts_3par) + labs(title = "3-Point Attempt Rate (3PAr)", y = "3PAr") + theme_minimal()
 p3 <- autoplot(ts_tspct) + labs(title = "True Shooting % (TS%)", y = "TS%") + theme_minimal()
@@ -160,13 +125,7 @@ p3 <- autoplot(ts_tspct) + labs(title = "True Shooting % (TS%)", y = "TS%") + th
 p1 / p2 / p3
 ```
 
-The time series reveal basketball's transformation at a glance:
-
-- **ORtg** climbs gradually from ~104 in 1980 to ~113 in 2025—efficiency gains of nearly 9 points per 100 possessions
-- **3PAr** explodes post-2012 (the analytics inflection point), accelerating from ~25% to over 40% of all shot attempts
-- **TS%** rises steadily, suggesting shooting skill improved *alongside* strategic changes—players got better as teams got smarter
-
-All three series trend upward together, raising the non-stationarity flag for our time series models.
+The time series reveal basketball's transformation at a glance: ORtg climbs gradually from ~104 in 1980 to ~113 in 2025. Meanwhile, 3PAr explodes post-2012 (the analytics inflection point), accelerating from ~25% to over 40% of all shot attempts. True Shooting percentage rises steadily, suggesting shooting skill improved alongside strategic changes, implying players got better as teams got smarter. All three series trend upward together, raising the non-stationarity flag for our time series models.
 
 ```{r arimax-correlation, warning=FALSE, message=FALSE}
 # Correlation analysis
@@ -181,33 +140,22 @@ cor_ortg_ts <- round(cor(league_avg$ORtg, league_avg$`TS%`), 3)
 cor_3par_ts <- round(cor(league_avg$`3PAr`, league_avg$`TS%`), 3)
 ```
 
-The correlations tell a clear story:
+The correlations tell a clear story: ORtg vs 3PAr show strong positive relationship, meaning shooting more threes correlates with better offense. ORtg vs TS% displays a very strong positive relationship, suggesting shooting accuracy matters even more. The 3PAr vs TS% has a moderate positive correlation indicates that teams shooting more threes also shoot better likely due to selection effects where better shooters take more threes. Overall both predictors correlate strongly with offensive efficiency, but TS% shows the stronger association. The lesson: strategy matters, but execution matters more.
 
-- **ORtg vs 3PAr**: r = `r cor_ortg_3par` (strong positive)—shooting more threes correlates with better offense
-- **ORtg vs TS%**: r = `r cor_ortg_ts` (very strong positive)—shooting accuracy matters even more
-- **3PAr vs TS%**: r = `r cor_3par_ts` (moderate positive)—teams shooting more threes also shoot better (selection effects: better shooters take more threes)
-
-**The takeaway**: Both predictors correlate strongly with offensive efficiency, but TS% shows the stronger association. Strategy matters, but execution matters more.
-
-### Step ii) Model Fitting: auto.arima() vs Manual Method
-
-#### Method 1: auto.arima() with Exogenous Variables
+## Model Fitting
 
 ```{r arimax-auto, warning=FALSE, message=FALSE}
-# Prepare exogenous matrix
 xreg_matrix <- cbind(
     `3PAr` = ts_3par,
     `TS%` = ts_tspct
 )
 
-# Fit using auto.arima()
-cat("Fitting ARIMAX using auto.arima()...\n\n")
 arimax_auto <- auto.arima(ts_ortg,
     xreg = xreg_matrix, seasonal = FALSE,
     stepwise = FALSE, approximation = FALSE
 )
 
-cat("auto.arima() selected model:\n")
+cat("Selected model:\n")
 print(arimax_auto)
 
 cat("\n\nModel Summary:\n")
@@ -217,22 +165,12 @@ summary(arimax_auto)
 **Model Diagnostics**:
 
 ```{r arimax-auto-diagnostics, warning=FALSE, message=FALSE, fig.width=12, fig.height=10}
-# Diagnostic plots
 checkresiduals(arimax_auto)
 
 # Ljung-Box test
 ljung_auto <- Box.test(arimax_auto$residuals, lag = 10, type = "Ljung-Box")
-cat("\nLjung-Box Test (lag=10):\n")
-cat("  p-value =", round(ljung_auto$p.value, 4), "\n")
-cat("  Conclusion:", ifelse(ljung_auto$p.value > 0.05,
-    "Residuals are white noise ",
-    "Some autocorrelation remains"
-), "\n")
 ```
 
-#### Method 2: Manual Method (Regression + ARIMA on Residuals)
-
-**Step 1**: Fit linear regression
 
 ```{r arimax-manual-lm, warning=FALSE, message=FALSE}
 # Create data frame
@@ -261,19 +199,9 @@ $$
 \text{ORtg} = `r beta_intercept` + `r beta_3par` \times \text{3PAr} + `r beta_ts` \times \text{TS\%}
 $$
 
-Here's what this means on the court:
-
-- **1 percentage point increase in 3PAr** → ORtg increases by **`r beta_3par` points per 100 possessions**
-  (Moving from 30% to 31% of shots being threes adds `r beta_3par` points to offensive rating)
-
-- **1 percentage point increase in TS%** → ORtg increases by **`r beta_ts` points per 100 possessions**
-  (Improving from 55% to 56% True Shooting adds `r beta_ts` points—shooting *accuracy* has stronger impact than shot *selection*)
-```
-
-**Step 2**: Extract residuals and fit ARIMA
+Here's what this means on the court: a 1 percentage point increase in 3PAr leads to an ORtg increase of **`r beta_3par` points per 100 possessions** (moving from 30% to 31% of shots being threes adds `beta_3par` points to offensive rating). Similarly, a 1 percentage point increase in TS% leads to an ORtg increase of **`r beta_ts` points per 100 possessions** (improving from 55% to 56% True Shooting adds `beta_ts` points), emphasising that shooting accuracy has a stronger impact than shot selection.
 
 ```{r arimax-manual-arima, warning=FALSE, message=FALSE}
-# Extract residuals
 lm_residuals <- ts(residuals(lm_model), start = 1980, frequency = 1)
 
 # Plot residuals
@@ -282,7 +210,6 @@ autoplot(lm_residuals) +
     theme_minimal()
 
 # Fit ARIMA to residuals
-cat("\n\nFitting ARIMA to residuals...\n")
 arima_resid <- auto.arima(lm_residuals, seasonal = FALSE)
 
 cat("\nARIMA model for residuals:\n")
@@ -292,10 +219,8 @@ print(arima_resid)
 checkresiduals(arima_resid)
 ```
 
-**Step 3**: Combine regression + ARIMA
 
 ```{r arimax-manual-final, warning=FALSE, message=FALSE}
-# Manual ARIMAX: Use Arima() with same order as residual model and xreg
 arima_order <- arimaorder(arima_resid)
 
 arimax_manual <- Arima(ts_ortg,
@@ -303,19 +228,13 @@ arimax_manual <- Arima(ts_ortg,
     xreg = xreg_matrix
 )
 
-cat("Manual ARIMAX Model:\n")
 print(arimax_manual)
-
-cat("\n\nCoefficients:\n")
 print(coef(arimax_manual))
 ```
 
-### Step iii) Cross-Validation to Choose Best Model
+## Cross-Validation
 
 ```{r arimax-cv, warning=FALSE, message=FALSE, fig.width=12, fig.height=6}
-cat("Running time series cross-validation...\n\n")
-
-# Define training period: 1980-2019, test: 2020-2024
 train_end <- 2019
 test_start <- 2020
 
@@ -333,9 +252,6 @@ h <- length(test_ortg)
 # Prepare xreg for train/test
 xreg_train <- cbind(`3PAr` = train_3par, `TS%` = train_tspct)
 xreg_test <- cbind(`3PAr` = test_3par, `TS%` = test_tspct)
-
-# Fit models on training data
-cat("Fitting models on training data (1980-2019)...\n")
 
 # Model 1: auto.arima() method
 fit_auto <- auto.arima(train_ortg, xreg = xreg_train, seasonal = FALSE)
@@ -362,7 +278,7 @@ acc_benchmark <- accuracy(fc_benchmark, test_ortg)[2, c("RMSE", "MAE", "MAPE")]
 # Display results
 cat("\n=== CROSS-VALIDATION RESULTS (Test Set: 2020-2024) ===\n\n")
 cv_results <- data.frame(
-    Model = c("ARIMAX (auto.arima)", "ARIMAX (manual)", "ARIMA (no exog)"),
+    Model = c("ARIMAX", "ARIMAX", "ARIMA"),
     RMSE = c(acc_auto["RMSE"], acc_manual["RMSE"], acc_benchmark["RMSE"]),
     MAE = c(acc_auto["MAE"], acc_manual["MAE"], acc_benchmark["MAE"]),
     MAPE = c(acc_auto["MAPE"], acc_manual["MAPE"], acc_benchmark["MAPE"])
@@ -372,7 +288,7 @@ cv_results <- data.frame(
 kable(cv_results,
     format = "html",
     digits = 3,
-    caption = "Cross-Validation Results: ORtg Models (Test Set: 2020-2024)",
+    caption = "Cross-Validation Results: ORtg Models",
     col.names = c("Model", "RMSE", "MAE", "MAPE (%)")
 ) %>%
     kable_styling(
@@ -381,24 +297,19 @@ kable(cv_results,
     ) %>%
     row_spec(which.min(cv_results$RMSE), bold = TRUE, color = "white", background = "#006bb6")
 
-# Plot RMSEs
-ggplot(cv_results, aes(x = Model, y = RMSE, fill = Model)) +
-    geom_bar(stat = "identity", width = 0.6) +
-    geom_text(aes(label = round(RMSE, 2)), vjust = -0.5, size = 4, fontface = "bold") +
-    labs(
-        title = "Cross-Validation: RMSE Comparison",
-        subtitle = "Lower RMSE = Better predictive performance",
-        y = "Root Mean Squared Error (RMSE)",
-        x = ""
-    ) +
-    theme_minimal(base_size = 12) +
-    theme(legend.position = "none", axis.text.x = element_text(angle = 15, hjust = 1)) +
-    scale_fill_manual(values = c("#006bb6", "#f58426", "#bec0c2"))
-
 # Determine best model
 best_idx <- which.min(cv_results$RMSE)
 cat("\n\n*** BEST MODEL: ", cv_results$Model[best_idx], " ***\n")
 cat("RMSE =", round(cv_results$RMSE[best_idx], 3), "\n")
+
+# Select best model based on CV
+if (cv_results$Model[best_idx] == "ARIMAX (auto.arima)") {
+    final_arimax <- arimax_auto
+} else if (cv_results$Model[best_idx] == "ARIMAX (manual)") {
+    final_arimax <- arimax_manual
+} else {
+    final_arimax <- auto.arima(ts_ortg, seasonal = FALSE)
+}
 ```
 
 ```{r cv-interpretation-setup, echo=FALSE, message=FALSE}
@@ -411,29 +322,16 @@ arimax_better <- grepl("ARIMAX", best_model_name)
 
 ```{r echo=FALSE, results='asis'}
 if (arimax_better) {
-    cat("The winner is **", best_model_name, "** with RMSE = ", best_rmse, ". This confirms that **exogenous variables add real predictive power**—knowing 3PAr and TS% helps forecast ORtg beyond what time-series patterns alone can capture.\n\nThe analytics revolution is quantifiable: shot selection and shooting skill aren't just correlated with efficiency, they *predict* it.", sep = "")
+    cat("The winner is **", best_model_name, "** with RMSE = ", best_rmse, ". This confirms that **exogenous variables add real predictive power**.\n\nThe analytics revolution is quantifiable: shot selection and shooting skill aren't just correlated with efficiency, they *predict* it.", sep = "")
 } else {
     cat("Surprisingly, the plain **ARIMA model** (no exogenous variables) won with RMSE = ", best_rmse, ". This suggests that ORtg's temporal structure—its own past values—contains enough information to forecast the future.\n\nWhy? High multicollinearity: 3PAr, TS%, and ORtg all trend together so strongly that including them as separate predictors doesn't improve forecasts. The ARIMA model implicitly captures their co-evolution through autocorrelation.", sep = "")
 }
 ```
 
-### Step iv) Chosen Model: Fit and Equation
+## Final Model & Equation
 
 ```{r arimax-final-model, warning=FALSE, message=FALSE}
-# Select best model based on CV
-if (cv_results$Model[best_idx] == "ARIMAX (auto.arima)") {
-    final_arimax <- arimax_auto
-    cat("Final Model: ARIMAX using auto.arima() method\n\n")
-} else if (cv_results$Model[best_idx] == "ARIMAX (manual)") {
-    final_arimax <- arimax_manual
-    cat("Final Model: ARIMAX using manual (regression + ARIMA) method\n\n")
-} else {
-    final_arimax <- auto.arima(ts_ortg, seasonal = FALSE)
-    cat("Final Model: Simple ARIMA (exogenous variables not helpful)\n\n")
-}
-
-# Refit on full data
-cat("Refitting best model on full dataset (1980-2025)...\n\n")
+# Refit winning model on full data
 if ("xreg" %in% names(final_arimax$call)) {
     final_fit <- Arima(ts_ortg,
         order = arimaorder(final_arimax)[1:3],
@@ -445,11 +343,22 @@ if ("xreg" %in% names(final_arimax$call)) {
 
 print(summary(final_fit))
 
-# Write model equation
-cat("\n\n=== MODEL EQUATION ===\n\n")
-cat("Let Y_t = ORtg, X1_t = 3PAr, X2_t = TS%\n\n")
+# Also fit ARIMAX model for demonstration
+cat("\n\n=== For Comparison: ARIMAX Model with Exogenous Variables ===\n")
+final_fit_arimax <- Arima(ts_ortg,
+    order = arimaorder(arimax_auto)[1:3],
+    xreg = xreg_matrix
+)
+print(summary(final_fit_arimax))
+```
 
+**Model Equations:**
+
+### Winning Model (Selected by Cross-Validation)
+
+```{r winning-equation, echo=FALSE, results='asis'}
 arima_part <- arimaorder(final_fit)
+
 if ("xreg" %in% names(final_fit$call)) {
     coefs <- coef(final_fit)
 
@@ -461,42 +370,53 @@ if ("xreg" %in% names(final_fit$call)) {
     cat("ARIMAX(", arima_part[1], ",", arima_part[2], ",", arima_part[3], ") model:\n\n", sep = "")
 
     # Regression component
-    cat("Regression Component:\n")
-    cat("  ORtg_t = �� + ��*(3PAr_t) + ��*(TS%_t) + N_t\n")
-    cat("  where:\n")
-    if (length(xreg_coefs) >= 1) cat("    �� =", round(xreg_coefs[1], 3), "\n")
-    if (length(xreg_coefs) >= 2) cat("    �� =", round(xreg_coefs[2], 3), "\n")
+    cat("$$\n")
+    cat("\\text{ORtg}_t = \\beta_0 + \\beta_1 \\cdot \\text{3PAr}_t + \\beta_2 \\cdot \\text{TS\\%}_t + N_t\n")
+    cat("$$\n\n")
+
+    cat("where:\n\n")
+    if (length(xreg_coefs) >= 1) cat("- $\\beta_1 =", round(xreg_coefs[1], 3), "$\n")
+    if (length(xreg_coefs) >= 2) cat("- $\\beta_2 =", round(xreg_coefs[2], 3), "$\n")
 
     # ARIMA component for N_t
-    cat("\n  N_t follows ARIMA(", arima_part[1], ",", arima_part[2], ",", arima_part[3], "):\n", sep = "")
+    cat("\n$N_t$ follows ARIMA(", arima_part[1], ",", arima_part[2], ",", arima_part[3], "):\n\n", sep = "")
+
+    cat("$$\n")
     if (arima_part[2] == 1) {
-        cat("  (1 - B)^", arima_part[2], " N_t = �_t", sep = "")
+        cat("(1 - B)^{", arima_part[2], "} N_t = ", sep = "")
+    } else if (arima_part[2] > 1) {
+        cat("(1 - B)^{", arima_part[2], "} N_t = ", sep = "")
     } else {
-        cat("  N_t = �_t")
+        cat("N_t = ")
     }
 
+    # Add AR terms
     if (length(ar_coefs) > 0) {
-        cat(" + ", paste(round(ar_coefs, 3), "*N_{t-", 1:length(ar_coefs), "}", sep = "", collapse = " + "), sep = "")
+        ar_terms <- paste0(round(ar_coefs, 3), " N_{t-", 1:length(ar_coefs), "}")
+        cat(paste(ar_terms, collapse = " + "), " + ")
     }
-    if (length(ma_coefs) > 0) {
-        cat(" + ", paste(round(ma_coefs, 3), "*�_{t-", 1:length(ma_coefs), "}", sep = "", collapse = " + "), sep = "")
-    }
-    cat("\n\n")
-} else {
-    cat("ARIMA(", arima_part[1], ",", arima_part[2], ",", arima_part[3], ") model (no exogenous variables)\n\n", sep = "")
-}
 
-cat("Where:\n")
-cat("  B = backshift operator\n")
-cat("  �_t = white noise error term\n")
+    # Add MA terms
+    if (length(ma_coefs) > 0) {
+        ma_terms <- paste0(round(ma_coefs, 3), " \\epsilon_{t-", 1:length(ma_coefs), "}")
+        cat(paste(ma_terms, collapse = " + "), " + ")
+    }
+
+    cat("\\epsilon_t\n")
+    cat("$$\n\n")
+
+    cat("where $B$ is the backshift operator and $\\epsilon_t$ is white noise.\n")
+} else {
+    cat("ARIMA(", arima_part[1], ",", arima_part[2], ",", arima_part[3], ") model:\n\n", sep = "")
+    cat("$$\n")
+    cat("(1 - B) \\text{ORtg}_t = \\epsilon_t\n")
+    cat("$$\n\n")
+}
 ```
 
-### Step v) Forecasting
+## Forecasting
 
 ```{r arimax-forecast, warning=FALSE, message=FALSE, fig.width=12, fig.height=7}
-cat("Generating 5-year forecast (2026-2030)...\n\n")
-
-# Need to forecast exogenous variables first
 if ("xreg" %in% names(final_fit$call)) {
     # Forecast 3PAr and TS%
     fc_3par <- forecast(auto.arima(ts_3par), h = 5)
@@ -533,10 +453,9 @@ print(fc_final$lower[, 1])
 print(fc_final$upper[, 1])
 ```
 
-### Step vi) What the Model Reveals
+## Interpretation
 
 ```{r arimax-commentary-setup, warning=FALSE, message=FALSE, echo=FALSE}
-# Store results for narrative use
 has_xreg <- "xreg" %in% names(final_fit$call)
 test_rmse <- cv_results$RMSE[best_idx]
 test_mape <- cv_results$MAPE[best_idx]
@@ -548,15 +467,15 @@ The ARIMAX model tells a compelling story about modern basketball's transformati
 
 ```{r echo=FALSE, results='asis'}
 if (has_xreg) {
-    cat("Our analysis confirms what front offices discovered in 2012: both shot selection (3PAr) and shooting skill (TS%) significantly predict offensive efficiency. The model reveals that **shooting accuracy matters more than strategy**—a one percentage point increase in True Shooting% has a larger impact on offensive rating than the same increase in three-point attempt rate.\n\nThis validates the Houston Rockets' famous insight: it's not just about *shooting* threes, it's about *making* them.\n")
+    cat("Our analysis confirms what front offices discovered in 2012: both shot selection (3PAr) and shooting skill (TS%) significantly predict offensive efficiency. The model reveals that **shooting accuracy matters more than strategy**—a one percentage point increase in True Shooting% has a larger impact on offensive rating than the same increase in three-point attempt rate.\n\nThis ARIMAX model outperformed plain ARIMA, confirming that exogenous variables add real predictive power. Shot selection and skill improve ORtg forecasts beyond what temporal patterns alone can capture. Including the right exogenous variables isn't just theoretically justified—it's empirically beneficial. This validates the Houston Rockets' famous insight: it's not just about *shooting* threes, it's about *making* them.\n")
 } else {
-    cat("Interestingly, adding exogenous variables did not improve forecast accuracy in cross-validation. This suggests either high multicollinearity between ORtg and its predictors (they all trend together) or that the temporal structure captured by ARIMA already accounts for strategic changes. In time series, sometimes the past is the best predictor of the future.\n")
+    cat("Interestingly, adding exogenous variables did not improve forecast accuracy in cross-validation. This suggests high multicollinearity between ORtg and its predictors. \n")
 }
 ```
 
 **Forecast Performance**
 
-The model achieved a test RMSE of **`r round(test_rmse, 2)` points per 100 possessions**, corresponding to approximately **`r round(test_mape, 1)`%** average error. To put this in context, the difference between the best and worst offense in 2024 was about 15 points per 100 possessions—our model's error is less than one-fifth of that range.
+The model achieved a test RMSE of **`r round(test_rmse, 2)` points per 100 possessions**, corresponding to approximately **`r round(test_mape, 1)`%** average error. To put this in context, the difference between the best and worst offense in 2024 was about 15 points per 100 possessions.
 
 **What the Future Holds**
 
@@ -570,7 +489,7 @@ if (has_xreg) {
 
 **The Basketball Insight**
 
-Here's what matters for teams: offensive efficiency isn't magic—it's a function of **where you shoot** (3PAr) and **how well you shoot** (TS%). The model equation makes this quantitative:
+Here's what matters for teams: offensive efficiency isn't magic, it's a function of **where you shoot** (3PAr) and **how well you shoot** (TS%). The model equation makes this quantitative:
 
 $$
 \text{ORtg}_t = \beta_0 + \beta_1 \times \text{3PAr}_t + \beta_2 \times \text{TS\%}_t + N_t
@@ -583,26 +502,22 @@ Teams have two levers:
 1. **Strategic**: Shoot more threes (reallocate shot distribution)
 2. **Developmental**: Improve shooting accuracy (player development, coaching)
 
-The analytics revolution validated a simple truth: efficiency is *measurable* and *improvable*. This model proves it.
+The analytics revolution validated a simple truth: efficiency is *measurable* and *improvable*.
 
----
+:::
 
-## Model 3: COVID Impact on Attendance (ARIMAX with Intervention)
+## COVID Impact on Attendance (ARIMAX with Intervention)
 
-**Response Variable**: `Total_Attendance`
-**Exogenous Variables**: `ORtg`, `Pace`, `COVID_Dummy` (pulse intervention)
+- **Response Variable**: `Total_Attendance`
+- **Exogenous Variables**: `ORtg`, `Pace`, `COVID_Dummy` (pulse intervention)
 
-### Step i) Justification
+The model includes three key variables: ORtg captures how better offensive performance leads to more entertaining games and higher attendance; Pace reflects whether faster games attract more fans; and the COVID_Dummy captures the structural break in 2020-2021 from empty arenas and capacity restrictions.
 
-**Research Question**: How did COVID-19 disrupt attendance patterns beyond what game quality (ORtg, Pace) would predict?
+::: {.panel-tabset}
 
-**Variables**:
-- **ORtg**: Better offensive performance � more entertaining games � higher attendance
-- **Pace**: Faster games may attract more fans (though evidence is mixed)
-- **COVID_Dummy**: Captures structural break in 2020-2021 (empty arenas, capacity restrictions)
+## EDA
 
 ```{r attendance-eda, warning=FALSE, message=FALSE, fig.width=12, fig.height=8}
-# Focus on 2000-2025 (reliable attendance data)
 league_post2000 <- league_avg %>% filter(Season >= 2000)
 
 ts_attend <- ts(league_post2000$Total_Attendance, start = 2000, frequency = 1)
@@ -610,7 +525,6 @@ ts_ortg_sub <- ts(league_post2000$ORtg, start = 2000, frequency = 1)
 ts_pace_sub <- ts(league_post2000$Pace, start = 2000, frequency = 1)
 ts_covid <- ts(league_post2000$COVID_Dummy, start = 2000, frequency = 1)
 
-# Plot
 p1 <- autoplot(ts_attend / 1e6) +
     labs(title = "Total NBA Attendance", y = "Attendance (Millions)") +
     geom_vline(xintercept = 2020, linetype = "dashed", color = "red") +
@@ -628,19 +542,9 @@ p3 <- autoplot(ts_pace_sub) +
 p1 / (p2 | p3)
 ```
 
-**What the Data Shows**
+The attendance plot tells a stark before-and-after story: from 2000-2019, the NBA showed remarkable stability around 22 million attendees per season as a reliable entertainment product. In 2020, attendance collapsed to essentially zero due to empty arenas, the bubble, and capacity restrictions. From 2021-2025, gradual recovery began but with visible scars. Meanwhile, ORtg and Pace continued their upward trends during COVID—games were still played, analytics still mattered, but no one was there to watch.
 
-The attendance plot tells a stark before-and-after story:
-
-- **2000-2019**: Remarkable stability around 22 million attendees per season—the NBA as a reliable entertainment product
-- **2020**: Near-total collapse to essentially zero—empty arenas, the bubble, capacity restrictions
-- **2021-2025**: Gradual recovery, but with visible scars
-
-Meanwhile, ORtg and Pace continued their upward trends during COVID—games were still played (in the bubble), analytics still mattered, but *no one was there to watch*.
-
-This is the textbook setup for **intervention analysis**: a clean external shock that disrupts one variable (attendance) while leaving others (game statistics) intact.
-
-### Step ii) Model Fitting
+## Model Fitting
 
 ```{r attendance-auto, warning=FALSE, message=FALSE}
 # Prepare exogenous matrix
@@ -651,7 +555,6 @@ xreg_attend <- cbind(
 )
 
 # auto.arima() method
-cat("Fitting ARIMAX for Attendance using auto.arima()...\n\n")
 arimax_attend_auto <- auto.arima(ts_attend, xreg = xreg_attend, seasonal = FALSE)
 
 print(arimax_attend_auto)
@@ -680,19 +583,15 @@ covid_coef <- round(coef(lm_attend)["COVID"], 0)
 covid_impact_millions <- round(abs(coef(lm_attend)["COVID"]) / 1e6, 1)
 ```
 
-**The COVID Coefficient: Quantifying the Shock**
-
 The regression reveals COVID's devastating impact in stark numerical terms:
 
 $$
 \beta_{\text{COVID}} = `r format(covid_coef, big.mark=",")`
 $$
 
-**Interpretation**: The pandemic reduced attendance by approximately **`r covid_impact_millions` million attendees** during 2020-2021. For context, total pre-pandemic attendance was around 22 million per season—this represents a near-complete collapse.
+The pandemic reduced attendance by approximately **`r covid_impact_millions` million attendees** during 2020-2021. For context, total pre-pandemic attendance was around 22 million per season, this represents a near-complete collapse.
 
 ```{r echo=FALSE}
-cat("\n")
-
 # Fit ARIMA to residuals
 resid_attend <- ts(residuals(lm_attend), start = 2000, frequency = 1)
 arima_resid_attend <- auto.arima(resid_attend, seasonal = FALSE)
@@ -709,7 +608,7 @@ arimax_attend_manual <- Arima(ts_attend,
 print(arimax_attend_manual)
 ```
 
-### Step iii) Cross-Validation
+## Cross-Validation
 
 ```{r attendance-cv, warning=FALSE, message=FALSE, fig.width=10, fig.height=6}
 # Train: 2000-2018, Test: 2019-2024 (includes pre-COVID and COVID periods)
@@ -731,8 +630,6 @@ h_att <- length(test_attend)
 xreg_train_att <- cbind(ORtg = train_ortg_a, Pace = train_pace_a, COVID = train_covid_a)
 xreg_test_att <- cbind(ORtg = test_ortg_a, Pace = test_pace_a, COVID = test_covid_a)
 
-# Fit models with error handling
-cat("Fitting models on training data (2000-2018)...\n")
 
 # Model 1: auto.arima() - use simpler constraints for small dataset
 fit_auto_att <- tryCatch(
@@ -743,7 +640,6 @@ fit_auto_att <- tryCatch(
         )
     },
     error = function(e) {
-        cat("  auto.arima() with full xreg failed, trying without COVID dummy...\n")
         xreg_no_covid <- cbind(ORtg = train_ortg_a, Pace = train_pace_a)
         auto.arima(train_attend,
             xreg = xreg_no_covid, seasonal = FALSE,
@@ -761,7 +657,6 @@ fit_manual_att <- tryCatch(
         )
     },
     error = function(e) {
-        cat("  Manual model failed, using ARIMA(0,1,0) with xreg...\n")
         xreg_no_covid <- cbind(ORtg = train_ortg_a, Pace = train_pace_a)
         Arima(train_attend, order = c(0, 1, 0), xreg = xreg_no_covid)
     }
@@ -794,7 +689,7 @@ acc_bench_att <- accuracy(fc_bench_att, test_attend)[2, c("RMSE", "MAE", "MAPE")
 
 cat("\n=== ATTENDANCE MODEL CROSS-VALIDATION (Test: 2019-2024) ===\n\n")
 cv_att_results <- data.frame(
-    Model = c("ARIMAX (auto)", "ARIMAX (manual)", "ARIMA (no exog)"),
+    Model = c("ARIMAX", "ARIMAX", "ARIMA"),
     RMSE = c(acc_auto_att["RMSE"], acc_manual_att["RMSE"], acc_bench_att["RMSE"]),
     MAE = c(acc_auto_att["MAE"], acc_manual_att["MAE"], acc_bench_att["MAE"]),
     MAPE = c(acc_auto_att["MAPE"], acc_manual_att["MAPE"], acc_bench_att["MAPE"])
@@ -817,27 +712,13 @@ kable(cv_att_display,
     ) %>%
     row_spec(which.min(cv_att_results$RMSE), bold = TRUE, color = "white", background = "#006bb6")
 
-# Plot RMSEs
-ggplot(cv_att_results, aes(x = Model, y = RMSE / 1e6, fill = Model)) +
-    geom_bar(stat = "identity", width = 0.6) +
-    geom_text(aes(label = round(RMSE / 1e6, 2)), vjust = -0.5, fontface = "bold") +
-    labs(
-        title = "Attendance Model: RMSE Comparison",
-        subtitle = "Test period includes COVID shock (2020-2021)",
-        y = "RMSE (Millions of Attendees)",
-        x = ""
-    ) +
-    theme_minimal() +
-    theme(legend.position = "none") +
-    scale_fill_manual(values = c("#006bb6", "#f58426", "#bec0c2"))
-
 best_idx_att <- which.min(cv_att_results$RMSE)
-cat("\n*** BEST MODEL: ", cv_att_results$Model[best_idx_att], " ***\n")
+cat("\n*** BEST MODEL: ", cv_att_results$Model[best_idx_att], "***\n")
 ```
 
-**Key Insight**: The COVID dummy is all zeros in training data (2000-2018) since the pandemic started in 2020. This creates a constant predictor issue. The models handle this gracefully by either (1) dropping COVID from training models, or (2) using simpler model structures. When fitted on full data (2000-2025), the COVID dummy captures the unprecedented shock effectively.
+When fitted on full data (2000-2025), the COVID dummy captures the unprecedented shock effectively.
 
-### Steps iv-vi) Final Model, Forecast, and Commentary
+## Final Model & Interpretation
 
 ```{r attendance-final, warning=FALSE, message=FALSE, fig.width=12, fig.height=6}
 # Refit best model on full data
@@ -855,7 +736,7 @@ if (cv_att_results$Model[best_idx_att] == "ARIMAX (auto)") {
 cat("Final Attendance Model:\n")
 print(summary(final_attend))
 
-# Forecast (assume COVID_Dummy = 0 post-2025, ORtg/Pace continue trends)
+# Forecast
 fc_ortg_fut <- forecast(auto.arima(ts_ortg_sub), h = 5)
 fc_pace_fut <- forecast(auto.arima(ts_pace_sub), h = 5)
 
@@ -864,7 +745,7 @@ if ("COVID" %in% names(coef(final_attend))) {
     xreg_future_att <- cbind(
         ORtg = fc_ortg_fut$mean,
         Pace = fc_pace_fut$mean,
-        COVID = rep(0, 5) # Assume no COVID restrictions 2026-2030
+        COVID = rep(0, 5)
     )
 } else {
     xreg_future_att <- cbind(
@@ -895,54 +776,39 @@ if (has_covid) {
 }
 ```
 
-**The Pandemic's Signature**
-
 ```{r echo=FALSE, results='asis'}
 if (has_covid) {
-    cat("March 2020 left an indelible mark in the data. The COVID dummy variable carries a coefficient of **", round(covid_impact, 2), " million attendees**—representing nearly a 90% collapse in arena attendance during the 2020-2021 seasons.\n\nThis wasn't gradual decline. It was instantaneous erasure. The model quantifies what we all witnessed: packed arenas became empty stages overnight, and the roar of 20,000 fans vanished into eerie silence. Including this dummy variable wasn't just statistically beneficial—it was necessary to capture a shock that no amount of historical data could have predicted.\n", sep = "")
+    cat("March 2020 left an indelible mark in the data. The COVID dummy variable carries a coefficient of **", round(covid_impact, 2), " million attendees**—representing nearly a 90% collapse in arena attendance during the 2020-2021 seasons.\n\nThis wasn't gradual decline. It was instantaneous erasure. Intervention analysis quantifies what everyone witnessed: the pandemic reduced attendance by ~20 million (near-complete collapse), this shock was structural and unpredictable from pre-2020 trends (no amount of historical data could forecast a global pandemic), and the dummy variable approach cleanly separates the COVID effect from underlying trends. Including this dummy variable wasn't just statistically beneficial—it was necessary to capture a shock that no amount of historical data could have predicted. This serves as a natural experiment demonstrating how external shocks disrupt time series patterns.\n", sep = "")
 } else {
-    cat("Here's where cross-validation reveals a hard truth about forecasting: the COVID dummy was *all zeros* in our training data (2000-2018) because the pandemic didn't exist yet. The model couldn't learn what it hadn't seen.\n\nWhen the test period arrived (2019-2024), actual attendance plummeted by 90% in 2020—but our model, trained on pre-pandemic patterns, had no mechanism to anticipate this. This demonstrates the fundamental challenge of time series forecasting: **external shocks that have never occurred before are, by definition, unforecastable**.\n\nThe model did what it was trained to do: predict based on historical patterns of steady attendance around 22 million per season. The pandemic rewrote the rules.\n")
+    cat("Here's where cross-validation reveals a hard truth about forecasting: the COVID dummy was *all zeros* in our training data (2000-2018) because the pandemic didn't exist yet. The model couldn't learn what it hadn't seen.\n\nWhen the test period arrived (2019-2024), actual attendance plummeted by 90% in 2020. However our model, trained on pre-pandemic patterns, had no mechanism to anticipate this. This demonstrates the fundamental challenge of time series forecasting: **external shocks that have never occurred before are, by definition, unforecastable**.")
 }
 ```
-
-**What Drives Attendance (Besides Pandemics)**
 
 ```{r echo=FALSE, results='asis'}
 if (has_ortg) {
     cat("Beyond COVID's overwhelming impact, the model detects subtler forces: offensive rating and pace do influence attendance, but their effects are small compared to the pandemic shock. This tells us that **fans care more about whether games happen** than about how exciting those games are. A boring game with 18,000 fans beats an offensive shootout with zero.\n\nAttendance is sticky—fans buy season tickets, form habits, make plans. Game quality matters at the margin (a 115 ORtg season might draw slightly more than a 105 ORtg season), but structural factors like arena access, pricing, and health safety dominate.\n")
 } else {
-    cat("The model relies purely on time-series patterns, revealing that attendance follows its own momentum: yesterday's crowds predict tomorrow's. This makes sense—season ticket holders commit months in advance, and casual fans follow habits more than real-time performance metrics.\n\nThe absence of game quality variables (ORtg, Pace) in the final model suggests these factors either don't vary enough to matter or are already baked into the autocorrelated structure of attendance trends.\n")
+    cat("The model relies purely on time-series patterns, revealing that attendance follows its own momentum: yesterday's crowds predict tomorrow's. This makes sense; season ticket holders commit months in advance, and casual fans follow habits more than real-time performance metrics.")
 }
 ```
-
-**Looking Ahead**
-
-The forecast anticipates gradual recovery toward pre-pandemic levels by 2026-2030, assuming no new health crises disrupt attendance. The widening prediction intervals acknowledge deep uncertainty: Will work-from-home culture permanently reduce business attendance? Will streaming alternatives keep younger fans at home? Will ticket prices outpace demand?
-
-The model can project trends, but it cannot predict the next March 2020.
+:::
 
 ---
 
-# Part II: VAR (Vector Autoregression) Models
+# VAR (Vector Autoregression) Models
 
-## Model 1: Efficiency Drivers (VAR)
+## Efficiency Drivers (VAR)
 
 **Variables**: `ORtg`, `Pace`, `3PAr`
 
-**Research Question**: Do offensive efficiency (ORtg), pace, and shot selection (3PAr) exhibit bidirectional causal relationships? Does increasing pace lead to higher 3PAr (and vice versa)? Do efficiency gains feed back into strategic changes?
+The theoretical rationale for this VAR model involves multiple bidirectional relationships: faster tempo (Pace) creates more transition opportunities favoring quick 3PT attempts (3PAr), while teams shooting more 3s may adopt faster pace to maximize possessions. Similarly, efficient offense (ORtg) may enable teams to control tempo (Pace), while higher pace may increase transition scoring efficiency (ORtg). We use VAR rather than ARIMAX because we do not assume unidirectional causality.
 
-### Step i) Variable Selection & Justification
+::: {.panel-tabset}
 
-**Theoretical Rationale** (@franks2015characterizing, intro.qmd:38-41):
-- **Pace � 3PAr**: Faster tempo creates more transition opportunities, favoring quick 3PT attempts
-- **3PAr � Pace**: Teams shooting more 3s may adopt faster pace to maximize possessions
-- **ORtg � Pace**: Efficient offense may enable teams to control tempo
-- **Pace � ORtg**: Higher pace may increase transition scoring efficiency
-
-**Why VAR (not ARIMAX)?**: We do NOT assume unidirectional causality. Each variable may influence the others with time lags. VAR treats all variables symmetrically as endogenous.
+## EDA & Stationarity
 
 ```{r var-eda, warning=FALSE, message=FALSE, fig.width=12, fig.height=8}
-# Create VAR dataset (all series same length)
+# Create VAR dataset
 var_data <- ts(league_avg %>% dplyr::select(ORtg, Pace, `3PAr`),
     start = 1980, frequency = 1
 )
@@ -955,22 +821,9 @@ autoplot(var_data, facets = TRUE) +
     ) +
     theme_minimal()
 
-# Pairwise scatterplots
-pairs(var_data, main = "Pairwise Relationships")
-
 cat("Summary Statistics:\n")
 summary(var_data)
 ```
-
-**Stationarity Check: The Visual Evidence**
-
-The plots reveal a fundamental challenge: all three series trend upward over 45 years. This violates VAR's stationarity requirement—the model assumes variables fluctuate around stable means, not climb indefinitely.
-
-**The options**:
-1. **First-differencing**: Model changes (ΔORtg, ΔPace, Δ3PAr) instead of levels
-2. **VECM (Vector Error Correction Model)**: If variables are cointegrated (trend together with stable long-run relationship)
-
-We'll test for stationarity formally with ADF tests and difference if needed. VAR demands stationarity; the data demands transformation.
 
 ```{r var-stationarity, warning=FALSE, message=FALSE}
 # ADF tests for each series
@@ -982,20 +835,19 @@ adf_3par_var <- adf.test(var_data[, "3PAr"])
 
 cat(
     "ORtg: ADF p-value =", round(adf_ortg_var$p.value, 4),
-    ifelse(adf_ortg_var$p.value < 0.05, "(stationary)", "(non-stationary)"), "\n"
+    ifelse(adf_ortg_var$p.value < 0.05, "(stationary)", "implies non-stationary"), "\n"
 )
 cat(
     "Pace: ADF p-value =", round(adf_pace_var$p.value, 4),
-    ifelse(adf_pace_var$p.value < 0.05, "(stationary)", "(non-stationary)"), "\n"
+    ifelse(adf_pace_var$p.value < 0.05, "(stationary)", "implies non-stationary"), "\n"
 )
 cat(
     "3PAr: ADF p-value =", round(adf_3par_var$p.value, 4),
-    ifelse(adf_3par_var$p.value < 0.05, "(stationary)", "(non-stationary)"), "\n\n"
+    ifelse(adf_3par_var$p.value < 0.05, "(stationary)", "implies non-stationary"), "\n\n"
 )
 
 # Difference if non-stationary
 if (adf_ortg_var$p.value > 0.05 | adf_pace_var$p.value > 0.05 | adf_3par_var$p.value > 0.05) {
-    cat("At least one series is non-stationary. Applying first-differencing...\n\n")
     var_data_diff <- diff(var_data)
 
     # Test differenced data
@@ -1003,7 +855,7 @@ if (adf_ortg_var$p.value > 0.05 | adf_pace_var$p.value > 0.05 | adf_3par_var$p.v
     adf_pace_diff <- adf.test(var_data_diff[, "Pace"])
     adf_3par_diff <- adf.test(var_data_diff[, "3PAr"])
 
-    cat("After differencing:\n")
+    cat("After first-differencing:\n")
     cat("ORtg: ADF p-value =", round(adf_ortg_diff$p.value, 4), "\n")
     cat("Pace: ADF p-value =", round(adf_pace_diff$p.value, 4), "\n")
     cat("3PAr: ADF p-value =", round(adf_3par_diff$p.value, 4), "\n\n")
@@ -1013,19 +865,16 @@ if (adf_ortg_var$p.value > 0.05 | adf_pace_var$p.value > 0.05 | adf_3par_var$p.v
         var_data_final <- var_data_diff
         differenced <- TRUE
     } else {
-        cat("Warning: Some series still non-stationary. Consider VECM for cointegrated series.\n")
-        cat("For this analysis, we'll proceed with differenced data.\n\n")
         var_data_final <- var_data_diff
         differenced <- TRUE
     }
 } else {
-    cat("All series are stationary. Proceeding with original data.\n\n")
     var_data_final <- var_data
     differenced <- FALSE
 }
 ```
 
-### Step ii) VARselect() and Fit Models
+## Model Selection & Fitting
 
 ```{r var-select, warning=FALSE, message=FALSE}
 # Determine optimal lag order
@@ -1034,11 +883,6 @@ var_select <- VARselect(var_data_final, lag.max = 8, type = "const")
 
 print(var_select$selection)
 print(var_select$criteria)
-
-cat("\n\nInterpretation:\n")
-cat("- AIC selects p =", var_select$selection["AIC(n)"], "\n")
-cat("- BIC selects p =", var_select$selection["SC(n)"], "(more parsimonious)\n")
-cat("- HQ selects p =", var_select$selection["HQ(n)"], "\n\n")
 
 # Fit models with different lag orders
 lags_to_fit <- unique(var_select$selection[1:3])
@@ -1050,12 +894,9 @@ for (p in lags_to_fit) {
     var_models[[paste0("VAR_", p)]] <- VAR(var_data_final, p = p, type = "const")
     cat("VAR(", p, ") fitted successfully\n", sep = "")
 }
-
-cat("\n")
 ```
 
 ```{r var-summaries, warning=FALSE, message=FALSE}
-# Display summaries
 for (name in names(var_models)) {
     cat("========================================\n")
     cat(name, "Summary:\n")
@@ -1065,55 +906,8 @@ for (name in names(var_models)) {
 }
 ```
 
-**Model Comparison Commentary**:
 
-```{r var-comparison, warning=FALSE, message=FALSE}
-cat("=== MODEL COMPARISON ===\n\n")
-
-aic_vals <- sapply(var_models, AIC)
-bic_vals <- sapply(var_models, BIC)
-
-comparison_var <- data.frame(
-    Model = names(var_models),
-    Lags = as.numeric(gsub("VAR_", "", names(var_models))),
-    AIC = aic_vals,
-    BIC = bic_vals
-)
-
-# Display formatted table
-kable(comparison_var,
-    format = "html",
-    digits = 2,
-    caption = "VAR Model Comparison: Information Criteria",
-    col.names = c("Model", "Lag Order (p)", "AIC", "BIC"),
-    row.names = FALSE
-) %>%
-    kable_styling(
-        full_width = FALSE,
-        bootstrap_options = c("striped", "hover", "condensed", "responsive")
-    ) %>%
-    row_spec(which.min(comparison_var$AIC), bold = TRUE, color = "white", background = "#1f77b4") %>%
-    row_spec(which.min(comparison_var$BIC), bold = TRUE, color = "white", background = "#ff7f0e")
-```
-
-```{r var-comparison-narrative-setup, echo=FALSE, message=FALSE}
-best_aic_idx <- which.min(comparison_var$AIC)
-best_bic_idx <- which.min(comparison_var$BIC)
-aic_winner <- comparison_var$Lags[best_aic_idx]
-bic_winner <- comparison_var$Lags[best_bic_idx]
-```
-
-**Choosing Lag Order: The Complexity Trade-Off**
-
-```{r echo=FALSE, results='asis'}
-if (aic_winner == bic_winner) {
-    cat("Both AIC and BIC agree: **VAR(", aic_winner, ")** strikes the optimal balance between fit and parsimony. This consensus suggests a clear winner—the model captures meaningful dynamics without overfitting.\n\n", sep = "")
-} else {
-    cat("AIC and BIC disagree: AIC prefers **VAR(", aic_winner, ")** (more lags, better fit), while BIC selects **VAR(", bic_winner, ")** (fewer lags, more parsimonious). This reflects their different penalties for complexity.\n\n**AIC**: Prioritizes predictive accuracy, willing to accept more parameters\n**BIC**: Penalizes complexity more heavily, favors simpler models\n\nThe disagreement reveals a classic bias-variance trade-off: more lags capture richer dynamics but risk overfitting to noise. Cross-validation will settle the debate.\n\n", sep = "")
-}
-```
-
-### Step iii) Cross-Validation
+## Cross-Validation
 
 ```{r var-cv, warning=FALSE, message=FALSE, fig.width=10, fig.height=6}
 cat("=== TIME SERIES CROSS-VALIDATION FOR VAR ===\n\n")
@@ -1132,11 +926,6 @@ if (differenced) {
 }
 
 h_var <- nrow(test_var)
-
-cat("Data is differenced:", differenced, "\n")
-cat("Training data: ", nrow(train_var), "observations\n")
-cat("Test data: ", h_var, "observations\n")
-cat("Test period: 2020-2024\n\n")
 
 # Fit VAR models on training data with error handling
 var_train_models <- list()
@@ -1251,7 +1040,7 @@ if (nrow(rmse_results) > 0) {
 }
 ```
 
-### Step iv) Chosen Model & Forecast
+## Final Model & Forecast
 
 ```{r var-final, warning=FALSE, message=FALSE, fig.width=12, fig.height=10}
 # Select best model
@@ -1259,53 +1048,41 @@ if (nrow(rmse_results) > 0) {
     best_var_name <- rmse_results$Model[best_var_idx]
     best_var_lags <- rmse_results$Lags[best_var_idx]
 } else {
-    # Fallback: use simplest model from var_select
     best_var_lags <- min(lags_to_fit)
-    cat("Using fallback lag selection: p =", best_var_lags, "\n")
 }
 
 cat("Final VAR Model: VAR(", best_var_lags, ")\n\n", sep = "")
 
-# Refit on full data with error handling
+# Refit on full data
 final_var <- tryCatch(
     {
         VAR(var_data_final, p = best_var_lags, type = "const")
     },
     error = function(e) {
-        cat("Error fitting VAR(", best_var_lags, "), trying VAR(1)...\n", sep = "")
         VAR(var_data_final, p = 1, type = "const")
     }
 )
 
-cat("Full Model Summary:\n")
 print(summary(final_var))
 
 # Forecast 5 periods ahead
 fc_var_final <- predict(final_var, n.ahead = 5)
 
-cat("\n\n=== FORECASTS (5 periods ahead) ===\n\n")
-
-# Get actual variable names from forecast
+# Get variable names
 fc_var_names <- names(fc_var_final$fcst)
-cat("Forecast variables:", paste(fc_var_names, collapse = ", "), "\n\n")
-
-# Print forecasts using actual names
-cat("ORtg Forecast:\n")
-print(fc_var_final$fcst$ORtg)
-
-# Find 3PAr variable name
 tpar_fc_name <- fc_var_names[grep("3PAr|PAr", fc_var_names, ignore.case = TRUE)]
-if (length(tpar_fc_name) == 0) {
-    tpar_fc_name <- fc_var_names[3]
-}
+if (length(tpar_fc_name) == 0) tpar_fc_name <- fc_var_names[3]
 
-cat("\n", tpar_fc_name, " Forecast:\n", sep = "")
+# Display forecasts
+cat("\n=== 5-Period Forecasts ===\n\n")
+cat("ORtg:\n")
+print(fc_var_final$fcst$ORtg)
+cat("\n", tpar_fc_name, ":\n", sep = "")
 print(fc_var_final$fcst[[tpar_fc_name]])
-
-cat("\nPace Forecast:\n")
+cat("\nPace:\n")
 print(fc_var_final$fcst$Pace)
 
-# Plot using actual names
+# Plot forecasts
 for (vname in fc_var_names) {
     plot(fc_var_final, names = vname)
 }
@@ -1314,288 +1091,44 @@ for (vname in fc_var_names) {
 **Granger Causality Tests**:
 
 ```{r var-granger, warning=FALSE, message=FALSE}
-cat("=== GRANGER CAUSALITY TESTS ===\n\n")
-cat("Research Question: Do changes in one variable 'Granger-cause' changes in another?\n\n")
-
-# Check actual variable names in VAR model
+# Granger causality tests
 var_names <- names(final_var$varresult)
-cat("Variable names in VAR model:", paste(var_names, collapse = ", "), "\n\n")
-
-# Find the correct name for 3PAr variable (might be X3PAr or similar)
 tpar_name <- var_names[grep("3PAr|PAr", var_names, ignore.case = TRUE)]
-if (length(tpar_name) == 0) {
-    tpar_name <- var_names[3] # Fallback to third variable
-}
-cat("Using '", tpar_name, "' for 3PAr variable\n\n", sep = "")
+if (length(tpar_name) == 0) tpar_name <- var_names[3]
 
-# Test if 3PAr Granger-causes ORtg
 granger_3par_ortg <- causality(final_var, cause = tpar_name)$Granger
-cat("H0: 3PAr does NOT Granger-cause ORtg, Pace\n")
-cat("  F-statistic =", round(granger_3par_ortg$statistic, 3), "\n")
-cat("  p-value =", round(granger_3par_ortg$p.value, 4), "\n")
-cat("  Conclusion:", ifelse(granger_3par_ortg$p.value < 0.05,
-    "REJECT H0 � 3PAr Granger-causes other variables ",
-    "FAIL TO REJECT � No Granger causality"
-), "\n\n")
-
-# Test if Pace Granger-causes ORtg, 3PAr
 granger_pace <- causality(final_var, cause = "Pace")$Granger
-cat("H0: Pace does NOT Granger-cause ORtg, 3PAr\n")
-cat("  F-statistic =", round(granger_pace$statistic, 3), "\n")
-cat("  p-value =", round(granger_pace$p.value, 4), "\n")
-cat("  Conclusion:", ifelse(granger_pace$p.value < 0.05,
-    "REJECT H0 � Pace Granger-causes other variables ",
-    "FAIL TO REJECT � No Granger causality"
-), "\n\n")
-
-# Test if ORtg Granger-causes Pace, 3PAr
 granger_ortg <- causality(final_var, cause = "ORtg")$Granger
-cat("H0: ORtg does NOT Granger-cause Pace, 3PAr\n")
-cat("  F-statistic =", round(granger_ortg$statistic, 3), "\n")
-cat("  p-value =", round(granger_ortg$p.value, 4), "\n")
-cat("  Conclusion:", ifelse(granger_ortg$p.value < 0.05,
-    "REJECT H0 � ORtg Granger-causes other variables ",
-    "FAIL TO REJECT � No Granger causality"
-), "\n\n")
+
+cat("=== Granger Causality Tests ===\n\n")
+cat("3PAr → {ORtg, Pace}: F =", round(granger_3par_ortg$statistic, 3),
+    ", p =", round(granger_3par_ortg$p.value, 4), "\n")
+cat("Pace → {ORtg, 3PAr}: F =", round(granger_pace$statistic, 3),
+    ", p =", round(granger_pace$p.value, 4), "\n")
+cat("ORtg → {Pace, 3PAr}: F =", round(granger_ortg$statistic, 3),
+    ", p =", round(granger_ortg$p.value, 4), "\n")
 ```
 
-**Impulse Response Functions (IRFs)**:
+Granger causality tests reveal the temporal ordering of the analytics revolution by determining which variables' past values predict other variables' future changes. These tests show whether the rise in three-point shooting preceded changes in offensive efficiency and pace, or whether successful offenses drove teams to adopt more three-pointers, providing empirical evidence about the direction of causation during the NBA's transformation.
 
 ```{r var-irf, warning=FALSE, message=FALSE, fig.width=12, fig.height=8}
-cat("=== IMPULSE RESPONSE FUNCTIONS ===\n\n")
-cat("Question: How does a shock to one variable affect others over time?\n\n")
-
-# Use the variable names identified earlier
 var_names_irf <- names(final_var$varresult)
 tpar_name_irf <- var_names_irf[grep("3PAr|PAr", var_names_irf, ignore.case = TRUE)]
-if (length(tpar_name_irf) == 0) {
-    tpar_name_irf <- var_names_irf[3]
-}
+if (length(tpar_name_irf) == 0) tpar_name_irf <- var_names_irf[3]
 
-# IRF: Shock to 3PAr → response in ORtg
+# IRFs
 irf_3par_ortg <- irf(final_var, impulse = tpar_name_irf, response = "ORtg", n.ahead = 10)
 plot(irf_3par_ortg, main = paste("Impulse:", tpar_name_irf, "→ Response: ORtg"))
 
-# IRF: Shock to Pace → response in ORtg
 irf_pace_ortg <- irf(final_var, impulse = "Pace", response = "ORtg", n.ahead = 10)
 plot(irf_pace_ortg, main = "Impulse: Pace → Response: ORtg")
 
-# IRF: Shock to ORtg → response in 3PAr
 irf_ortg_3par <- irf(final_var, impulse = "ORtg", response = tpar_name_irf, n.ahead = 10)
 plot(irf_ortg_3par, main = paste("Impulse: ORtg → Response:", tpar_name_irf))
-
-cat("\nInterpretation:\n")
-cat("- If confidence bands include zero: No significant response\n")
-cat("- Positive IRF: Shock in impulse variable increases response variable\n")
-cat("- IRF shape shows how long effects persist (decay rate)\n")
 ```
 
-### Step v) The Feedback Loop: What VAR Reveals
+## Interpretation
 
-```{r var-commentary-setup, echo=FALSE, message=FALSE}
-# Store causality results for narrative
-tpar_causes_ortg <- granger_3par_ortg$p.value < 0.05
-ortg_causes_tpar <- granger_ortg$p.value < 0.05
-var_rmse_avg <- round(rmse_results$RMSE_Avg[best_var_idx], 4)
-```
+The VAR model reveals meaningful relationships among offensive efficiency, three-point shooting, and pace across NBA history. Granger causality tests quantify whether past values of one variable help predict future values of others, addressing the question of whether the rise in three-point shooting preceded changes in offensive efficiency or vice versa.
 
-Unlike ARIMAX (which assumes one-way causation), VAR models acknowledge a messier reality: **everything affects everything else**. Offensive rating, pace, and three-point volume don't exist in isolation—they form a dynamic system where past values of each variable help predict future values of all the others.
-
-This is the NBA as a complex adaptive system.
-
-**The Chicken-and-Egg Question: Which Came First?**
-
-The Granger causality tests cut through decades of basketball debate:
-
-```{r echo=FALSE, results='asis'}
-if (tpar_causes_ortg) {
-    cat("Our analysis shows that **3PAr Granger-causes ORtg and Pace**. In plain English: changes in three-point attempt rate *precede* changes in offensive efficiency. Shot selection came first; efficiency gains followed.\n\nThis supports the 'analytics revolution' narrative that Daryl Morey and others pushed: teams changed their strategy *before* seeing results, betting on math rather than tradition. The Rockets didn't wait for shooters to improve—they demanded more threes immediately, and efficiency caught up later.\n\n")
-} else {
-    cat("Interestingly, **3PAr does NOT Granger-cause ORtg or Pace**. This suggests shot selection changes were *reactive* rather than proactive—teams increased three-point volume in response to other factors (perhaps player availability, defensive schemes, or efficiency gains that came first).\n\nThe analytics revolution might not have been as revolutionary as the narrative suggests. Perhaps teams stumbled into efficiency gains, then reinforced what worked.\n\n")
-}
-
-if (ortg_causes_tpar) {
-    cat("Simultaneously, **ORtg Granger-causes 3PAr**—efficiency improvements feed back into strategic choices. When teams saw their offensive rating climb, they shot even more threes. Success bred more of the same.\n\nThis is a **positive feedback loop**: better offense to more confidence to more threes to better offense. The analytics revolution wasn't a one-time shift; it was a self-reinforcing spiral.\n\n")
-} else {
-    cat("However, **ORtg does NOT Granger-cause 3PAr**—efficiency gains didn't systematically drive teams to shoot more threes. The strategy shift was independent of immediate performance feedback.\n\nThis suggests teams followed analytics *on faith*, not on results. They believed in the math before it paid off.\n\n")
-}
-```
-
-**The Impulse Response Story**
-
-The IRF plots visualize dynamic propagation: if the league suddenly increased three-point attempts by 1% (a shock), how would offensive rating respond over the next 10 years?
-
-- **If the IRF line stays positive**: The shock has lasting benefits (permanent efficiency gains)
-- **If it decays to zero**: The effect is temporary (defenses adapt, benefits fade)
-- **If confidence bands include zero**: The relationship is statistically insignificant (noise, not signal)
-
-These plots don't just show correlation—they show **temporal dynamics**. How long do strategic changes take to pay off? Do their effects compound or dissipate?
-
-**Forecast Performance**
-
-The VAR(`r best_var_lags`) model achieved an average RMSE of **`r var_rmse_avg`** across all three variables. This represents the model's ability to predict 2020-2024 values using only 1980-2019 data—a challenging test given COVID's disruption.
-
-The multivariate approach outperforms univariate models because it accounts for **interdependencies**: a spike in three-point attempts doesn't just affect future 3PAr—it ripples through pace and efficiency too.
-
-**What This Means for Basketball**
-
-The NBA isn't a collection of independent trends. It's an ecosystem:
-
-- **Strategy-led hypothesis** (3PAr → ORtg): Teams *experimented* with analytics, then efficiency followed
-- **Success-led hypothesis** (ORtg → 3PAr): Teams *discovered* efficiency gains, then doubled down on threes
-- **Reality**: Likely both—a bidirectional feedback loop where strategy and success reinforce each other
-
-The VAR model captures this co-evolution. The analytics revolution wasn't imposed from above or discovered by accident. It emerged from **iterative adaptation**: try threes, see results, shoot more, repeat.
-
----
-
-# Summary & Conclusions
-
-```{r summary, warning=FALSE, message=FALSE}
-cat("========================================\n")
-cat("MULTIVARIATE TIME SERIES ANALYSIS SUMMARY\n")
-cat("========================================\n\n")
-
-# Create comprehensive summary table with error handling
-# Ensure all indices are single values
-best_idx <- best_idx[1]
-best_idx_att <- best_idx_att[1]
-
-# Check if VAR results exist
-if (exists("rmse_results") && nrow(rmse_results) > 0 && exists("best_var_idx")) {
-    best_var_idx <- best_var_idx[1] # Ensure single value
-    var_rmse_value <- round(rmse_results$RMSE_Avg[best_var_idx], 4)
-    var_spec <- paste0("VAR(", best_var_lags, ")")
-} else {
-    var_rmse_value <- "Not available"
-    var_spec <- "VAR (fitting in progress)"
-}
-
-# Extract values safely
-arimax_model <- as.character(cv_results$Model[best_idx])[1]
-arimax_rmse <- round(cv_results$RMSE[best_idx], 2)[1]
-
-att_model <- as.character(cv_att_results$Model[best_idx_att])[1]
-att_rmse <- round(cv_att_results$RMSE[best_idx_att] / 1e6, 2)[1]
-
-summary_table <- data.frame(
-    Model = c(
-        "ARIMAX: ORtg ~ 3PAr + TS%",
-        "ARIMAX: Attendance ~ ORtg + Pace + COVID",
-        "VAR: (ORtg, Pace, 3PAr)"
-    ),
-    Best_Specification = c(
-        arimax_model,
-        att_model,
-        var_spec
-    ),
-    Test_RMSE = c(
-        paste0(arimax_rmse, " pts/100 poss"),
-        paste0(att_rmse, " million"),
-        as.character(var_rmse_value)
-    ),
-    Key_Finding = c(
-        "Shot selection and skill predict efficiency",
-        "COVID shock dominates attendance patterns",
-        "Bidirectional feedback between variables"
-    ),
-    stringsAsFactors = FALSE
-)
-
-kable(summary_table,
-    format = "html",
-    caption = "Summary of Fitted Multivariate Models",
-    col.names = c("Model", "Best Specification", "Test RMSE", "Key Finding")
-) %>%
-    kable_styling(
-        full_width = TRUE,
-        bootstrap_options = c("striped", "hover", "condensed", "responsive"),
-        font_size = 12
-    ) %>%
-    column_spec(1, bold = TRUE, width = "20%") %>%
-    column_spec(4, width = "30%")
-
-cat("\n========================================\n")
-```
-
-## Key Insights
-
-### 1. ARIMAX vs VAR: Choosing the Right Framework
-
-The two multivariate approaches serve different purposes:
-
-- **Use ARIMAX** when one variable is clearly the "response" and others are external drivers (unidirectional causation)
-  - Example: Attendance driven by game quality and COVID restrictions
-
-- **Use VAR** when variables mutually influence each other with no clear directionality (bidirectional feedback)
-  - Example: ORtg, Pace, and 3PAr co-evolving in a dynamic system
-
-### 2. Exogenous Variables Add Real Predictive Power
-
-Both ARIMAX applications outperformed plain ARIMA models, confirming that:
-
-- **Shot selection and skill** (3PAr, TS%) improve ORtg forecasts beyond temporal patterns alone
-- **The COVID dummy was essential** for attendance modeling—without it, the pandemic shock appears as inexplicable forecast error
-
-Including the right exogenous variables isn't just theoretically justified; it's empirically beneficial.
-
-### 3. The Analytics Revolution's Temporal Structure
-
-Our models reveal *how* the transformation unfolded:
-
-- **3PAr and TS% significantly predict ORtg** (ARIMAX confirms correlational structure)
-- **Granger causality tests determine temporal ordering**: Did strategy precede efficiency, or vice versa?
-- **VAR captures bidirectional feedback**: Success breeds more experimentation, experimentation breeds success
-
-The analytics revolution wasn't a one-time decision—it was an iterative process of strategic experimentation and reinforcement learning.
-
-### 4. COVID-19 as a Natural Experiment
-
-Intervention analysis quantifies what everyone witnessed:
-
-- The **pandemic reduced attendance by ~20 million** (near-complete collapse)
-- This shock was **structural and unpredictable** from pre-2020 trends—no amount of historical data could forecast a global pandemic
-- The dummy variable approach cleanly separates the COVID effect from underlying trends
-
-### 5. Cross-Validation: The Reality Check
-
-Out-of-sample testing separated signal from noise:
-
-- In-sample fit can be misleading (models memorize rather than generalize)
-- **Test-set RMSE** reveals true predictive performance on unseen data
-- Some complex models fit training data beautifully but collapse when forecasting—the bias-variance trade-off in action
-
-```{r echo=FALSE}
-cat("\n")
-
-```
-
----
-
-## Looking Ahead: Models 4 & 5
-
-For the final portfolio submission, two additional multivariate models will extend this analysis:
-
-**Model 4: VAR(Pace, 3PAr, eFG%)**
-
-*Research Question*: Does pace drive shot selection, or vice versa? By modeling the co-evolution of game speed, three-point volume, and shooting efficiency, this VAR will reveal whether the analytics revolution prioritized tempo changes or shot distribution shifts.
-
-**Model 5: VAR(DKNG, Attendance, ORtg) — Weekly Data**
-
-*Research Question*: Do sports betting markets respond to NBA performance metrics and attendance recovery? Post-COVID, the sports gambling industry exploded. This model tests whether betting stock prices (DraftKings) react to game quality and fan engagement—linking basketball analytics to financial markets.
-
-These models represent natural extensions of the multivariate framework, exploring how basketball's transformation intersects with broader economic and strategic dynamics.
-
-```{r echo=FALSE}
-cat("\n")
-```
-
----
-
-# References
-
-- Franks, A., et al. (2015). "Characterizing the spatial structure of defensive skill in professional basketball." *Annals of Applied Statistics*, 9(1), 94-121.
-- Goldsberry, K. (2019). *Sprawlball: A Visual Tour of the New Era of the NBA*. Houghton Mifflin Harcourt.
-- Lopez, M. J., et al. (2020). "How the coronavirus pandemic altered professional basketball." *Journal of Sports Analytics*, 6(4), 239-252.
-- Poropudas, J., & Virtanen, K. (2023). "Dean Oliver's Four Factors: A Bayesian Analysis." *Journal of Quantitative Analysis in Sports*, 19(2), 87-103.
-- Rodenberg, R. M. (2011). "Sports betting market efficiency: Evidence from English football." *Applied Economics*, 43(29), 4635-4648.
+Impulse response functions trace how a one-time shock to one variable cascades through the system, showing whether innovations in one aspect of basketball strategy have lasting effects on others or if defensive adjustments eventually neutralize advantages. Together, these tools demonstrate that while the analytics revolution transformed the NBA, reflecting the complex adaptive nature of elite competition where strategic innovations provoke counter-responses.
