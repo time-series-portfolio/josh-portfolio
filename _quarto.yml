@@ -12,7 +12,7 @@ website:
       - text: About Me
         href: about.qmd
   sidebar:
-    style: docked        # "floating" if want it to scroll with the page
+    style: docked       
     collapse-level: 1    
     contents:
       - href: intro.qmd
