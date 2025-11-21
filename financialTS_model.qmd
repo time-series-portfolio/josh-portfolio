@@ -1,0 +1,1735 @@
+---
+title: "Financial Time Series Models"
+format:
+  html:
+    code-fold: true
+    toc: true
+    toc-depth: 3
+    embed-resources: true
+---
+
+# Theoretical Framework
+
+## Overview
+
+Having established the relationship between NBA performance and betting markets, we now shift our focus to the financial behavior of sports betting stocks themselves. In this chapter, these firms are treated as an independent financial ecosystem shaped by sports events, regulatory changes, and broader market forces.
+
+Financial returns exhibit volatility clustering, where periods of high or low volatility tend to persist. Because ARIMA models assume constant variance, they are not well suited for data with this property. GARCH models address this limitation by explicitly capturing time-varying volatility. The key insight is that while returns may be unpredictable due to market efficiency, volatility often follows predictable patterns that are essential for risk management, options pricing, and portfolio optimization.
+
+---
+
+```{r setup, warning=FALSE, message=FALSE}
+library(tidyverse)
+library(ggplot2)
+library(forecast)
+library(astsa)
+library(xts)
+library(tseries)
+library(fpp2)
+library(fma)
+library(lubridate)
+library(TSstudio)
+library(quantmod)
+library(tidyquant)
+library(plotly)
+library(imputeTS)
+library(dplyr)
+library(reshape2)
+library(gridExtra)
+library(zoo)
+library(kableExtra)
+library(vars)
+library(patchwork)
+library(moments)
+library(fGarch)
+
+theme_set(theme_minimal(base_size = 12))
+```
+
+# Data Preparation
+
+We analyze four major sports betting stocks—DraftKings (DKNG), a pure-play online sports betting and daily fantasy sports platform; Penn Entertainment (PENN), a regional casino operator partnered with ESPN BET; Caesars Entertainment (CZR), a major casino operator with the Caesars Sportsbook brand; and MGM Resorts International (MGM), a global casino and resort company behind BetMGM. All four firms operate within the fast-evolving sports betting and online gaming industry, where regulatory developments, earnings surprises, and competitive pressures contribute to pronounced volatility clustering.
+
+```{r load-data, warning=FALSE, message=FALSE}
+# Load all stock data
+dkng <- read_csv("data/financial/DKNG_daily.csv", show_col_types = FALSE)
+colnames(dkng) <- gsub("Adj Close", "Adj_Close", colnames(dkng))
+dkng <- dkng %>%
+    mutate(Date = as.Date(Date)) %>%
+    arrange(Date)
+
+penn <- read_csv("data/financial/PENN_daily.csv", show_col_types = FALSE)
+colnames(penn) <- gsub("Adj Close", "Adj_Close", colnames(penn))
+penn <- penn %>%
+    mutate(Date = as.Date(Date)) %>%
+    arrange(Date)
+
+czr <- read_csv("data/financial/CZR_daily.csv", show_col_types = FALSE)
+colnames(czr) <- gsub("Adj\\.Close", "Adj_Close", colnames(czr))
+
+if ("Adj_Close" %in% colnames(czr)) {
+    czr$Adj_Close <- as.numeric(czr$Adj_Close)
+}
+czr <- czr %>%
+    mutate(Date = as.Date(Date)) %>%
+    arrange(Date)
+
+mgm <- read_csv("data/financial/MGM_daily.csv", show_col_types = FALSE)
+colnames(mgm) <- gsub("Adj\\.Close", "Adj_Close", colnames(mgm))
+
+if ("Adj_Close" %in% colnames(mgm)) {
+    mgm$Adj_Close <- as.numeric(mgm$Adj_Close)
+}
+mgm <- mgm %>%
+    mutate(Date = as.Date(Date)) %>%
+    arrange(Date)
+```
+
+## Calculate Returns
+
+Financial time series models typically work with **returns** rather than prices because:
+
+1. **Stationarity**: Prices are non-stationary (trending), returns are closer to stationary
+2. **Scale Independence**: Returns normalize for price level (a $1 move matters more for a $10 stock than a $100 stock)
+3. **Theoretical Foundation**: Asset pricing models (CAPM, APT) are formulated in terms of returns
+
+We calculate **log returns** (continuously compounded):
+
+$$
+r_t = \ln(P_t) - \ln(P_{t-1}) = \ln\left(\frac{P_t}{P_{t-1}}\right)
+$$
+
+```{r calculate-returns, warning=FALSE, message=FALSE}
+# Calculate log returns for all stocks
+dkng$LogReturn <- c(NA, diff(log(dkng$Adj_Close)))
+dkng$Return_Pct <- dkng$LogReturn * 100
+dkng$Ticker <- "DKNG"
+dkng <- dkng %>% filter(!is.na(LogReturn))
+
+penn$LogReturn <- c(NA, diff(log(penn$Adj_Close)))
+penn$Return_Pct <- penn$LogReturn * 100
+penn$Ticker <- "PENN"
+penn <- penn %>% filter(!is.na(LogReturn))
+
+czr$LogReturn <- c(NA, diff(log(czr$Adj_Close)))
+czr$Return_Pct <- czr$LogReturn * 100
+czr$Ticker <- "CZR"
+czr <- czr %>% filter(!is.na(LogReturn))
+
+mgm$LogReturn <- c(NA, diff(log(mgm$Adj_Close)))
+mgm$Return_Pct <- mgm$LogReturn * 100
+mgm$Ticker <- "MGM"
+mgm <- mgm %>% filter(!is.na(LogReturn))
+
+# Summary statistics for all stocks
+stocks_list <- list(
+    DKNG = dkng$Return_Pct,
+    PENN = penn$Return_Pct,
+    CZR = czr$Return_Pct,
+    MGM = mgm$Return_Pct
+)
+
+cat("\n=== RETURNS SUMMARY STATISTICS ===\n\n")
+for (ticker in names(stocks_list)) {
+    returns <- stocks_list[[ticker]]
+    cat(ticker, ":\n")
+    cat("  Mean:", round(mean(returns), 4), "%\n")
+    cat("  Std Dev:", round(sd(returns), 4), "%\n")
+    cat("  Min:", round(min(returns), 4), "%\n")
+    cat("  Max:", round(max(returns), 4), "%\n")
+    cat("  Skewness:", round(moments::skewness(returns), 4), "\n")
+    cat("  Kurtosis:", round(moments::kurtosis(returns), 4), "\n\n")
+}
+```
+
+**Interpretation**: Excess kurtosis (>3) is a signature of financial returns, indicating fat tails extreme returns occur more frequently than a normal distribution would predict. This is another motivation for GARCH models.
+
+---
+
+# Data Visualization & Stationarity
+
+::: {.panel-tabset}
+
+## DraftKings (DKNG)
+
+::: {.panel-tabset}
+
+### Price & Returns Plot
+
+```{r dkng-price-returns, warning=FALSE, message=FALSE, fig.width=12, fig.height=8}
+p1 <- ggplot(dkng, aes(x = Date, y = Adj_Close)) +
+    geom_line(color = "#006bb6", linewidth = 0.8) +
+    labs(
+        title = "DraftKings (DKNG) Stock Price",
+        subtitle = "Daily Adjusted Close Price",
+        x = "Date", y = "Price ($)"
+    ) +
+    theme_minimal()
+
+p2 <- ggplot(dkng, aes(x = Date, y = Return_Pct)) +
+    geom_line(color = "darkred", linewidth = 0.5, alpha = 0.7) +
+    geom_hline(yintercept = 0, linetype = "dashed", color = "black") +
+    labs(
+        title = "DraftKings (DKNG) Daily Returns",
+        subtitle = "Log returns showing volatility clustering",
+        x = "Date", y = "Return (%)"
+    ) +
+    theme_minimal()
+
+p1 / p2
+```
+
+**Observations**:
+
+- **Price Series**: Non-stationary with clear trends. DKNG went public via SPAC merger in 2020, experienced a pandemic boom, then declined as competition intensified.
+- **Returns Series**: Appears stationary around zero mean, but exhibits clear **volatility clustering**. Periods of calm (2021-early 2022) alternate with turbulence (late 2022, 2024).
+
+### Volatility Clustering
+
+```{r dkng-volatility-cluster, warning=FALSE, message=FALSE, fig.width=12, fig.height=8}
+# Calculate rolling volatility (20-day window)
+dkng <- dkng %>%
+    arrange(Date) %>%
+    mutate(
+        Roll_Vol_20 = zoo::rollapply(Return_Pct, width = 20, FUN = sd, fill = NA, align = "right"),
+        Abs_Return = abs(Return_Pct)
+    )
+
+p3 <- ggplot(dkng, aes(x = Date, y = Abs_Return)) +
+    geom_line(color = "purple", alpha = 0.6) +
+    labs(
+        title = "Absolute Returns (Proxy for Volatility)",
+        x = "Date", y = "|Return| (%)"
+    ) +
+    theme_minimal()
+
+p4 <- ggplot(dkng, aes(x = Date, y = Roll_Vol_20)) +
+    geom_line(color = "darkgreen", linewidth = 0.8) +
+    labs(
+        title = "20-Day Rolling Volatility",
+        x = "Date", y = "Volatility (% std dev)"
+    ) +
+    theme_minimal()
+
+p3 / p4
+```
+
+**Volatility Clustering Evidence**:
+
+The rolling volatility plot clearly shows time-varying variance. Volatility is not constant it rises sharply during market stress and falls during stable periods. This visual evidence motivates GARCH modeling.
+
+### ACF/PACF Analysis
+
+```{r dkng-acf-returns, warning=FALSE, message=FALSE, fig.width=12, fig.height=6}
+# ACF/PACF of returns
+par(mfrow = c(1, 2))
+acf(dkng$Return_Pct, lag.max = 30, main = "ACF: DKNG Returns")
+pacf(dkng$Return_Pct, lag.max = 30, main = "PACF: DKNG Returns")
+par(mfrow = c(1, 1))
+```
+
+```{r dkng-acf-squared, warning=FALSE, message=FALSE, fig.width=12, fig.height=6}
+# ACF/PACF of squared returns (test for ARCH effects)
+par(mfrow = c(1, 2))
+acf(dkng$Return_Pct^2, lag.max = 30, main = "ACF: Squared Returns (DKNG)")
+pacf(dkng$Return_Pct^2, lag.max = 30, main = "PACF: Squared Returns (DKNG)")
+par(mfrow = c(1, 1))
+```
+
+**Key Findings**:
+
+- **Returns ACF/PACF**: Minimal autocorrelation at most lags (consistent with weak-form market efficiency). Returns themselves are largely unpredictable.
+- **Squared Returns ACF/PACF**: **Strong autocorrelation** at multiple lags. This is the signature of ARCH effects while returns are unpredictable, volatility (proxied by squared returns) is highly predictable and persistent.
+  
+### Stationarity Tests
+
+```{r dkng-stationarity, warning=FALSE, message=FALSE}
+# ADF test on returns
+adf_dkng <- adf.test(dkng$Return_Pct)
+
+cat("=== Augmented Dickey-Fuller Test ===\n")
+cat("Null Hypothesis: Series has a unit root (non-stationary)\n\n")
+cat("ADF Statistic:", round(adf_dkng$statistic, 4), "\n")
+cat("p-value:", round(adf_dkng$p.value, 4), "\n")
+cat("Conclusion:", ifelse(adf_dkng$p.value < 0.05,
+    "Reject H0 - Returns are STATIONARY",
+    "Fail to reject H0 - Returns are NON-STATIONARY"
+), "\n")
+```
+
+**Stationarity Conclusion**: The ADF test confirms that DKNG returns are stationary (p < 0.01). This validates our use of returns rather than prices and confirms that we don't need differencing in the mean equation (d=0 in ARIMA terms).
+
+:::
+
+---
+
+## Penn Entertainment (PENN)
+
+::: {.panel-tabset}
+
+### Price & Returns Plot
+
+```{r penn-price-returns, warning=FALSE, message=FALSE, fig.width=12, fig.height=8}
+p5 <- ggplot(penn, aes(x = Date, y = Adj_Close)) +
+    geom_line(color = "#006bb6", linewidth = 0.8) +
+    labs(
+        title = "Penn Entertainment (PENN) Stock Price",
+        subtitle = "Daily Adjusted Close Price",
+        x = "Date", y = "Price ($)"
+    ) +
+    theme_minimal()
+
+p6 <- ggplot(penn, aes(x = Date, y = Return_Pct)) +
+    geom_line(color = "darkred", linewidth = 0.5, alpha = 0.7) +
+    geom_hline(yintercept = 0, linetype = "dashed", color = "black") +
+    labs(
+        title = "Penn Entertainment (PENN) Daily Returns",
+        subtitle = "Log returns showing volatility clustering",
+        x = "Date", y = "Return (%)"
+    ) +
+    theme_minimal()
+
+p5 / p6
+```
+
+**Observations**:
+
+- **Price Series**: Even more volatile than DKNG. PENN's business model shifted from Barstool Sports (2020-2023) to ESPN BET (2023-present), creating structural breaks and extreme volatility.
+- **Returns Series**: Strong volatility clustering with several extreme spikes. This suggests PENN may exhibit even stronger GARCH effects than DKNG.
+
+### Volatility Clustering
+
+```{r penn-volatility-cluster, warning=FALSE, message=FALSE, fig.width=12, fig.height=8}
+penn <- penn %>%
+    arrange(Date) %>%
+    mutate(
+        Roll_Vol_20 = zoo::rollapply(Return_Pct, width = 20, FUN = sd, fill = NA, align = "right"),
+        Abs_Return = abs(Return_Pct)
+    )
+
+p7 <- ggplot(penn, aes(x = Date, y = Abs_Return)) +
+    geom_line(color = "purple", alpha = 0.6) +
+    labs(
+        title = "Absolute Returns (Proxy for Volatility)",
+        x = "Date", y = "|Return| (%)"
+    ) +
+    theme_minimal()
+
+p8 <- ggplot(penn, aes(x = Date, y = Roll_Vol_20)) +
+    geom_line(color = "darkgreen", linewidth = 0.8) +
+    labs(
+        title = "20-Day Rolling Volatility",
+        x = "Date", y = "Volatility (% std dev)"
+    ) +
+    theme_minimal()
+
+p7 / p8
+```
+
+### ACF/PACF Analysis
+
+```{r penn-acf-returns, warning=FALSE, message=FALSE, fig.width=12, fig.height=6}
+par(mfrow = c(1, 2))
+acf(penn$Return_Pct, lag.max = 30, main = "ACF: PENN Returns")
+pacf(penn$Return_Pct, lag.max = 30, main = "PACF: PENN Returns")
+par(mfrow = c(1, 1))
+```
+
+```{r penn-acf-squared, warning=FALSE, message=FALSE, fig.width=12, fig.height=6}
+par(mfrow = c(1, 2))
+acf(penn$Return_Pct^2, lag.max = 30, main = "ACF: Squared Returns (PENN)")
+pacf(penn$Return_Pct^2, lag.max = 30, main = "PACF: Squared Returns (PENN)")
+par(mfrow = c(1, 1))
+```
+
+**Key Findings**:
+
+Similar to DKNG: returns show weak autocorrelation, but squared returns exhibit strong autocorrelation, indicating ARCH effects. The PACF of squared returns shows significant spikes at early lags, suggesting GARCH(1,1) may be appropriate.
+
+### Stationarity Tests
+
+```{r penn-stationarity, warning=FALSE, message=FALSE}
+adf_penn <- adf.test(penn$Return_Pct)
+
+cat("=== Augmented Dickey-Fuller Test ===\n")
+cat("ADF Statistic:", round(adf_penn$statistic, 4), "\n")
+cat("p-value:", round(adf_penn$p.value, 4), "\n")
+cat("Conclusion:", ifelse(adf_penn$p.value < 0.05,
+    "Reject H0 � Returns are STATIONARY",
+    "Fail to reject H0 � Returns are NON-STATIONARY"
+), "\n")
+```
+
+:::
+
+## Caesars Entertainment (CZR)
+
+::: {.panel-tabset}
+
+### Price & Returns
+
+```{r czr-price-returns, warning=FALSE, message=FALSE, fig.width=12, fig.height=8}
+p_czr1 <- ggplot(czr, aes(x = Date, y = Adj_Close)) +
+    geom_line(color = "#006bb6", linewidth = 0.8) +
+    labs(
+        title = "Caesars Entertainment (CZR) Stock Price",
+        x = "Date", y = "Price ($)"
+    ) +
+    theme_minimal()
+
+p_czr2 <- ggplot(czr, aes(x = Date, y = Return_Pct)) +
+    geom_line(color = "darkred", linewidth = 0.5, alpha = 0.7) +
+    geom_hline(yintercept = 0, linetype = "dashed", color = "black") +
+    labs(
+        title = "Caesars Entertainment (CZR) Daily Returns",
+        x = "Date", y = "Return (%)"
+    ) +
+    theme_minimal()
+
+p_czr1 / p_czr2
+```
+
+### Volatility & ACF
+
+```{r czr-vol-acf, warning=FALSE, message=FALSE, fig.width=12, fig.height=6}
+czr <- czr %>%
+    arrange(Date) %>%
+    mutate(Roll_Vol_20 = zoo::rollapply(Return_Pct, width = 20, FUN = sd, fill = NA, align = "right"))
+
+p_czr_vol <- ggplot(czr, aes(x = Date, y = Roll_Vol_20)) +
+    geom_line(color = "darkgreen", linewidth = 0.8) +
+    labs(title = "CZR: 20-Day Rolling Volatility", y = "Volatility (%)") +
+    theme_minimal()
+
+print(p_czr_vol)
+
+par(mfrow = c(1, 2))
+acf(czr$Return_Pct^2, lag.max = 30, main = "ACF: Squared Returns (CZR)")
+pacf(czr$Return_Pct^2, lag.max = 30, main = "PACF: Squared Returns (CZR)")
+par(mfrow = c(1, 1))
+```
+
+**Observations**: CZR shows volatility clustering typical of casino/gaming stocks, with moderate ARCH effects visible in squared returns ACF.
+
+:::
+
+## MGM Resorts (MGM)
+
+::: {.panel-tabset}
+
+### Price & Returns
+
+```{r mgm-price-returns, warning=FALSE, message=FALSE, fig.width=12, fig.height=8}
+p_mgm1 <- ggplot(mgm, aes(x = Date, y = Adj_Close)) +
+    geom_line(color = "#006bb6", linewidth = 0.8) +
+    labs(
+        title = "MGM Resorts (MGM) Stock Price",
+        x = "Date", y = "Price ($)"
+    ) +
+    theme_minimal()
+
+p_mgm2 <- ggplot(mgm, aes(x = Date, y = Return_Pct)) +
+    geom_line(color = "darkred", linewidth = 0.5, alpha = 0.7) +
+    geom_hline(yintercept = 0, linetype = "dashed", color = "black") +
+    labs(
+        title = "MGM Resorts (MGM) Daily Returns",
+        x = "Date", y = "Return (%)"
+    ) +
+    theme_minimal()
+
+p_mgm1 / p_mgm2
+```
+
+### Volatility & ACF
+
+```{r mgm-vol-acf, warning=FALSE, message=FALSE, fig.width=12, fig.height=6}
+mgm <- mgm %>%
+    arrange(Date) %>%
+    mutate(Roll_Vol_20 = zoo::rollapply(Return_Pct, width = 20, FUN = sd, fill = NA, align = "right"))
+
+p_mgm_vol <- ggplot(mgm, aes(x = Date, y = Roll_Vol_20)) +
+    geom_line(color = "darkgreen", linewidth = 0.8) +
+    labs(title = "MGM: 20-Day Rolling Volatility", y = "Volatility (%)") +
+    theme_minimal()
+
+print(p_mgm_vol)
+
+par(mfrow = c(1, 2))
+acf(mgm$Return_Pct^2, lag.max = 30, main = "ACF: Squared Returns (MGM)")
+pacf(mgm$Return_Pct^2, lag.max = 30, main = "PACF: Squared Returns (MGM)")
+par(mfrow = c(1, 1))
+```
+
+**Observations**: MGM exhibits similar volatility clustering patterns, characteristic of the gaming/hospitality sector with sports betting exposure.
+
+:::
+
+:::
+
+---
+
+# Model Fitting
+
+::: {.panel-tabset}
+
+## DraftKings (DKNG) Model
+
+::: {.panel-tabset}
+
+### Step 1: Mean Equation Selection
+
+```{r dkng-mean-models, warning=FALSE, message=FALSE}
+# Prepare data
+dkng_returns <- dkng$Return_Pct
+
+# Fit candidate mean models (without GARCH first)
+mean_models <- list(
+    ARMA00 = arima(dkng_returns, order = c(0, 0, 0)),
+    ARMA10 = arima(dkng_returns, order = c(1, 0, 0)),
+    ARMA01 = arima(dkng_returns, order = c(0, 0, 1)),
+    ARMA11 = arima(dkng_returns, order = c(1, 0, 1))
+)
+
+# Compare AIC
+mean_aic <- data.frame(
+    Model = names(mean_models),
+    AIC = sapply(mean_models, AIC),
+    BIC = sapply(mean_models, BIC)
+)
+
+cat("=== Mean Equation Comparison ===\n\n")
+kable(mean_aic,
+    format = "html",
+    digits = 2,
+    caption = "Model Comparison: Mean Equation Only"
+) %>%
+    kable_styling(
+        full_width = FALSE,
+        bootstrap_options = c("striped", "hover", "condensed", "responsive")
+    ) %>%
+    row_spec(which.min(mean_aic$AIC), bold = TRUE, color = "white", background = "#006bb6")
+```
+
+### Step 2: Check for ARCH Effects
+
+```{r dkng-arch-test, warning=FALSE, message=FALSE, fig.width=12, fig.height=8}
+# Use best mean model from AIC
+best_mean_idx <- which.min(mean_aic$AIC)
+best_mean_model <- mean_models[[best_mean_idx]]
+best_mean_name <- names(mean_models)[best_mean_idx]
+
+cat("\nSelected Mean Model:", best_mean_name, "\n\n")
+
+# Extract residuals
+resid_mean <- residuals(best_mean_model)
+
+# Plot standardized residuals and squared residuals
+par(mfrow = c(2, 2))
+plot(resid_mean, type = "l", main = "Standardized Residuals", ylab = "Residuals")
+abline(h = 0, col = "red", lty = 2)
+plot(resid_mean^2, type = "l", main = "Squared Residuals", ylab = "Residuals�")
+acf(resid_mean^2, lag.max = 30, main = "ACF: Squared Residuals")
+pacf(resid_mean^2, lag.max = 30, main = "PACF: Squared Residuals")
+par(mfrow = c(1, 1))
+
+# ARCH LM test
+arch_test <- FinTS::ArchTest(resid_mean, lags = 12)
+cat("\n=== ARCH LM Test ===\n")
+cat("Null Hypothesis: No ARCH effects\n")
+cat("Chi-squared:", round(arch_test$statistic, 4), "\n")
+cat("p-value:", format(arch_test$p.value, scientific = FALSE), "\n")
+cat("Conclusion:", ifelse(arch_test$p.value < 0.05,
+    "REJECT H0 � ARCH effects present � GARCH modeling needed",
+    "Fail to reject H0 � No ARCH effects"
+), "\n")
+```
+
+**Interpretation**:
+
+- **Squared Residuals**: Show clear autocorrelation even after fitting the mean equation
+- **ARCH LM Test**: Highly significant (p < 0.05), confirming ARCH effects
+- **Conclusion**: We need to add a GARCH variance equation to properly model volatility
+
+### Step 3: Fit ARMA+GARCH Models
+
+Now we fit complete models with GARCH(1,1) variance equation:
+
+```{r dkng-garch-models, warning=FALSE, message=FALSE}
+# Model specifications to test
+model_specs <- list(
+    list(formula = ~ garch(1, 1), name = "ARMA(0,0)+GARCH(1,1)"),
+    list(formula = ~ arma(1, 0) + garch(1, 1), name = "ARMA(1,0)+GARCH(1,1)"),
+    list(formula = ~ arma(0, 1) + garch(1, 1), name = "ARMA(0,1)+GARCH(1,1)"),
+    list(formula = ~ arma(1, 1) + garch(1, 1), name = "ARMA(1,1)+GARCH(1,1)")
+)
+
+# Fit all models
+garch_models <- list()
+garch_results <- data.frame()
+
+for (spec in model_specs) {
+    # Fit model
+    fit <- tryCatch(
+        {
+            garchFit(formula = spec$formula, data = dkng_returns, trace = FALSE)
+        },
+        error = function(e) {
+            cat("Warning: Failed to fit", spec$name, "\n")
+            NULL
+        }
+    )
+
+    if (!is.null(fit)) {
+        garch_models[[spec$name]] <- fit
+
+        # Extract information criteria
+        aic_val <- fit@fit$ics["AIC"]
+        bic_val <- fit@fit$ics["BIC"]
+        loglik_val <- fit@fit$llh
+
+        garch_results <- rbind(garch_results, data.frame(
+            Model = spec$name,
+            AIC = aic_val,
+            BIC = bic_val,
+            Log_Likelihood = loglik_val
+        ))
+    }
+}
+
+cat("=== GARCH Model Comparison ===\n\n")
+```
+
+```{r dkng-garch-table, warning=FALSE, message=FALSE, results='asis', echo=FALSE}
+if (nrow(garch_results) > 0) {
+    kable(garch_results,
+        format = "html",
+        digits = 4,
+        caption = "Model Comparison: ARMA+GARCH(1,1) Models for DKNG",
+        row.names = FALSE
+    ) %>%
+        kable_styling(
+            full_width = FALSE,
+            bootstrap_options = c("striped", "hover", "condensed", "responsive")
+        ) %>%
+        row_spec(which.min(garch_results$AIC), bold = TRUE, color = "white", background = "#006bb6")
+}
+```
+
+```{r dkng-best-model, warning=FALSE, message=FALSE}
+# Select best model
+best_garch_idx <- which.min(garch_results$AIC)
+best_garch_name <- garch_results$Model[best_garch_idx]
+best_garch_model <- garch_models[[best_garch_name]]
+
+cat("\n*** BEST MODEL:", best_garch_name, "***\n\n")
+cat("Model Coefficients:\n")
+print(coef(best_garch_model))
+```
+
+### Step 4: Model Diagnostics
+
+```{r dkng-diagnostics, warning=FALSE, message=FALSE, fig.width=12, fig.height=10}
+# Extract standardized residuals
+std_resid <- residuals(best_garch_model, standardize = TRUE)
+
+# Diagnostic plots
+par(mfrow = c(3, 2))
+
+# 1. Standardized residuals
+plot(std_resid, type = "l", main = "Standardized Residuals", ylab = "Std. Residuals")
+abline(h = 0, col = "red", lty = 2)
+abline(h = c(-2, 2), col = "blue", lty = 2)
+
+# 2. Squared standardized residuals
+plot(std_resid^2, type = "l", main = "Squared Standardized Residuals", ylab = "Std. Residuals�")
+
+# 3. ACF of standardized residuals
+acf(std_resid, lag.max = 20, main = "ACF: Standardized Residuals")
+
+# 4. ACF of squared standardized residuals
+acf(std_resid^2, lag.max = 20, main = "ACF: Squared Std. Residuals")
+
+# 5. QQ plot
+qqnorm(std_resid, main = "Q-Q Plot: Standardized Residuals")
+qqline(std_resid, col = "red")
+
+# 6. Histogram
+hist(std_resid, breaks = 50, probability = TRUE, main = "Distribution of Std. Residuals", xlab = "Std. Residuals")
+curve(dnorm(x), add = TRUE, col = "red", lwd = 2)
+
+par(mfrow = c(1, 1))
+```
+
+```{r dkng-ljung-box, warning=FALSE, message=FALSE}
+# Ljung-Box test on standardized residuals
+cat("\n=== Ljung-Box Test (Standardized Residuals) ===\n")
+cat("Null Hypothesis: Residuals are white noise (no autocorrelation)\n\n")
+
+lb_test_resid <- Box.test(std_resid, lag = 10, type = "Ljung-Box", fitdf = 0)
+cat("Lag 10:\n")
+cat("  Q-statistic:", round(lb_test_resid$statistic, 4), "\n")
+cat("  p-value:", round(lb_test_resid$p.value, 4), "\n")
+cat("  Conclusion:", ifelse(lb_test_resid$p.value > 0.05,
+    "No autocorrelation detected (good)",
+    "Autocorrelation detected (concern)"
+), "\n\n")
+
+# Ljung-Box test on squared standardized residuals
+cat("=== Ljung-Box Test (Squared Standardized Residuals) ===\n")
+cat("Null Hypothesis: No remaining ARCH effects\n\n")
+
+lb_test_sq <- Box.test(std_resid^2, lag = 10, type = "Ljung-Box", fitdf = 0)
+cat("Lag 10:\n")
+cat("  Q-statistic:", round(lb_test_sq$statistic, 4), "\n")
+cat("  p-value:", round(lb_test_sq$p.value, 4), "\n")
+cat("  Conclusion:", ifelse(lb_test_sq$p.value > 0.05,
+    "ARCH effects successfully captured (good)",
+    "Remaining ARCH effects (may need higher order)"
+), "\n")
+```
+
+**Diagnostic Interpretation**:
+
+- **ACF of Std. Residuals**: No significant autocorrelation (validates mean equation)
+- **Ljung-Box Tests**: p-values > 0.05 indicate the model has adequately captured temporal dependencies
+- **Q-Q Plot**: Some deviation in tails suggests fat-tailed distribution (could consider t-distribution)
+
+### Step 5: Volatility Forecast
+
+```{r dkng-volatility-forecast, warning=FALSE, message=FALSE, fig.width=12, fig.height=8}
+# Extract conditional volatility
+cond_vol <- best_garch_model@sigma.t
+
+# Create data frame for plotting
+vol_df <- data.frame(
+    Date = dkng$Date,
+    Return_Pct = dkng$Return_Pct,
+    Cond_Vol = as.numeric(cond_vol)
+)
+
+# Plot returns with conditional volatility bands
+ggplot(vol_df, aes(x = Date)) +
+    geom_line(aes(y = Return_Pct), color = "black", alpha = 0.6, linewidth = 0.4) +
+    geom_ribbon(aes(ymin = -2 * Cond_Vol, ymax = 2 * Cond_Vol),
+        fill = "blue", alpha = 0.2
+    ) +
+    geom_line(aes(y = 2 * Cond_Vol), color = "blue", linetype = "dashed", linewidth = 0.6) +
+    geom_line(aes(y = -2 * Cond_Vol), color = "blue", linetype = "dashed", linewidth = 0.6) +
+    geom_hline(yintercept = 0, linetype = "solid", color = "red", linewidth = 0.5) +
+    labs(
+        title = "DKNG: Returns with GARCH Conditional Volatility (�2� bands)",
+        subtitle = "Blue bands show time-varying volatility forecast",
+        x = "Date",
+        y = "Return (%)"
+    ) +
+    theme_minimal()
+
+# Plot conditional volatility over time
+ggplot(vol_df, aes(x = Date, y = Cond_Vol)) +
+    geom_line(color = "darkgreen", linewidth = 0.8) +
+    labs(
+        title = "DKNG: GARCH Conditional Volatility Over Time",
+        subtitle = "Volatility forecast from GARCH(1,1) model",
+        x = "Date",
+        y = "Conditional Volatility (%)"
+    ) +
+    theme_minimal()
+
+cat("\nCurrent Volatility (last observation):", round(tail(cond_vol, 1), 4), "%\n")
+cat("Average Volatility:", round(mean(cond_vol), 4), "%\n")
+cat("Max Volatility:", round(max(cond_vol), 4), "%\n")
+```
+
+:::
+
+---
+
+## Penn Entertainment (PENN) Model
+
+Following the same procedure for PENN:
+
+::: {.panel-tabset}
+
+### Mean Equation & ARCH Test
+
+```{r penn-mean-models, warning=FALSE, message=FALSE}
+penn_returns <- penn$Return_Pct
+
+# Fit candidate mean models
+mean_models_penn <- list(
+    ARMA00 = arima(penn_returns, order = c(0, 0, 0)),
+    ARMA10 = arima(penn_returns, order = c(1, 0, 0)),
+    ARMA01 = arima(penn_returns, order = c(0, 0, 1)),
+    ARMA11 = arima(penn_returns, order = c(1, 0, 1))
+)
+
+mean_aic_penn <- data.frame(
+    Model = names(mean_models_penn),
+    AIC = sapply(mean_models_penn, AIC),
+    BIC = sapply(mean_models_penn, BIC)
+)
+
+cat("=== PENN Mean Equation Comparison ===\n\n")
+kable(mean_aic_penn,
+    format = "html",
+    digits = 2,
+    caption = "Model Comparison: Mean Equation Only (PENN)"
+) %>%
+    kable_styling(
+        full_width = FALSE,
+        bootstrap_options = c("striped", "hover", "condensed", "responsive")
+    ) %>%
+    row_spec(which.min(mean_aic_penn$AIC), bold = TRUE, color = "white", background = "#006bb6")
+
+# ARCH test
+best_mean_penn <- mean_models_penn[[which.min(mean_aic_penn$AIC)]]
+resid_penn <- residuals(best_mean_penn)
+
+arch_test_penn <- FinTS::ArchTest(resid_penn, lags = 12)
+cat("\n=== ARCH LM Test (PENN) ===\n")
+cat("p-value:", format(arch_test_penn$p.value, scientific = FALSE), "\n")
+cat("Conclusion:", ifelse(arch_test_penn$p.value < 0.05,
+    "ARCH effects present � GARCH needed",
+    "No ARCH effects"
+), "\n")
+```
+
+### GARCH Model Fitting
+
+```{r penn-garch-models, warning=FALSE, message=FALSE}
+garch_models_penn <- list()
+garch_results_penn <- data.frame()
+
+for (spec in model_specs) {
+    # Fit model using fGarch
+    fit <- tryCatch(
+        {
+            garchFit(formula = spec$formula, data = penn_returns, trace = FALSE)
+        },
+        error = function(e) {
+            cat("Warning: Failed to fit", spec$name, "for PENN\n")
+            NULL
+        }
+    )
+
+    if (!is.null(fit)) {
+        garch_models_penn[[spec$name]] <- fit
+
+        # Extract information criteria
+        aic_val <- fit@fit$ics["AIC"]
+        bic_val <- fit@fit$ics["BIC"]
+        loglik_val <- fit@fit$llh
+
+        garch_results_penn <- rbind(garch_results_penn, data.frame(
+            Model = spec$name,
+            AIC = aic_val,
+            BIC = bic_val,
+            Log_Likelihood = loglik_val
+        ))
+    }
+}
+
+cat("=== PENN GARCH Model Comparison ===\n\n")
+```
+
+```{r penn-garch-table, warning=FALSE, message=FALSE, results='asis', echo=FALSE}
+if (nrow(garch_results_penn) > 0) {
+    kable(garch_results_penn,
+        format = "html",
+        digits = 4,
+        caption = "Model Comparison: ARMA+GARCH(1,1) Models for PENN",
+        row.names = FALSE
+    ) %>%
+        kable_styling(
+            full_width = FALSE,
+            bootstrap_options = c("striped", "hover", "condensed", "responsive")
+        ) %>%
+        row_spec(which.min(garch_results_penn$AIC), bold = TRUE, color = "white", background = "#006bb6")
+}
+```
+
+```{r penn-best-model, warning=FALSE, message=FALSE}
+best_garch_penn <- garch_models_penn[[which.min(garch_results_penn$AIC)]]
+best_name_penn <- garch_results_penn$Model[which.min(garch_results_penn$AIC)]
+
+cat("\n*** BEST MODEL:", best_name_penn, "***\n\n")
+cat("Model Coefficients:\n")
+print(coef(best_garch_penn))
+```
+
+### Diagnostics
+
+```{r penn-diagnostics, warning=FALSE, message=FALSE, fig.width=12, fig.height=10}
+std_resid_penn <- residuals(best_garch_penn, standardize = TRUE)
+
+par(mfrow = c(3, 2))
+plot(std_resid_penn, type = "l", main = "Standardized Residuals (PENN)")
+abline(h = 0, col = "red", lty = 2)
+plot(std_resid_penn^2, type = "l", main = "Squared Std. Residuals (PENN)")
+acf(std_resid_penn, lag.max = 20, main = "ACF: Std. Residuals")
+acf(std_resid_penn^2, lag.max = 20, main = "ACF: Squared Std. Residuals")
+qqnorm(std_resid_penn, main = "Q-Q Plot")
+qqline(std_resid_penn, col = "red")
+hist(std_resid_penn, breaks = 50, probability = TRUE, main = "Distribution")
+curve(dnorm(x), add = TRUE, col = "red", lwd = 2)
+par(mfrow = c(1, 1))
+
+# Ljung-Box tests
+lb_penn <- Box.test(std_resid_penn, lag = 10, type = "Ljung-Box")
+lb_penn_sq <- Box.test(std_resid_penn^2, lag = 10, type = "Ljung-Box")
+
+cat("\nLjung-Box (Std. Residuals): p =", round(lb_penn$p.value, 4), "\n")
+cat("Ljung-Box (Squared): p =", round(lb_penn_sq$p.value, 4), "\n")
+```
+
+### Volatility Forecast
+
+```{r penn-volatility, warning=FALSE, message=FALSE, fig.width=12, fig.height=8}
+cond_vol_penn <- best_garch_penn@sigma.t
+
+vol_df_penn <- data.frame(
+    Date = penn$Date,
+    Return_Pct = penn$Return_Pct,
+    Cond_Vol = as.numeric(cond_vol_penn)
+)
+
+ggplot(vol_df_penn, aes(x = Date)) +
+    geom_line(aes(y = Return_Pct), color = "black", alpha = 0.6, linewidth = 0.4) +
+    geom_ribbon(aes(ymin = -2 * Cond_Vol, ymax = 2 * Cond_Vol),
+        fill = "red", alpha = 0.2
+    ) +
+    geom_line(aes(y = 2 * Cond_Vol), color = "red", linetype = "dashed", linewidth = 0.6) +
+    geom_line(aes(y = -2 * Cond_Vol), color = "red", linetype = "dashed", linewidth = 0.6) +
+    geom_hline(yintercept = 0, linetype = "solid", color = "black", linewidth = 0.5) +
+    labs(
+        title = "PENN: Returns with GARCH Conditional Volatility",
+        x = "Date", y = "Return (%)"
+    ) +
+    theme_minimal()
+
+ggplot(vol_df_penn, aes(x = Date, y = Cond_Vol)) +
+    geom_line(color = "darkred", linewidth = 0.8) +
+    labs(
+        title = "PENN: GARCH Conditional Volatility",
+        x = "Date", y = "Conditional Volatility (%)"
+    ) +
+    theme_minimal()
+```
+
+:::
+
+## Caesars Entertainment (CZR) Model
+
+::: {.panel-tabset}
+
+### Mean Equation & ARCH Test
+
+```{r czr-mean-models, warning=FALSE, message=FALSE}
+czr_returns <- czr$Return_Pct
+
+# Fit candidate mean models
+mean_models_czr <- list(
+    ARMA00 = arima(czr_returns, order = c(0, 0, 0)),
+    ARMA10 = arima(czr_returns, order = c(1, 0, 0)),
+    ARMA01 = arima(czr_returns, order = c(0, 0, 1)),
+    ARMA11 = arima(czr_returns, order = c(1, 0, 1))
+)
+
+mean_aic_czr <- data.frame(
+    Model = names(mean_models_czr),
+    AIC = sapply(mean_models_czr, AIC),
+    BIC = sapply(mean_models_czr, BIC)
+)
+
+cat("=== CZR Mean Equation Comparison ===\n\n")
+kable(mean_aic_czr,
+    format = "html",
+    digits = 2,
+    caption = "Model Comparison: Mean Equation Only (CZR)"
+) %>%
+    kable_styling(
+        full_width = FALSE,
+        bootstrap_options = c("striped", "hover", "condensed", "responsive")
+    ) %>%
+    row_spec(which.min(mean_aic_czr$AIC), bold = TRUE, color = "white", background = "#006bb6")
+
+# ARCH test
+best_mean_czr <- mean_models_czr[[which.min(mean_aic_czr$AIC)]]
+resid_czr <- residuals(best_mean_czr)
+
+cat("\n")
+
+# Plot squared residuals
+par(mfrow = c(1, 2))
+acf(resid_czr^2, lag.max = 30, main = "ACF: Squared Residuals (CZR)")
+pacf(resid_czr^2, lag.max = 30, main = "PACF: Squared Residuals (CZR)")
+par(mfrow = c(1, 1))
+
+arch_test_czr <- FinTS::ArchTest(resid_czr, lags = 12)
+cat("\n=== ARCH LM Test (CZR) ===\n")
+cat("Chi-squared:", round(arch_test_czr$statistic, 4), "\n")
+cat("p-value:", format(arch_test_czr$p.value, scientific = FALSE), "\n")
+cat("Conclusion:", ifelse(arch_test_czr$p.value < 0.05,
+    "ARCH effects present → GARCH needed",
+    "No ARCH effects"
+), "\n")
+```
+
+**Interpretation**: The ACF/PACF of squared residuals show significant autocorrelation at multiple lags, and the ARCH LM test confirms the presence of ARCH effects. This validates the need for GARCH modeling to capture CZR's time-varying volatility.
+
+### GARCH Model Fitting
+
+```{r czr-garch-models, warning=FALSE, message=FALSE}
+garch_models_czr <- list()
+garch_results_czr <- data.frame()
+
+for (spec in model_specs) {
+    # Fit model using fGarch
+    fit <- tryCatch(
+        {
+            garchFit(formula = spec$formula, data = czr_returns, trace = FALSE)
+        },
+        error = function(e) {
+            cat("Warning: Failed to fit", spec$name, "for CZR\n")
+            NULL
+        }
+    )
+
+    if (!is.null(fit)) {
+        garch_models_czr[[spec$name]] <- fit
+
+        # Extract information criteria
+        aic_val <- fit@fit$ics["AIC"]
+        bic_val <- fit@fit$ics["BIC"]
+        loglik_val <- fit@fit$llh
+
+        garch_results_czr <- rbind(garch_results_czr, data.frame(
+            Model = spec$name,
+            AIC = aic_val,
+            BIC = bic_val,
+            Log_Likelihood = loglik_val
+        ))
+    }
+}
+
+cat("=== CZR GARCH Model Comparison ===\n\n")
+```
+
+```{r czr-garch-table, warning=FALSE, message=FALSE, results='asis', echo=FALSE}
+if (nrow(garch_results_czr) > 0) {
+    kable(garch_results_czr,
+        format = "html",
+        digits = 4,
+        caption = "Model Comparison: ARMA+GARCH(1,1) Models for CZR",
+        row.names = FALSE
+    ) %>%
+        kable_styling(
+            full_width = FALSE,
+            bootstrap_options = c("striped", "hover", "condensed", "responsive")
+        ) %>%
+        row_spec(which.min(garch_results_czr$AIC), bold = TRUE, color = "white", background = "#006bb6")
+}
+```
+
+```{r czr-best-model, warning=FALSE, message=FALSE}
+best_garch_czr <- garch_models_czr[[which.min(garch_results_czr$AIC)]]
+best_name_czr <- garch_results_czr$Model[which.min(garch_results_czr$AIC)]
+
+cat("\n*** BEST MODEL:", best_name_czr, "***\n\n")
+cat("Model Coefficients:\n")
+print(coef(best_garch_czr))
+```
+
+**Model Selection Rationale**: The AIC-selected model balances fit and parsimony. CZR exhibits volatility patterns driven by both established gaming operations and newer sports betting ventures.
+
+### Diagnostics
+
+```{r czr-diagnostics, warning=FALSE, message=FALSE, fig.width=12, fig.height=10}
+std_resid_czr <- residuals(best_garch_czr, standardize = TRUE)
+
+par(mfrow = c(3, 2))
+plot(std_resid_czr, type = "l", main = "Standardized Residuals (CZR)", ylab = "Std. Residuals")
+abline(h = 0, col = "red", lty = 2)
+abline(h = c(-2, 2), col = "blue", lty = 2)
+
+plot(std_resid_czr^2, type = "l", main = "Squared Std. Residuals (CZR)", ylab = "Residuals²")
+
+acf(std_resid_czr, lag.max = 20, main = "ACF: Std. Residuals")
+acf(std_resid_czr^2, lag.max = 20, main = "ACF: Squared Std. Residuals")
+
+qqnorm(std_resid_czr, main = "Q-Q Plot (CZR)")
+qqline(std_resid_czr, col = "red")
+
+hist(std_resid_czr, breaks = 50, probability = TRUE, main = "Distribution (CZR)", xlab = "Std. Residuals")
+curve(dnorm(x), add = TRUE, col = "red", lwd = 2)
+par(mfrow = c(1, 1))
+
+# Ljung-Box tests
+lb_czr <- Box.test(std_resid_czr, lag = 10, type = "Ljung-Box")
+lb_czr_sq <- Box.test(std_resid_czr^2, lag = 10, type = "Ljung-Box")
+
+cat("\n=== Ljung-Box Tests (CZR) ===\n\n")
+cat("Standardized Residuals: p =", round(lb_czr$p.value, 4), "\n")
+cat("  Conclusion:", ifelse(lb_czr$p.value > 0.05,
+    "No autocorrelation (good)",
+    "Autocorrelation present (concern)"
+), "\n\n")
+
+cat("Squared Std. Residuals: p =", round(lb_czr_sq$p.value, 4), "\n")
+cat("  Conclusion:", ifelse(lb_czr_sq$p.value > 0.05,
+    "ARCH effects captured (good)",
+    "Remaining ARCH effects"
+), "\n")
+```
+
+**Diagnostic Summary**:
+- Standardized residuals should resemble white noise (no pattern in ACF)
+- Squared residuals ACF tests whether GARCH captured all volatility clustering
+- Ljung-Box p > 0.05 indicates successful model specification
+- Q-Q plot reveals any remaining fat-tail characteristics
+
+### Volatility Forecast
+
+```{r czr-volatility, warning=FALSE, message=FALSE, fig.width=12, fig.height=8}
+cond_vol_czr <- best_garch_czr@sigma.t
+
+vol_df_czr <- data.frame(
+    Date = czr$Date,
+    Return_Pct = czr$Return_Pct,
+    Cond_Vol = as.numeric(cond_vol_czr)
+)
+
+ggplot(vol_df_czr, aes(x = Date)) +
+    geom_line(aes(y = Return_Pct), color = "black", alpha = 0.6, linewidth = 0.4) +
+    geom_ribbon(aes(ymin = -2 * Cond_Vol, ymax = 2 * Cond_Vol),
+        fill = "darkgreen", alpha = 0.2
+    ) +
+    geom_line(aes(y = 2 * Cond_Vol), color = "darkgreen", linetype = "dashed", linewidth = 0.6) +
+    geom_line(aes(y = -2 * Cond_Vol), color = "darkgreen", linetype = "dashed", linewidth = 0.6) +
+    geom_hline(yintercept = 0, linetype = "solid", color = "black", linewidth = 0.5) +
+    labs(
+        title = "CZR: Returns with GARCH Conditional Volatility (±2σ bands)",
+        subtitle = "Green bands show time-varying volatility forecast",
+        x = "Date",
+        y = "Return (%)"
+    ) +
+    theme_minimal()
+
+ggplot(vol_df_czr, aes(x = Date, y = Cond_Vol)) +
+    geom_line(color = "darkgreen", linewidth = 0.8) +
+    labs(
+        title = "CZR: GARCH Conditional Volatility Over Time",
+        subtitle = "Volatility reflects both casino operations and sports betting integration",
+        x = "Date",
+        y = "Conditional Volatility (%)"
+    ) +
+    theme_minimal()
+
+cat("\nCurrent Volatility (last observation):", round(tail(cond_vol_czr, 1), 4), "%\n")
+cat("Average Volatility:", round(mean(cond_vol_czr), 4), "%\n")
+cat("Max Volatility:", round(max(cond_vol_czr), 4), "%\n")
+```
+
+**Volatility Interpretation**: CZR's conditional volatility shows periods of elevated risk during major corporate events. The GARCH model successfully tracks these time-varying patterns, providing valuable risk forecasts for portfolio managers and options traders.
+
+:::
+
+## MGM Resorts (MGM) Model
+
+::: {.panel-tabset}
+
+### Mean Equation & ARCH Test
+
+```{r mgm-mean-models, warning=FALSE, message=FALSE}
+mgm_returns <- mgm$Return_Pct
+
+# Fit candidate mean models
+mean_models_mgm <- list(
+    ARMA00 = arima(mgm_returns, order = c(0, 0, 0)),
+    ARMA10 = arima(mgm_returns, order = c(1, 0, 0)),
+    ARMA01 = arima(mgm_returns, order = c(0, 0, 1)),
+    ARMA11 = arima(mgm_returns, order = c(1, 0, 1))
+)
+
+mean_aic_mgm <- data.frame(
+    Model = names(mean_models_mgm),
+    AIC = sapply(mean_models_mgm, AIC),
+    BIC = sapply(mean_models_mgm, BIC)
+)
+
+cat("=== MGM Mean Equation Comparison ===\n\n")
+kable(mean_aic_mgm,
+    format = "html",
+    digits = 2,
+    caption = "Model Comparison: Mean Equation Only (MGM)"
+) %>%
+    kable_styling(
+        full_width = FALSE,
+        bootstrap_options = c("striped", "hover", "condensed", "responsive")
+    ) %>%
+    row_spec(which.min(mean_aic_mgm$AIC), bold = TRUE, color = "white", background = "#006bb6")
+
+# ARCH test
+best_mean_mgm <- mean_models_mgm[[which.min(mean_aic_mgm$AIC)]]
+resid_mgm <- residuals(best_mean_mgm)
+
+cat("\n")
+
+# Plot squared residuals
+par(mfrow = c(1, 2))
+acf(resid_mgm^2, lag.max = 30, main = "ACF: Squared Residuals (MGM)")
+pacf(resid_mgm^2, lag.max = 30, main = "PACF: Squared Residuals (MGM)")
+par(mfrow = c(1, 1))
+
+arch_test_mgm <- FinTS::ArchTest(resid_mgm, lags = 12)
+cat("\n=== ARCH LM Test (MGM) ===\n")
+cat("Chi-squared:", round(arch_test_mgm$statistic, 4), "\n")
+cat("p-value:", format(arch_test_mgm$p.value, scientific = FALSE), "\n")
+cat("Conclusion:", ifelse(arch_test_mgm$p.value < 0.05,
+    "ARCH effects present → GARCH needed",
+    "No ARCH effects"
+), "\n")
+```
+
+**Interpretation**: Despite MGM's diversified business model, the stock still exhibits ARCH effects, though potentially milder than pure-play sports betting stocks. The ARCH LM test confirms time-varying volatility requiring GARCH specification.
+
+### GARCH Model Fitting
+
+```{r mgm-garch-models, warning=FALSE, message=FALSE}
+garch_models_mgm <- list()
+garch_results_mgm <- data.frame()
+
+for (spec in model_specs) {
+    # Fit model using fGarch
+    fit <- tryCatch(
+        {
+            garchFit(formula = spec$formula, data = mgm_returns, trace = FALSE)
+        },
+        error = function(e) {
+            cat("Warning: Failed to fit", spec$name, "for MGM\n")
+            NULL
+        }
+    )
+
+    if (!is.null(fit)) {
+        garch_models_mgm[[spec$name]] <- fit
+
+        # Extract information criteria
+        aic_val <- fit@fit$ics["AIC"]
+        bic_val <- fit@fit$ics["BIC"]
+        loglik_val <- fit@fit$llh
+
+        garch_results_mgm <- rbind(garch_results_mgm, data.frame(
+            Model = spec$name,
+            AIC = aic_val,
+            BIC = bic_val,
+            Log_Likelihood = loglik_val
+        ))
+    }
+}
+
+cat("=== MGM GARCH Model Comparison ===\n\n")
+```
+
+```{r mgm-garch-table, warning=FALSE, message=FALSE, results='asis', echo=FALSE}
+if (nrow(garch_results_mgm) > 0) {
+    kable(garch_results_mgm,
+        format = "html",
+        digits = 4,
+        caption = "Model Comparison: ARMA+GARCH(1,1) Models for MGM",
+        row.names = FALSE
+    ) %>%
+        kable_styling(
+            full_width = FALSE,
+            bootstrap_options = c("striped", "hover", "condensed", "responsive")
+        ) %>%
+        row_spec(which.min(garch_results_mgm$AIC), bold = TRUE, color = "white", background = "#006bb6")
+}
+```
+
+```{r mgm-best-model, warning=FALSE, message=FALSE}
+best_garch_mgm <- garch_models_mgm[[which.min(garch_results_mgm$AIC)]]
+best_name_mgm <- garch_results_mgm$Model[which.min(garch_results_mgm$AIC)]
+
+cat("\n*** BEST MODEL:", best_name_mgm, "***\n\n")
+cat("Model Coefficients:\n")
+print(coef(best_garch_mgm))
+```
+
+**Model Selection Rationale**: The selected GARCH(1,1) specification for MGM captures volatility persistence while maintaining parsimony. MGM's diversified operations (Las Vegas Strip properties, regional casinos, BetMGM, entertainment venues) create a more stable volatility profile compared to pure-play operators, which should be reflected in the model coefficients.
+
+### Diagnostics
+
+```{r mgm-diagnostics, warning=FALSE, message=FALSE, fig.width=12, fig.height=10}
+std_resid_mgm <- residuals(best_garch_mgm, standardize = TRUE)
+
+par(mfrow = c(3, 2))
+plot(std_resid_mgm, type = "l", main = "Standardized Residuals (MGM)", ylab = "Std. Residuals")
+abline(h = 0, col = "red", lty = 2)
+abline(h = c(-2, 2), col = "blue", lty = 2)
+
+plot(std_resid_mgm^2, type = "l", main = "Squared Std. Residuals (MGM)", ylab = "Residuals²")
+
+acf(std_resid_mgm, lag.max = 20, main = "ACF: Std. Residuals")
+acf(std_resid_mgm^2, lag.max = 20, main = "ACF: Squared Std. Residuals")
+
+qqnorm(std_resid_mgm, main = "Q-Q Plot (MGM)")
+qqline(std_resid_mgm, col = "red")
+
+hist(std_resid_mgm, breaks = 50, probability = TRUE, main = "Distribution (MGM)", xlab = "Std. Residuals")
+curve(dnorm(x), add = TRUE, col = "red", lwd = 2)
+par(mfrow = c(1, 1))
+
+# Ljung-Box tests
+lb_mgm <- Box.test(std_resid_mgm, lag = 10, type = "Ljung-Box")
+lb_mgm_sq <- Box.test(std_resid_mgm^2, lag = 10, type = "Ljung-Box")
+
+cat("\n=== Ljung-Box Tests (MGM) ===\n\n")
+cat("Standardized Residuals: p =", round(lb_mgm$p.value, 4), "\n")
+cat("  Conclusion:", ifelse(lb_mgm$p.value > 0.05,
+    "No autocorrelation (good)",
+    "Autocorrelation present (concern)"
+), "\n\n")
+
+cat("Squared Std. Residuals: p =", round(lb_mgm_sq$p.value, 4), "\n")
+cat("  Conclusion:", ifelse(lb_mgm_sq$p.value > 0.05,
+    "ARCH effects captured (good)",
+    "Remaining ARCH effects"
+), "\n")
+```
+
+**Diagnostic Summary**: MGM's standardized residuals should show cleaner behavior than PENN or DKNG, reflecting the stabilizing effect of diversified revenue streams. Successful diagnostics (Ljung-Box p > 0.05) indicate the GARCH model adequately captures MGM's conditional volatility dynamics.
+
+### Volatility Forecast
+
+```{r mgm-volatility, warning=FALSE, message=FALSE, fig.width=12, fig.height=8}
+cond_vol_mgm <- best_garch_mgm@sigma.t
+
+vol_df_mgm <- data.frame(
+    Date = mgm$Date,
+    Return_Pct = mgm$Return_Pct,
+    Cond_Vol = as.numeric(cond_vol_mgm)
+)
+
+ggplot(vol_df_mgm, aes(x = Date)) +
+    geom_line(aes(y = Return_Pct), color = "black", alpha = 0.6, linewidth = 0.4) +
+    geom_ribbon(aes(ymin = -2 * Cond_Vol, ymax = 2 * Cond_Vol),
+        fill = "darkorange", alpha = 0.2
+    ) +
+    geom_line(aes(y = 2 * Cond_Vol), color = "darkorange", linetype = "dashed", linewidth = 0.6) +
+    geom_line(aes(y = -2 * Cond_Vol), color = "darkorange", linetype = "dashed", linewidth = 0.6) +
+    geom_hline(yintercept = 0, linetype = "solid", color = "black", linewidth = 0.5) +
+    labs(
+        title = "MGM: Returns with GARCH Conditional Volatility (±2σ bands)",
+        subtitle = "Orange bands show time-varying volatility forecast",
+        x = "Date",
+        y = "Return (%)"
+    ) +
+    theme_minimal()
+
+ggplot(vol_df_mgm, aes(x = Date, y = Cond_Vol)) +
+    geom_line(color = "darkorange", linewidth = 0.8) +
+    labs(
+        title = "MGM: GARCH Conditional Volatility Over Time",
+        subtitle = "Most stable volatility profile among all sports betting stocks",
+        x = "Date",
+        y = "Conditional Volatility (%)"
+    ) +
+    theme_minimal()
+
+cat("\nCurrent Volatility (last observation):", round(tail(cond_vol_mgm, 1), 4), "%\n")
+cat("Average Volatility:", round(mean(cond_vol_mgm), 4), "%\n")
+cat("Max Volatility:", round(max(cond_vol_mgm), 4), "%\n")
+```
+
+**Volatility Interpretation**: MGM's conditional volatility time series shows the lowest average volatility among all four stocks, confirming that diversification provides natural hedging against sector-specific shocks. The GARCH forecasts are particularly valuable for MGM during major events that create temporary volatility spikes.
+
+:::
+
+:::
+
+---
+
+# Model Equations
+
+::: {.panel-tabset}
+
+## DraftKings (DKNG)
+
+```{r dkng-equation-setup, echo=FALSE}
+# Extract coefficients
+dkng_coef <- coef(best_garch_model)
+
+# Mean equation coefficients
+mu_dkng <- ifelse("mu" %in% names(dkng_coef), dkng_coef["mu"], 0)
+ar1_dkng <- ifelse("ar1" %in% names(dkng_coef), dkng_coef["ar1"], 0)
+ma1_dkng <- ifelse("ma1" %in% names(dkng_coef), dkng_coef["ma1"], 0)
+
+# Variance equation coefficients
+omega_dkng <- dkng_coef["omega"]
+alpha1_dkng <- dkng_coef["alpha1"]
+beta1_dkng <- dkng_coef["beta1"]
+
+# Persistence
+persistence_dkng <- alpha1_dkng + beta1_dkng
+```
+
+**Selected Model**: `r best_garch_name`
+
+### Mean Equation
+
+$$
+r_t = `r round(mu_dkng, 6)` + \epsilon_t
+$$
+
+where $\epsilon_t = \sigma_t z_t$ and $z_t \sim N(0, 1)$
+
+### Variance Equation (GARCH(1,1))
+
+$$
+\sigma_t^2 = `r round(omega_dkng, 6)` + `r round(alpha1_dkng, 6)` \epsilon_{t-1}^2 + `r round(beta1_dkng, 6)` \sigma_{t-1}^2
+$$
+
+**Unconditional Variance**:
+
+$$
+\sigma^2_{\text{unconditional}} = \frac{\omega}{1 - \alpha_1 - \beta_1} = \frac{`r round(omega_dkng, 6)`}{1 - `r round(persistence_dkng, 4)`} = `r round(omega_dkng / (1 - persistence_dkng), 4)`
+$$
+
+Unconditional volatility: `r round(sqrt(omega_dkng / (1 - persistence_dkng)), 4)`%
+
+## Penn Entertainment (PENN)
+
+```{r penn-equation-setup, echo=FALSE}
+penn_coef <- coef(best_garch_penn)
+
+mu_penn <- ifelse("mu" %in% names(penn_coef), penn_coef["mu"], 0)
+ar1_penn <- ifelse("ar1" %in% names(penn_coef), penn_coef["ar1"], 0)
+ma1_penn <- ifelse("ma1" %in% names(penn_coef), penn_coef["ma1"], 0)
+
+omega_penn <- penn_coef["omega"]
+alpha1_penn <- penn_coef["alpha1"]
+beta1_penn <- penn_coef["beta1"]
+
+persistence_penn <- alpha1_penn + beta1_penn
+```
+
+**Selected Model**: `r best_name_penn`
+
+### Mean Equation
+
+$$
+r_t = `r round(mu_penn, 6)` + \epsilon_t
+$$
+
+### Variance Equation (GARCH(1,1))
+
+$$
+\sigma_t^2 = `r round(omega_penn, 6)` + `r round(alpha1_penn, 6)` \epsilon_{t-1}^2 + `r round(beta1_penn, 6)` \sigma_{t-1}^2
+$$
+
+## Caesars Entertainment (CZR)
+
+```{r czr-equation-setup, echo=FALSE}
+czr_coef <- coef(best_garch_czr)
+
+mu_czr <- ifelse("mu" %in% names(czr_coef), czr_coef["mu"], 0)
+ar1_czr <- ifelse("ar1" %in% names(czr_coef), czr_coef["ar1"], 0)
+ma1_czr <- ifelse("ma1" %in% names(czr_coef), czr_coef["ma1"], 0)
+
+omega_czr <- czr_coef["omega"]
+alpha1_czr <- czr_coef["alpha1"]
+beta1_czr <- czr_coef["beta1"]
+
+persistence_czr <- alpha1_czr + beta1_czr
+```
+
+**Selected Model**: `r best_name_czr`
+
+### Mean Equation
+
+$$
+r_t = `r round(mu_czr, 6)` + \epsilon_t
+$$
+
+where $\epsilon_t = \sigma_t z_t$ and $z_t \sim N(0, 1)$
+
+### Variance Equation (GARCH(1,1))
+
+$$
+\sigma_t^2 = `r round(omega_czr, 6)` + `r round(alpha1_czr, 6)` \epsilon_{t-1}^2 + `r round(beta1_czr, 6)` \sigma_{t-1}^2
+$$
+
+**Unconditional Variance**:
+
+$$
+\sigma^2_{\text{unconditional}} = \frac{\omega}{1 - \alpha_1 - \beta_1} = \frac{`r round(omega_czr, 6)`}{1 - `r round(persistence_czr, 4)`} = `r round(omega_czr / (1 - persistence_czr), 4)`
+$$
+
+Unconditional volatility: `r round(sqrt(omega_czr / (1 - persistence_czr)), 4)`%
+
+## MGM Resorts (MGM)
+
+```{r mgm-equation-setup, echo=FALSE}
+mgm_coef <- coef(best_garch_mgm)
+
+mu_mgm <- ifelse("mu" %in% names(mgm_coef), mgm_coef["mu"], 0)
+ar1_mgm <- ifelse("ar1" %in% names(mgm_coef), mgm_coef["ar1"], 0)
+ma1_mgm <- ifelse("ma1" %in% names(mgm_coef), mgm_coef["ma1"], 0)
+
+omega_mgm <- mgm_coef["omega"]
+alpha1_mgm <- mgm_coef["alpha1"]
+beta1_mgm <- mgm_coef["beta1"]
+
+persistence_mgm <- alpha1_mgm + beta1_mgm
+```
+
+**Selected Model**: `r best_name_mgm`
+
+### Mean Equation
+
+$$
+r_t = `r round(mu_mgm, 6)` + \epsilon_t
+$$
+
+where $\epsilon_t = \sigma_t z_t$ and $z_t \sim N(0, 1)$
+
+### Variance Equation (GARCH(1,1))
+
+$$
+\sigma_t^2 = `r round(omega_mgm, 6)` + `r round(alpha1_mgm, 6)` \epsilon_{t-1}^2 + `r round(beta1_mgm, 6)` \sigma_{t-1}^2
+$$
+
+**Unconditional Variance**:
+
+$$
+\sigma^2_{\text{unconditional}} = \frac{\omega}{1 - \alpha_1 - \beta_1} = \frac{`r round(omega_mgm, 6)`}{1 - `r round(persistence_mgm, 4)`} = `r round(omega_mgm / (1 - persistence_mgm), 4)`
+$$
+
+Unconditional volatility: `r round(sqrt(omega_mgm / (1 - persistence_mgm)), 4)`% (lowest among all four stocks)
+
+**Business Model Impact**: MGM's lower volatility parameters directly reflect its diversified operations. The smaller $\alpha_1$ suggests that MGM's stock is less sensitive to short-term shocks, while moderate $\beta_1$ indicates reasonable volatility persistence.
+
+:::
+
+---
+
+# Cross-Stock Comparison
+
+Now that we've analyzed individual stocks, let's compare volatility dynamics across all four sports betting companies.
+
+::: {.panel-tabset}
+
+## Volatility Comparison
+
+```{r volatility-comparison, warning=FALSE, message=FALSE, fig.width=14, fig.height=10}
+# Combine all returns data
+all_returns <- bind_rows(
+    dkng %>% dplyr::select(Date, Return_Pct, Ticker),
+    penn %>% dplyr::select(Date, Return_Pct, Ticker),
+    czr %>% dplyr::select(Date, Return_Pct, Ticker),
+    mgm %>% dplyr::select(Date, Return_Pct, Ticker)
+)
+
+# Plot all returns together
+p_all_returns <- ggplot(all_returns, aes(x = Date, y = Return_Pct, color = Ticker)) +
+    geom_line(alpha = 0.5, linewidth = 0.3) +
+    facet_wrap(~Ticker, ncol = 1) +
+    geom_hline(yintercept = 0, linetype = "dashed", color = "black") +
+    labs(
+        title = "Daily Returns Comparison: All Sports Betting Stocks",
+        subtitle = "Volatility clustering visible across all stocks",
+        x = "Date",
+        y = "Return (%)"
+    ) +
+    scale_color_manual(values = c(
+        "DKNG" = "#006bb6", "PENN" = "darkred",
+        "CZR" = "darkgreen", "MGM" = "darkorange"
+    )) +
+    theme_minimal() +
+    theme(legend.position = "none")
+
+print(p_all_returns)
+
+# Rolling volatility comparison
+all_vol <- bind_rows(
+    dkng %>% dplyr::select(Date, Roll_Vol_20, Ticker),
+    penn %>% dplyr::select(Date, Roll_Vol_20, Ticker),
+    czr %>% dplyr::select(Date, Roll_Vol_20, Ticker),
+    mgm %>% dplyr::select(Date, Roll_Vol_20, Ticker)
+) %>% filter(!is.na(Roll_Vol_20))
+
+p_vol_comp <- ggplot(all_vol, aes(x = Date, y = Roll_Vol_20, color = Ticker)) +
+    geom_line(linewidth = 0.8, alpha = 0.8) +
+    labs(
+        title = "20-Day Rolling Volatility Comparison",
+        subtitle = "PENN shows highest volatility, MGM most stable",
+        x = "Date",
+        y = "Volatility (% std dev)",
+        color = "Stock"
+    ) +
+    scale_color_manual(values = c(
+        "DKNG" = "#006bb6", "PENN" = "darkred",
+        "CZR" = "darkgreen", "MGM" = "darkorange"
+    )) +
+    theme_minimal() +
+    theme(legend.position = "right")
+
+print(p_vol_comp)
+```
+
+**Key Observations**:
+
+- **PENN** exhibits the highest volatility throughout the period, reflecting business model uncertainty
+- **MGM** shows the most stable returns, benefiting from diversified resort operations
+- **DKNG** and **CZR** display moderate volatility, typical of focused sports betting operators
+- All stocks show synchronized volatility spikes during market-wide events (COVID, regulatory news)
+
+## Statistical Summary
+
+```{r stats-summary-table, warning=FALSE, message=FALSE, results='asis', echo=FALSE}
+# Create comprehensive summary table
+summary_stats <- data.frame(
+    Stock = c("DKNG", "PENN", "CZR", "MGM"),
+    Mean_Return = c(
+        mean(dkng$Return_Pct), mean(penn$Return_Pct),
+        mean(czr$Return_Pct), mean(mgm$Return_Pct)
+    ),
+    Volatility = c(
+        sd(dkng$Return_Pct), sd(penn$Return_Pct),
+        sd(czr$Return_Pct), sd(mgm$Return_Pct)
+    ),
+    Min_Return = c(
+        min(dkng$Return_Pct), min(penn$Return_Pct),
+        min(czr$Return_Pct), min(mgm$Return_Pct)
+    ),
+    Max_Return = c(
+        max(dkng$Return_Pct), max(penn$Return_Pct),
+        max(czr$Return_Pct), max(mgm$Return_Pct)
+    ),
+    Skewness = c(
+        moments::skewness(dkng$Return_Pct), moments::skewness(penn$Return_Pct),
+        moments::skewness(czr$Return_Pct), moments::skewness(mgm$Return_Pct)
+    ),
+    Kurtosis = c(
+        moments::kurtosis(dkng$Return_Pct), moments::kurtosis(penn$Return_Pct),
+        moments::kurtosis(czr$Return_Pct), moments::kurtosis(mgm$Return_Pct)
+    )
+)
+
+kable(summary_stats,
+    format = "html",
+    digits = 4,
+    caption = "Comparative Summary Statistics: Sports Betting Stocks",
+    col.names = c(
+        "Stock", "Mean Return (%)", "Volatility (%)", "Min Return (%)",
+        "Max Return (%)", "Skewness", "Kurtosis"
+    )
+) %>%
+    kable_styling(
+        full_width = FALSE,
+        bootstrap_options = c("striped", "hover", "condensed", "responsive")
+    ) %>%
+    row_spec(which.max(summary_stats$Volatility), bold = TRUE, color = "white", background = "#8B0000") %>%
+    row_spec(which.min(summary_stats$Volatility), bold = TRUE, color = "white", background = "#006400")
+```
+
+## Return Distributions
+
+```{r return-distributions, warning=FALSE, message=FALSE, fig.width=12, fig.height=8}
+# Density plots
+ggplot(all_returns, aes(x = Return_Pct, fill = Ticker)) +
+    geom_density(alpha = 0.5) +
+    facet_wrap(~Ticker, scales = "free_y") +
+    labs(
+        title = "Return Distribution Comparison",
+        subtitle = "All stocks show fat tails (leptokurtic distributions)",
+        x = "Return (%)",
+        y = "Density"
+    ) +
+    scale_fill_manual(values = c(
+        "DKNG" = "#006bb6", "PENN" = "darkred",
+        "CZR" = "darkgreen", "MGM" = "darkorange"
+    )) +
+    geom_vline(xintercept = 0, linetype = "dashed", color = "black") +
+    theme_minimal() +
+    theme(legend.position = "none")
+
+# Box plots
+ggplot(all_returns, aes(x = Ticker, y = Return_Pct, fill = Ticker)) +
+    geom_boxplot(alpha = 0.7, outlier.alpha = 0.3) +
+    labs(
+        title = "Return Distribution Box Plots",
+        subtitle = "PENN shows widest range and most extreme outliers",
+        x = "Stock",
+        y = "Return (%)"
+    ) +
+    scale_fill_manual(values = c(
+        "DKNG" = "#006bb6", "PENN" = "darkred",
+        "CZR" = "darkgreen", "MGM" = "darkorange"
+    )) +
+    geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+    theme_minimal() +
+    theme(legend.position = "none")
+```
+
+## Correlation Analysis
+
+```{r correlation-analysis, warning=FALSE, message=FALSE, fig.width=10, fig.height=8}
+# Create wide format for correlation
+returns_wide <- all_returns %>%
+    dplyr::select(Date, Ticker, Return_Pct) %>%
+    pivot_wider(names_from = Ticker, values_from = Return_Pct) %>%
+    dplyr::select(-Date) %>%
+    na.omit()
+
+# Correlation matrix
+cor_matrix <- cor(returns_wide)
+
+cat("=== CORRELATION MATRIX ===\n\n")
+print(round(cor_matrix, 3))
+
+# Heatmap
+library(reshape2)
+cor_melted <- melt(cor_matrix)
+
+ggplot(cor_melted, aes(Var1, Var2, fill = value)) +
+    geom_tile(color = "white") +
+    geom_text(aes(label = round(value, 2)), color = "white", size = 5, fontface = "bold") +
+    scale_fill_gradient2(
+        low = "blue", high = "red", mid = "white",
+        midpoint = 0, limit = c(-1, 1), space = "Lab",
+        name = "Correlation"
+    ) +
+    labs(
+        title = "Return Correlation Heatmap",
+        subtitle = "Sports betting stocks show moderate to high positive correlation",
+        x = NULL, y = NULL
+    ) +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+**Correlation Insights**:
+
+- All stocks show **positive correlation** (0.3-0.7), indicating they respond to common industry factors
+- **CZR-MGM** show highest correlation (~0.6-0.7): both traditional casino operators
+- **DKNG-PENN** moderate correlation (~0.4-0.5): pure-play sports betting focus
+- Correlations increase during crisis periods (systematic risk)
+
+## Business Model Comparison
+
+::: {style="font-size: 0.9em;"}
+
+| Stock | Business Model | Volatility Profile | Key Risks |
+|-------|---------------|-------------------|-----------|
+| **DKNG** | Pure-play online sports betting & DFS | Moderate-High | Regulatory, competition, customer acquisition costs |
+| **PENN** | Regional casinos + ESPN BET partnership | **Highest** | Business model transition, brand partnerships |
+| **CZR** | Casino operator + Caesars Sportsbook | Moderate | Debt levels, integration risks, competition |
+| **MGM** | Resort/casino + BetMGM | **Lowest** | Diversified operations reduce volatility |
+
+:::
+
+:::
+
+---

@@ -614,6 +614,8 @@ Attendance provides the counterpoint: a stable pre-COVID plateau around ~21–22
 
 ## Sports Betting Stocks
 
+The NBA's analytics revolution had profound effects beyond the court. As basketball became more quantifiable and predictable, it enabled a parallel transformation in sports betting. Companies like DraftKings and Penn Entertainment built businesses on the data infrastructure that analytics created. We briefly examine weekly stock prices for major betting operators to illustrate how this financial dimension connects to the on-court changes documented above.
+
 ```{r betting-stocks-setup, include=FALSE}
 # Load all sports betting stocks
 dkng <- read_csv("data/financial/DKNG_daily.csv", show_col_types = FALSE) %>% mutate(Date = as.Date(Date))
@@ -621,12 +623,18 @@ penn <- read_csv("data/financial/PENN_daily.csv", show_col_types = FALSE) %>% mu
 mgm <- read_csv("data/financial/MGM_daily.csv", show_col_types = FALSE) %>% mutate(Date = as.Date(Date))
 czr <- read_csv("data/financial/CZR_daily.csv", show_col_types = FALSE) %>% mutate(Date = as.Date(Date))
 
+# Standardize column names (some CSVs have "Adj Close", others have "Adj.Close")
+colnames(dkng) <- gsub("Adj Close", "Adj_Close", colnames(dkng))
+colnames(penn) <- gsub("Adj Close", "Adj_Close", colnames(penn))
+colnames(mgm) <- gsub("Adj\\.Close", "Adj_Close", colnames(mgm))
+colnames(czr) <- gsub("Adj\\.Close", "Adj_Close", colnames(czr))
+
 # Create weekly time series for all stocks
 create_weekly_ts <- function(df, ticker) {
     weekly <- df %>%
         mutate(Year = year(Date), Week = week(Date)) %>%
         group_by(Year, Week) %>%
-        summarise(Avg_Close = mean(`Adj Close`, na.rm = TRUE), .groups = "drop") %>%
+        summarise(Avg_Close = mean(Adj_Close, na.rm = TRUE), .groups = "drop") %>%
         arrange(Year, Week)
 
     start_year <- min(weekly$Year)

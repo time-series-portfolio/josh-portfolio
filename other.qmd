@@ -1,0 +1,497 @@
+---
+title: "Interrupted Time Series Analysis"
+format:
+  html:
+    code-fold: true
+    toc: true
+    toc-depth: 3
+    embed-resources: true
+---
+
+# Background
+
+## The Intervention: New York Online Sports Betting Launch
+
+**Intervention Date: January 8, 2022**
+
+On January 8, 2022, New York State launched online sports betting, marking one of the most significant events in the U.S. sports betting industry. New York quickly became the **largest sports betting market in the United States** by revenue, fundamentally changing the competitive landscape for sports betting operators.
+
+### Why This Matters
+
+1. **Market Size**: New York represents approximately 20% of the total U.S. online sports betting market
+2. **Population**: ~20 million residents in the state, with high sports betting engagement
+3. **Major Operators**: All four stocks in our analysis (DraftKings, Penn Entertainment, Caesars, MGM) launched operations in NY
+4. **Revenue Impact**: Within months, NY operators generated hundreds of millions in revenue
+
+### Research Question
+
+**Did the New York sports betting legalization on January 8, 2022, produce a significant change in the level and/or trend of sports betting stock prices?**
+
+---
+
+# Data Description
+
+## Dataset Overview
+
+- **Time Period**: January 2, 2020 to December 31, 2024 (~5 years)
+- **Frequency**: Daily stock prices
+- **Companies Analyzed**:
+  - **DraftKings (DKNG)**: Pure-play online sports betting and DFS
+  - **Penn Entertainment (PENN)**: Casino/sports betting (ESPN BET)
+  - **Caesars Entertainment (CZR)**: Casino operator with Caesars Sportsbook
+  - **MGM Resorts (MGM)**: Resort/casino operator with BetMGM
+
+- **Outcome Variable**: Daily adjusted close price (in USD)
+- **Pre-intervention Period**: January 2, 2020 - January 7, 2022 (~2 years)
+- **Post-intervention Period**: January 8, 2022 - December 31, 2024 (~3 years)
+
+---
+
+```{r setup, warning=FALSE, message=FALSE}
+library(tidyverse)
+library(lubridate)
+library(forecast)
+library(tseries)
+library(gridExtra)
+library(kableExtra)
+
+theme_set(theme_minimal(base_size = 12))
+```
+
+```{r load-data, warning=FALSE, message=FALSE}
+# Load stock data
+dkng <- read_csv("data/financial/DKNG_daily.csv", show_col_types = FALSE)
+penn <- read_csv("data/financial/PENN_daily.csv", show_col_types = FALSE)
+czr <- read_csv("data/financial/CZR_daily.csv", show_col_types = FALSE)
+mgm <- read_csv("data/financial/MGM_daily.csv", show_col_types = FALSE)
+
+# Rename columns for easier handling
+colnames(dkng) <- gsub("Adj Close", "Adj_Close", colnames(dkng))
+colnames(penn) <- gsub("Adj Close", "Adj_Close", colnames(penn))
+colnames(czr) <- gsub("Adj\\.Close", "Adj_Close", colnames(czr))
+colnames(mgm) <- gsub("Adj\\.Close", "Adj_Close", colnames(mgm))
+
+# Convert dates
+dkng$Date <- as.Date(dkng$Date)
+penn$Date <- as.Date(penn$Date)
+czr$Date <- as.Date(czr$Date)
+mgm$Date <- as.Date(mgm$Date)
+
+# Define intervention date
+intervention_date <- as.Date("2022-01-08")
+
+# Filter to relevant time period (2020-2024)
+dkng <- dkng %>% filter(Date >= as.Date("2020-01-01"), Date <= as.Date("2024-12-31"))
+penn <- penn %>% filter(Date >= as.Date("2020-01-01"), Date <= as.Date("2024-12-31"))
+czr <- czr %>% filter(Date >= as.Date("2020-01-01"), Date <= as.Date("2024-12-31"))
+mgm <- mgm %>% filter(Date >= as.Date("2020-01-01"), Date <= as.Date("2024-12-31"))
+
+# Create intervention indicators
+dkng$Post_Intervention <- ifelse(dkng$Date >= intervention_date, 1, 0)
+dkng$Time <- as.numeric(dkng$Date - min(dkng$Date))
+dkng$Time_Since_Intervention <- ifelse(dkng$Post_Intervention == 1,
+    as.numeric(dkng$Date - intervention_date), 0
+)
+
+penn$Post_Intervention <- ifelse(penn$Date >= intervention_date, 1, 0)
+penn$Time <- as.numeric(penn$Date - min(penn$Date))
+penn$Time_Since_Intervention <- ifelse(penn$Post_Intervention == 1,
+    as.numeric(penn$Date - intervention_date), 0
+)
+
+czr$Post_Intervention <- ifelse(czr$Date >= intervention_date, 1, 0)
+czr$Time <- as.numeric(czr$Date - min(czr$Date))
+czr$Time_Since_Intervention <- ifelse(czr$Post_Intervention == 1,
+    as.numeric(czr$Date - intervention_date), 0
+)
+
+mgm$Post_Intervention <- ifelse(mgm$Date >= intervention_date, 1, 0)
+mgm$Time <- as.numeric(mgm$Date - min(mgm$Date))
+mgm$Time_Since_Intervention <- ifelse(mgm$Post_Intervention == 1,
+    as.numeric(mgm$Date - intervention_date), 0
+)
+
+cat("Data Summary:\n")
+cat(
+    "DraftKings (DKNG):", nrow(dkng), "observations from",
+    as.character(min(dkng$Date)), "to", as.character(max(dkng$Date)), "\n"
+)
+cat(
+    "Penn (PENN):", nrow(penn), "observations from",
+    as.character(min(penn$Date)), "to", as.character(max(penn$Date)), "\n"
+)
+cat(
+    "Caesars (CZR):", nrow(czr), "observations from",
+    as.character(min(czr$Date)), "to", as.character(max(czr$Date)), "\n"
+)
+cat(
+    "MGM (MGM):", nrow(mgm), "observations from",
+    as.character(min(mgm$Date)), "to", as.character(max(mgm$Date)), "\n\n"
+)
+cat("Intervention Date:", as.character(intervention_date), "\n")
+cat("Pre-intervention observations (DKNG):", sum(dkng$Post_Intervention == 0), "\n")
+cat("Post-intervention observations (DKNG):", sum(dkng$Post_Intervention == 1), "\n")
+```
+
+---
+
+# Visualization: Time Series with Intervention Point
+
+```{r visualize-intervention, warning=FALSE, message=FALSE, fig.width=14, fig.height=10}
+# Create plots for all stocks
+p1 <- ggplot(dkng, aes(x = Date, y = Adj_Close)) +
+    geom_line(color = "#006bb6", linewidth = 0.8) +
+    geom_vline(
+        xintercept = intervention_date, color = "red",
+        linetype = "dashed", linewidth = 1.2
+    ) +
+    annotate("text",
+        x = intervention_date, y = max(dkng$Adj_Close, na.rm = TRUE) * 0.95,
+        label = "NY Launch\nJan 8, 2022", color = "red", size = 4, fontface = "bold"
+    ) +
+    labs(
+        title = "DraftKings (DKNG) Stock Price",
+        subtitle = "NY sports betting legalization intervention point marked in red",
+        x = "Date",
+        y = "Adjusted Close Price ($)"
+    ) +
+    theme_minimal(base_size = 12) +
+    theme(plot.title = element_text(face = "bold"))
+
+p2 <- ggplot(penn, aes(x = Date, y = Adj_Close)) +
+    geom_line(color = "darkred", linewidth = 0.8) +
+    geom_vline(
+        xintercept = intervention_date, color = "red",
+        linetype = "dashed", linewidth = 1.2
+    ) +
+    annotate("text",
+        x = intervention_date, y = max(penn$Adj_Close, na.rm = TRUE) * 0.95,
+        label = "NY Launch\nJan 8, 2022", color = "red", size = 4, fontface = "bold"
+    ) +
+    labs(
+        title = "Penn Entertainment (PENN) Stock Price",
+        x = "Date",
+        y = "Adjusted Close Price ($)"
+    ) +
+    theme_minimal(base_size = 12) +
+    theme(plot.title = element_text(face = "bold"))
+
+p3 <- ggplot(czr, aes(x = Date, y = Adj_Close)) +
+    geom_line(color = "darkgreen", linewidth = 0.8) +
+    geom_vline(
+        xintercept = intervention_date, color = "red",
+        linetype = "dashed", linewidth = 1.2
+    ) +
+    annotate("text",
+        x = intervention_date, y = max(czr$Adj_Close, na.rm = TRUE) * 0.95,
+        label = "NY Launch\nJan 8, 2022", color = "red", size = 4, fontface = "bold"
+    ) +
+    labs(
+        title = "Caesars Entertainment (CZR) Stock Price",
+        x = "Date",
+        y = "Adjusted Close Price ($)"
+    ) +
+    theme_minimal(base_size = 12) +
+    theme(plot.title = element_text(face = "bold"))
+
+p4 <- ggplot(mgm, aes(x = Date, y = Adj_Close)) +
+    geom_line(color = "darkorange", linewidth = 0.8) +
+    geom_vline(
+        xintercept = intervention_date, color = "red",
+        linetype = "dashed", linewidth = 1.2
+    ) +
+    annotate("text",
+        x = intervention_date, y = max(mgm$Adj_Close, na.rm = TRUE) * 0.95,
+        label = "NY Launch\nJan 8, 2022", color = "red", size = 4, fontface = "bold"
+    ) +
+    labs(
+        title = "MGM Resorts (MGM) Stock Price",
+        x = "Date",
+        y = "Adjusted Close Price ($)"
+    ) +
+    theme_minimal(base_size = 12) +
+    theme(plot.title = element_text(face = "bold"))
+
+gridExtra::grid.arrange(p1, p2, p3, p4, ncol = 2)
+```
+
+---
+
+# Interrupted Time Series Regression Analysis
+
+## Model Specification
+
+The interrupted time series (ITS) model takes the form:
+
+$$
+Y_t = \beta_0 + \beta_1 \cdot Time_t + \beta_2 \cdot Intervention_t + \beta_3 \cdot Time\_Since\_Intervention_t + \epsilon_t
+$$
+
+Where:
+
+- $Y_t$ = Stock price at time $t$
+- $Time_t$ = Continuous time variable (days since start)
+- $Intervention_t$ = Binary indicator (0 before Jan 8, 2022; 1 after)
+- $Time\_Since\_Intervention_t$ = Days since intervention (0 before intervention)
+
+**Interpretation:**
+
+- $\beta_1$ = **Pre-intervention trend** (slope before NY launch)
+- $\beta_2$ = **Immediate level change** (jump/drop on intervention date)
+- $\beta_3$ = **Change in trend** (difference in slope after intervention)
+
+---
+
+## DraftKings (DKNG) Analysis
+
+```{r its-dkng, warning=FALSE, message=FALSE}
+# Fit ITS model
+model_dkng <- lm(Adj_Close ~ Time + Post_Intervention + Time_Since_Intervention,
+    data = dkng
+)
+
+# Summary
+summary(model_dkng)
+
+# Extract coefficients
+coef_dkng <- summary(model_dkng)$coefficients
+
+# Create nice table
+results_dkng <- data.frame(
+    Parameter = c(
+        "Intercept (Baseline)", "Pre-intervention Trend",
+        "Level Change (Immediate)", "Trend Change (Slope Difference)"
+    ),
+    Coefficient = coef_dkng[, 1],
+    Std_Error = coef_dkng[, 2],
+    t_value = coef_dkng[, 3],
+    p_value = coef_dkng[, 4]
+)
+
+kable(results_dkng,
+    format = "html",
+    digits = 4,
+    caption = "DraftKings (DKNG) Interrupted Time Series Results",
+    col.names = c("Parameter", "Coefficient", "Std. Error", "t-value", "p-value")
+) %>%
+    kable_styling(
+        full_width = FALSE,
+        bootstrap_options = c("striped", "hover", "condensed", "responsive")
+    ) %>%
+    row_spec(0, bold = TRUE, background = "#006bb6", color = "white") %>%
+    row_spec(which(results_dkng$p_value < 0.05), background = "#e6f2ff")
+```
+
+### Fitted Values Visualization
+
+```{r dkng-fitted, warning=FALSE, message=FALSE, fig.width=12, fig.height=6}
+# Add fitted values
+dkng$Fitted <- fitted(model_dkng)
+
+ggplot(dkng, aes(x = Date)) +
+    geom_line(aes(y = Adj_Close), color = "gray60", alpha = 0.6, linewidth = 0.5) +
+    geom_line(aes(y = Fitted), color = "#006bb6", linewidth = 1.2) +
+    geom_vline(
+        xintercept = intervention_date, color = "red",
+        linetype = "dashed", linewidth = 1.2
+    ) +
+    annotate("text",
+        x = intervention_date, y = max(dkng$Adj_Close, na.rm = TRUE) * 0.95,
+        label = "NY Launch", color = "red", size = 5, fontface = "bold"
+    ) +
+    labs(
+        title = "DraftKings (DKNG): Actual vs. Fitted Values from ITS Model",
+        subtitle = "Gray = Actual prices | Blue = Fitted trend lines",
+        x = "Date",
+        y = "Adjusted Close Price ($)"
+    ) +
+    theme_minimal(base_size = 13) +
+    theme(plot.title = element_text(face = "bold", size = 15))
+```
+
+---
+
+## Penn Entertainment (PENN) Analysis
+
+```{r its-penn, warning=FALSE, message=FALSE}
+model_penn <- lm(Adj_Close ~ Time + Post_Intervention + Time_Since_Intervention,
+    data = penn
+)
+
+coef_penn <- summary(model_penn)$coefficients
+
+results_penn <- data.frame(
+    Parameter = c(
+        "Intercept (Baseline)", "Pre-intervention Trend",
+        "Level Change (Immediate)", "Trend Change (Slope Difference)"
+    ),
+    Coefficient = coef_penn[, 1],
+    Std_Error = coef_penn[, 2],
+    t_value = coef_penn[, 3],
+    p_value = coef_penn[, 4]
+)
+
+kable(results_penn,
+    format = "html",
+    digits = 4,
+    caption = "Penn Entertainment (PENN) Interrupted Time Series Results",
+    col.names = c("Parameter", "Coefficient", "Std. Error", "t-value", "p-value")
+) %>%
+    kable_styling(
+        full_width = FALSE,
+        bootstrap_options = c("striped", "hover", "condensed", "responsive")
+    ) %>%
+    row_spec(0, bold = TRUE, background = "darkred", color = "white") %>%
+    row_spec(which(results_penn$p_value < 0.05), background = "#ffe6e6")
+```
+
+---
+
+## Caesars Entertainment (CZR) Analysis
+
+```{r its-czr, warning=FALSE, message=FALSE}
+model_czr <- lm(Adj_Close ~ Time + Post_Intervention + Time_Since_Intervention,
+    data = czr
+)
+
+coef_czr <- summary(model_czr)$coefficients
+
+results_czr <- data.frame(
+    Parameter = c(
+        "Intercept (Baseline)", "Pre-intervention Trend",
+        "Level Change (Immediate)", "Trend Change (Slope Difference)"
+    ),
+    Coefficient = coef_czr[, 1],
+    Std_Error = coef_czr[, 2],
+    t_value = coef_czr[, 3],
+    p_value = coef_czr[, 4]
+)
+
+kable(results_czr,
+    format = "html",
+    digits = 4,
+    caption = "Caesars Entertainment (CZR) Interrupted Time Series Results",
+    col.names = c("Parameter", "Coefficient", "Std. Error", "t-value", "p-value")
+) %>%
+    kable_styling(
+        full_width = FALSE,
+        bootstrap_options = c("striped", "hover", "condensed", "responsive")
+    ) %>%
+    row_spec(0, bold = TRUE, background = "darkgreen", color = "white") %>%
+    row_spec(which(results_czr$p_value < 0.05), background = "#e6ffe6")
+```
+
+---
+
+## MGM Resorts (MGM) Analysis
+
+```{r its-mgm, warning=FALSE, message=FALSE}
+model_mgm <- lm(Adj_Close ~ Time + Post_Intervention + Time_Since_Intervention,
+    data = mgm
+)
+
+coef_mgm <- summary(model_mgm)$coefficients
+
+results_mgm <- data.frame(
+    Parameter = c(
+        "Intercept (Baseline)", "Pre-intervention Trend",
+        "Level Change (Immediate)", "Trend Change (Slope Difference)"
+    ),
+    Coefficient = coef_mgm[, 1],
+    Std_Error = coef_mgm[, 2],
+    t_value = coef_mgm[, 3],
+    p_value = coef_mgm[, 4]
+)
+
+kable(results_mgm,
+    format = "html",
+    digits = 4,
+    caption = "MGM Resorts (MGM) Interrupted Time Series Results",
+    col.names = c("Parameter", "Coefficient", "Std. Error", "t-value", "p-value")
+) %>%
+    kable_styling(
+        full_width = FALSE,
+        bootstrap_options = c("striped", "hover", "condensed", "responsive")
+    ) %>%
+    row_spec(0, bold = TRUE, background = "darkorange", color = "white") %>%
+    row_spec(which(results_mgm$p_value < 0.05), background = "#fff4e6")
+```
+
+---
+
+# Comparative Summary
+
+```{r summary-comparison, warning=FALSE, message=FALSE, results='asis', echo=FALSE}
+comparison_df <- data.frame(
+    Stock = c("DKNG", "PENN", "CZR", "MGM"),
+    Pre_Trend = c(
+        results_dkng$Coefficient[2], results_penn$Coefficient[2],
+        results_czr$Coefficient[2], results_mgm$Coefficient[2]
+    ),
+    Level_Change = c(
+        results_dkng$Coefficient[3], results_penn$Coefficient[3],
+        results_czr$Coefficient[3], results_mgm$Coefficient[3]
+    ),
+    Trend_Change = c(
+        results_dkng$Coefficient[4], results_penn$Coefficient[4],
+        results_czr$Coefficient[4], results_mgm$Coefficient[4]
+    ),
+    Level_pval = c(
+        results_dkng$p_value[3], results_penn$p_value[3],
+        results_czr$p_value[3], results_mgm$p_value[3]
+    ),
+    Trend_pval = c(
+        results_dkng$p_value[4], results_penn$p_value[4],
+        results_czr$p_value[4], results_mgm$p_value[4]
+    )
+)
+
+kable(comparison_df,
+    format = "html",
+    digits = 4,
+    caption = "Comparison of Intervention Effects Across All Stocks",
+    col.names = c(
+        "Stock", "Pre-Trend", "Level Change", "Trend Change",
+        "Level p-value", "Trend p-value"
+    )
+) %>%
+    kable_styling(
+        full_width = FALSE,
+        bootstrap_options = c("striped", "hover", "condensed", "responsive")
+    ) %>%
+    row_spec(0, bold = TRUE, background = "#2c3e50", color = "white")
+```
+
+---
+
+# Key Findings
+
+## Statistical Significance
+
+Based on the interrupted time series analysis, we examine two key questions:
+
+1. **Was there an immediate level change?** (Did prices jump/drop on January 8, 2022?)
+2. **Was there a trend change?** (Did the growth trajectory change after the intervention?)
+
+## Interpretation Guidelines
+
+- **Level Change (β₂)**:
+  - Positive & significant → Stock price jumped immediately after NY launch
+  - Negative & significant → Stock price dropped immediately after NY launch
+  - Not significant → No immediate reaction to the intervention
+
+- **Trend Change (β₃)**:
+  - Positive & significant → Stocks grew faster after NY legalization
+  - Negative & significant → Growth slowed after NY legalization
+  - Not significant → No change in long-term trajectory
+
+---
+
+# Conclusion
+
+The New York sports betting legalization on January 8, 2022, represents a natural experiment to test whether a major market expansion affects sports betting stock valuations. The interrupted time series analysis allows us to decompose the intervention effect into:
+
+1. **Immediate impact** (level change)
+2. **Long-term trajectory change** (trend change)
+
+This analysis demonstrates the application of causal inference methods to financial time series data in the context of regulatory policy changes.

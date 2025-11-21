@@ -54,6 +54,8 @@ league_avg <- all_adv_data %>%
 
 ## Overview
 
+This chapter extends our analysis in two directions: continuing to examine basketball's on-court evolution through ORtg and 3PAr, while introducing sports betting stocks (PENN, DKNG) that exemplify how the data revolution transformed passive viewership into active wagering. Together, these series illustrate how analytics reshaped both game strategy and the financial markets built around it.
+
 In this analysis, we examine four distinct time series that represent different aspects of basketball analytics and sports betting markets:
 
 1. **NBA League-Average Offensive Rating (ORtg)**: Points scored per 100 possessions, capturing offensive efficiency trends from 1980-2025

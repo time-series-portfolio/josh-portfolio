@@ -10,6 +10,8 @@ format:
 
 # Theoretical Framework
 
+This chapter examines bidirectional relationships between variables, including the explicit linkage between basketball performance and betting industry valuations (Model 5: DKNG ~ Attendance + ORtg). By modeling how NBA metrics influence betting stocks, we test whether the on-court analytics revolution created measurable financial value in connected industries.
+
 ::: {.panel-tabset}
 
 ## Literature Review
