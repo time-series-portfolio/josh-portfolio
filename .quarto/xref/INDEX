@@ -1,41 +1,41 @@
 {
+  "ITS_analysis.qmd": {
+    "ITS_analysis.html": "d0947a18"
+  },
   "financialTS_model.qmd": {
-    "financialTS_model.html": "4d61a2f8"
+    "financialTS_model.html": "d72738ae"
   },
   "intro.qmd": {
-    "intro.html": "8534864b"
+    "intro.html": "bbdb97bc"
   },
   "data_viz.qmd": {
-    "data_viz.html": "8c2aab38"
-  },
-  "ITS_analysis.qmd": {
-    "ITS_analysis.html": "18ebc2dd"
+    "data_viz.html": "86a0bc75"
   },
   "eda.qmd": {
-    "eda.html": "4a9a71e6"
+    "eda.html": "0f0e5978"
   },
   "DLTS.qmd": {
-    "DLTS.html": "5fa153a0"
+    "DLTS.html": "33c247e5"
   },
   "index.qmd": {
-    "index.html": "5ef9cabd"
+    "index.html": "2bdf7034"
   },
   "conclusion.qmd": {
-    "conclusion.html": "384dc40d"
+    "conclusion.html": "12db8eca"
   },
   "about.qmd": {
-    "about.html": "6be3abdc"
+    "about.html": "1ae953c2"
   },
   "multiTS_model.qmd": {
-    "multiTS_model.html": "3b9d97a3"
+    "multiTS_model.html": "6f9169bc"
   },
   "data_source.qmd": {
-    "data_source.html": "d02e758d"
+    "data_source.html": "e49574f1"
   },
   "other.qmd": {
-    "other.html": "e91d508e"
+    "other.html": "26513967"
   },
   "uniTS_model.qmd": {
-    "uniTS_model.html": "69b3b2b8"
+    "uniTS_model.html": "b6cf3c91"
   }
 }

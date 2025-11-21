@@ -239,7 +239,7 @@ par(mfrow = c(1, 1))
 **Key Findings**:
 
 - **Returns ACF/PACF**: Minimal autocorrelation at most lags (consistent with weak-form market efficiency). Returns themselves are largely unpredictable.
-- **Squared Returns ACF/PACF**: **Strong autocorrelation** at multiple lags. This is the signature of ARCH effects while returns are unpredictable, volatility (proxied by squared returns) is highly predictable and persistent.
+- **Squared Returns ACF/PACF**: **Strong autocorrelation** at multiple lags. This is the signature of ARCH effects while returns are unpredictable, volatility is highly predictable and persistent.
   
 ### Stationarity Tests
 
@@ -355,8 +355,8 @@ cat("=== Augmented Dickey-Fuller Test ===\n")
 cat("ADF Statistic:", round(adf_penn$statistic, 4), "\n")
 cat("p-value:", round(adf_penn$p.value, 4), "\n")
 cat("Conclusion:", ifelse(adf_penn$p.value < 0.05,
-    "Reject H0 � Returns are STATIONARY",
-    "Fail to reject H0 � Returns are NON-STATIONARY"
+    "Reject H0 - Returns are STATIONARY",
+    "Fail to reject H0 - Returns are NON-STATIONARY"
 ), "\n")
 ```
 
@@ -527,7 +527,7 @@ resid_mean <- residuals(best_mean_model)
 par(mfrow = c(2, 2))
 plot(resid_mean, type = "l", main = "Standardized Residuals", ylab = "Residuals")
 abline(h = 0, col = "red", lty = 2)
-plot(resid_mean^2, type = "l", main = "Squared Residuals", ylab = "Residuals�")
+plot(resid_mean^2, type = "l", main = "Squared Residuals", ylab = "Residuals")
 acf(resid_mean^2, lag.max = 30, main = "ACF: Squared Residuals")
 pacf(resid_mean^2, lag.max = 30, main = "PACF: Squared Residuals")
 par(mfrow = c(1, 1))
@@ -539,8 +539,8 @@ cat("Null Hypothesis: No ARCH effects\n")
 cat("Chi-squared:", round(arch_test$statistic, 4), "\n")
 cat("p-value:", format(arch_test$p.value, scientific = FALSE), "\n")
 cat("Conclusion:", ifelse(arch_test$p.value < 0.05,
-    "REJECT H0 � ARCH effects present � GARCH modeling needed",
-    "Fail to reject H0 � No ARCH effects"
+    "REJECT H0 - ARCH effects present, GARCH modeling needed",
+    "Fail to reject H0 - No ARCH effects"
 ), "\n")
 ```
 
@@ -641,7 +641,7 @@ abline(h = 0, col = "red", lty = 2)
 abline(h = c(-2, 2), col = "blue", lty = 2)
 
 # 2. Squared standardized residuals
-plot(std_resid^2, type = "l", main = "Squared Standardized Residuals", ylab = "Std. Residuals�")
+plot(std_resid^2, type = "l", main = "Squared Standardized Residuals", ylab = "Std. Residuals")
 
 # 3. ACF of standardized residuals
 acf(std_resid, lag.max = 20, main = "ACF: Standardized Residuals")
@@ -717,7 +717,7 @@ ggplot(vol_df, aes(x = Date)) +
     geom_line(aes(y = -2 * Cond_Vol), color = "blue", linetype = "dashed", linewidth = 0.6) +
     geom_hline(yintercept = 0, linetype = "solid", color = "red", linewidth = 0.5) +
     labs(
-        title = "DKNG: Returns with GARCH Conditional Volatility (�2� bands)",
+        title = "DKNG: Returns with GARCH Conditional Volatility (2 bands)",
         subtitle = "Blue bands show time-varying volatility forecast",
         x = "Date",
         y = "Return (%)"
@@ -789,7 +789,7 @@ arch_test_penn <- FinTS::ArchTest(resid_penn, lags = 12)
 cat("\n=== ARCH LM Test (PENN) ===\n")
 cat("p-value:", format(arch_test_penn$p.value, scientific = FALSE), "\n")
 cat("Conclusion:", ifelse(arch_test_penn$p.value < 0.05,
-    "ARCH effects present � GARCH needed",
+    "ARCH effects present - GARCH needed",
     "No ARCH effects"
 ), "\n")
 ```
