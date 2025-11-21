@@ -31,7 +31,7 @@ website:
         text: Financial TS Models (ARCH/GARCH)
       - href: DLTS.qmd
         text: Deep Learning for TS
-      - href: other.qmd
+      - href: ITS_analysis.qmd
         text: Other (Interrupted TS/ARFIMA/Spectral Analysis)
       - href: conclusion.qmd
         text: Conclusions

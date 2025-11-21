@@ -8,55 +8,17 @@ format:
     embed-resources: true
 ---
 
-# Background
+# Overview
 
-## The Intervention: New York Online Sports Betting Launch
+This analysis examines two major interventions that reshaped the sports betting landscape: the COVID-19 pandemic (March 2020) and New York's online sports betting legalization (January 2022). Using Google Trends data spanning 2020-2024, we employ interrupted time series regression to quantify both immediate shocks and sustained trend changes. The ITS model 
 
-**Intervention Date: January 8, 2022**
+> $Y_t = \beta_0 + \beta_1 \cdot Time_t + \beta_2 \cdot Intervention_t + \beta_3 \cdot Time\_Since\_Intervention_t + \epsilon_t$
 
-On January 8, 2022, New York State launched online sports betting, marking one of the most significant events in the U.S. sports betting industry. New York quickly became the **largest sports betting market in the United States** by revenue, fundamentally changing the sports betting landscape and public awareness.
-
-### Why This Matters
-
-1. **Market Size**: New York represents approximately 20% of the total U.S. online sports betting market
-2. **Population**: ~20 million residents in the state, with high sports betting engagement
-3. **Media Coverage**: Massive advertising campaigns launched across NYC (subway, TV, online)
-4. **Cultural Impact**: Sports betting moved from niche activity to mainstream entertainment
-
-### Research Question
-
-**Did the New York sports betting legalization on January 8, 2022, produce a significant change in public interest in sports betting, as measured by Google search trends?**
-
-This approach captures the **cultural impact** of legalization beyond just financial market reactions. Google searches directly measure consumer interest and awareness.
+isolates intervention effects from underlying trends, measuring level changes ($\beta_2$) and slope changes ($\beta_3$) in search interest. Google Trends provides a direct cultural proxy for public engagement, capturing how these events transformed sports betting from a niche activity during COVID's sports shutdown to mainstream entertainment following New York's market entry.
 
 ---
 
-# Data Description
-
-## Dataset Overview
-
-- **Data Source**: Google Trends (United States)
-- **Time Period**: January 2020 to December 2024 (~5 years)
-- **Frequency**: Weekly search interest (Google Trends aggregates to weekly by default for multi-year queries)
-- **Search Terms Analyzed**:
-  - **"sports betting"**: General interest in sports wagering
-  - **"draftkings"**: Leading pure-play operator
-  - **"online betting"**: Digital betting interest
-  - **"nba betting"**: Basketball-specific betting (ties to broader thesis)
-
-- **Outcome Variable**: Search interest index (0-100 scale, normalized by Google)
-- **Pre-intervention Period**: January 2020 - January 7, 2022 (~2 years)
-- **Post-intervention Period**: January 8, 2022 - December 31, 2024 (~3 years)
-
-### Why Google Trends?
-
-Google Trends data provides a direct measure of public interest and awareness:
-- **Less confounding**: Search behavior isn't affected by Fed policy or interest rates
-- **Immediate response**: People search when curious - captures real-time interest
-- **Cultural proxy**: Reflects societal engagement with sports betting
-- **Ties to thesis**: Analytics revolution → betting infrastructure → **public participation**
-
----
+# Data & Setup
 
 ```{r setup, warning=FALSE, message=FALSE}
 library(tidyverse)
@@ -66,65 +28,57 @@ library(gridExtra)
 library(kableExtra)
 
 theme_set(theme_minimal(base_size = 12))
-```
 
-```{r load-data, warning=FALSE, message=FALSE}
 # Load Google Trends data
-trends <- read_csv("data/google_trends/sports_betting_trends.csv", show_col_types = FALSE)
-
-# Convert date and ensure proper format
-trends <- trends %>%
+trends <- read_csv("data/google_trends/sports_betting_trends.csv", show_col_types = FALSE) %>%
     mutate(date = as.Date(date))
 
-# Define intervention date
+# Create separate dataframes and add ITS variables
 intervention_date <- as.Date("2022-01-08")
+covid_intervention <- as.Date("2020-03-11")
 
-# Data summary
-cat("Google Trends Data Summary:\n")
-cat("Date range:", as.character(min(trends$date)), "to", as.character(max(trends$date)), "\n")
-cat("Search terms:", paste(unique(trends$keyword), collapse = ", "), "\n")
-cat("Total observations:", nrow(trends), "\n")
-cat("Frequency: Weekly\n\n")
-
-# Create separate dataframes for each term
-sports_betting <- trends %>% filter(keyword == "sports betting")
-draftkings <- trends %>% filter(keyword == "draftkings")
-online_betting <- trends %>% filter(keyword == "online betting")
-nba_betting <- trends %>% filter(keyword == "nba betting")
-
-# Add ITS variables to each
-add_its_variables <- function(df) {
+add_its_variables <- function(df, int_date) {
     df %>%
         mutate(
-            Post_Intervention = ifelse(date >= intervention_date, 1, 0),
+            Post_Intervention = ifelse(date >= int_date, 1, 0),
             Time = as.numeric(date - min(date)),
             Time_Since_Intervention = ifelse(Post_Intervention == 1,
-                as.numeric(date - intervention_date), 0
+                as.numeric(date - int_date), 0
             )
         )
 }
 
-sports_betting <- add_its_variables(sports_betting)
-draftkings <- add_its_variables(draftkings)
-online_betting <- add_its_variables(online_betting)
-nba_betting <- add_its_variables(nba_betting)
-
-cat("Pre-intervention weeks (sports betting):", sum(sports_betting$Post_Intervention == 0), "\n")
-cat("Post-intervention weeks (sports betting):", sum(sports_betting$Post_Intervention == 1), "\n")
+sports_betting <- trends %>%
+    filter(keyword == "sports betting") %>%
+    add_its_variables(intervention_date)
+draftkings <- trends %>%
+    filter(keyword == "draftkings") %>%
+    add_its_variables(intervention_date)
+online_betting <- trends %>%
+    filter(keyword == "online betting") %>%
+    add_its_variables(intervention_date)
+nba_betting <- trends %>%
+    filter(keyword == "nba betting") %>%
+    add_its_variables(intervention_date)
 ```
 
 ---
 
-# Visualization: Search Trends with Intervention Point
+::: {.panel-tabset}
 
-```{r visualize-intervention, warning=FALSE, message=FALSE, fig.width=14, fig.height=10}
-# Create plots for all search terms
+## NY Legalization Analysis
+
+### Background & Data
+
+**Intervention**: New York online sports betting launch (January 8, 2022) - the largest U.S. sports betting market by revenue, representing ~20% of the national market. **Research Question**: Did NY legalization produce a significant change in public interest in sports betting? We analyze Google search trends as a direct measure of cultural impact and consumer awareness, examining four search terms that capture different facets of betting interest from general ("sports betting") to operator-specific ("draftkings") to sport-specific ("nba betting").
+
+### Visualization & Data Preparation
+
+```{r ny-viz-data, warning=FALSE, message=FALSE, fig.width=14, fig.height=10}
+# Visualization
 p1 <- ggplot(sports_betting, aes(x = date, y = hits)) +
     geom_line(color = "#1e88e5", linewidth = 1) +
-    geom_vline(
-        xintercept = intervention_date, color = "red",
-        linetype = "dashed", linewidth = 1.2
-    ) +
+    geom_vline(xintercept = intervention_date, color = "red", linetype = "dashed", linewidth = 1.2) +
     annotate("text",
         x = intervention_date, y = max(sports_betting$hits) * 0.95,
         label = "NY Launch\nJan 8, 2022", color = "red", size = 4, fontface = "bold"
@@ -132,348 +86,440 @@ p1 <- ggplot(sports_betting, aes(x = date, y = hits)) +
     labs(
         title = "Google Searches: 'sports betting'",
         subtitle = "NY sports betting legalization intervention point marked in red",
-        x = "Date",
-        y = "Search Interest (0-100)"
+        x = "Date", y = "Search Interest (0-100)"
     ) +
-    theme_minimal(base_size = 12) +
     theme(plot.title = element_text(face = "bold"))
 
 p2 <- ggplot(draftkings, aes(x = date, y = hits)) +
     geom_line(color = "#ff6f00", linewidth = 1) +
-    geom_vline(
-        xintercept = intervention_date, color = "red",
-        linetype = "dashed", linewidth = 1.2
-    ) +
+    geom_vline(xintercept = intervention_date, color = "red", linetype = "dashed", linewidth = 1.2) +
     annotate("text",
         x = intervention_date, y = max(draftkings$hits) * 0.95,
         label = "NY Launch\nJan 8, 2022", color = "red", size = 4, fontface = "bold"
     ) +
-    labs(
-        title = "Google Searches: 'draftkings'",
-        x = "Date",
-        y = "Search Interest (0-100)"
-    ) +
-    theme_minimal(base_size = 12) +
+    labs(title = "Google Searches: 'draftkings'", x = "Date", y = "Search Interest (0-100)") +
     theme(plot.title = element_text(face = "bold"))
 
 p3 <- ggplot(online_betting, aes(x = date, y = hits)) +
     geom_line(color = "#43a047", linewidth = 1) +
-    geom_vline(
-        xintercept = intervention_date, color = "red",
-        linetype = "dashed", linewidth = 1.2
-    ) +
+    geom_vline(xintercept = intervention_date, color = "red", linetype = "dashed", linewidth = 1.2) +
     annotate("text",
         x = intervention_date, y = max(online_betting$hits) * 0.95,
         label = "NY Launch\nJan 8, 2022", color = "red", size = 4, fontface = "bold"
     ) +
-    labs(
-        title = "Google Searches: 'online betting'",
-        x = "Date",
-        y = "Search Interest (0-100)"
-    ) +
-    theme_minimal(base_size = 12) +
+    labs(title = "Google Searches: 'online betting'", x = "Date", y = "Search Interest (0-100)") +
     theme(plot.title = element_text(face = "bold"))
 
 p4 <- ggplot(nba_betting, aes(x = date, y = hits)) +
     geom_line(color = "#8e24aa", linewidth = 1) +
-    geom_vline(
-        xintercept = intervention_date, color = "red",
-        linetype = "dashed", linewidth = 1.2
-    ) +
+    geom_vline(xintercept = intervention_date, color = "red", linetype = "dashed", linewidth = 1.2) +
     annotate("text",
         x = intervention_date, y = max(nba_betting$hits) * 0.95,
         label = "NY Launch\nJan 8, 2022", color = "red", size = 4, fontface = "bold"
     ) +
-    labs(
-        title = "Google Searches: 'nba betting'",
-        x = "Date",
-        y = "Search Interest (0-100)"
-    ) +
-    theme_minimal(base_size = 12) +
+    labs(title = "Google Searches: 'nba betting'", x = "Date", y = "Search Interest (0-100)") +
     theme(plot.title = element_text(face = "bold"))
 
 gridExtra::grid.arrange(p1, p2, p3, p4, ncol = 2)
+
+# Data preparation table
+prep_table <- sports_betting %>%
+    filter(date >= as.Date("2021-12-01") & date <= as.Date("2022-02-28")) %>%
+    select(date, hits, Time, Post_Intervention, Time_Since_Intervention) %>%
+    mutate(Period = ifelse(Post_Intervention == 0, "Pre-NY", "Post-NY")) %>%
+    select(date, Period, Y = hits, X_t = Time, Z_t = Post_Intervention, P_t = Time_Since_Intervention)
+
+kable(prep_table,
+    format = "html", digits = 1,
+    caption = "ITS Variables for NY Legalization Analysis (Sample Period)",
+    col.names = c("Date", "Period", "Y (Search Interest)", "X_t (Time)", "Z_t (NY Indicator)", "P_t (Time Since NY)")
+) %>%
+    kable_styling(full_width = FALSE, bootstrap_options = c("striped", "hover", "condensed")) %>%
+    row_spec(0, bold = TRUE, background = "#2c3e50", color = "white") %>%
+    row_spec(which(prep_table$Z_t == 1), background = "#e3f2fd")
 ```
 
----
+**Variables**: Y = Search interest; X_t = Time (weeks from start); Z_t = NY intervention indicator (0 before, 1 after Jan 8, 2022); P_t = Weeks since NY launch (0 before intervention, increases after).
 
-# Interrupted Time Series Regression Analysis
+### ITS Model & Results
 
-## Model Specification
+**Model**: $Y_t = \beta_0 + \beta_1 X_t + \beta_2 Z_t + \beta_3 P_t + \varepsilon_t$ where $\beta_1$ captures pre-intervention trend, $\beta_2$ measures immediate level change, and $\beta_3$ quantifies trend change after intervention.
 
-The interrupted time series (ITS) model takes the form:
-
-$$
-Y_t = \beta_0 + \beta_1 \cdot Time_t + \beta_2 \cdot Intervention_t + \beta_3 \cdot Time\_Since\_Intervention_t + \epsilon_t
-$$
-
-Where:
-
-- $Y_t$ = Search interest at time $t$
-- $Time_t$ = Continuous time variable (weeks since start)
-- $Intervention_t$ = Binary indicator (0 before Jan 8, 2022; 1 after)
-- $Time\_Since\_Intervention_t$ = Weeks since intervention (0 before intervention)
-
-**Interpretation:**
-
-- $\beta_1$ = **Pre-intervention trend** (weekly change in search interest before NY launch)
-- $\beta_2$ = **Immediate level change** (jump/drop in search interest on intervention date)
-- $\beta_3$ = **Change in trend** (difference in weekly growth rate after intervention)
-
----
-
-## "Sports Betting" Analysis
-
-```{r its-sports-betting, warning=FALSE, message=FALSE}
-# Fit ITS model
-model_sb <- lm(hits ~ Time + Post_Intervention + Time_Since_Intervention,
-    data = sports_betting
-)
-
-# Summary
-summary(model_sb)
+```{r ny-its-models, warning=FALSE, message=FALSE, fig.width=12, fig.height=6}
+# Fit models for all search terms
+model_sb <- lm(hits ~ Time + Post_Intervention + Time_Since_Intervention, data = sports_betting)
+model_dk <- lm(hits ~ Time + Post_Intervention + Time_Since_Intervention, data = draftkings)
+model_ob <- lm(hits ~ Time + Post_Intervention + Time_Since_Intervention, data = online_betting)
+model_nb <- lm(hits ~ Time + Post_Intervention + Time_Since_Intervention, data = nba_betting)
 
 # Extract coefficients
-coef_sb <- summary(model_sb)$coefficients
+extract_results <- function(model, name) {
+    coef <- summary(model)$coefficients
+    data.frame(
+        Term = name,
+        Parameter = c("Intercept", "Pre-Trend (β₁)", "Level Change (β₂)", "Trend Change (β₃)"),
+        Coefficient = coef[, 1],
+        Std_Error = coef[, 2],
+        p_value = coef[, 4]
+    )
+}
 
-# Create nice table
-results_sb <- data.frame(
-    Parameter = c(
-        "Intercept (Baseline)", "Pre-intervention Trend",
-        "Level Change (Immediate)", "Trend Change (Slope Difference)"
-    ),
-    Coefficient = coef_sb[, 1],
-    Std_Error = coef_sb[, 2],
-    t_value = coef_sb[, 3],
-    p_value = coef_sb[, 4]
-)
+results_sb <- extract_results(model_sb, "Sports Betting")
+results_dk <- extract_results(model_dk, "DraftKings")
+results_ob <- extract_results(model_ob, "Online Betting")
+results_nb <- extract_results(model_nb, "NBA Betting")
 
-kable(results_sb,
-    format = "html",
-    digits = 4,
-    caption = "'Sports Betting' Search Interest: ITS Results",
-    col.names = c("Parameter", "Coefficient", "Std. Error", "t-value", "p-value")
+all_results <- rbind(results_sb, results_dk, results_ob, results_nb)
+
+kable(all_results,
+    format = "html", digits = 4,
+    caption = "NY Legalization ITS Results: All Search Terms",
+    col.names = c("Term", "Parameter", "Coefficient", "Std. Error", "p-value")
 ) %>%
-    kable_styling(
-        full_width = FALSE,
-        bootstrap_options = c("striped", "hover", "condensed", "responsive")
-    ) %>%
-    row_spec(0, bold = TRUE, background = "#1e88e5", color = "white") %>%
-    row_spec(which(results_sb$p_value < 0.05), background = "#e3f2fd")
-```
+    kable_styling(full_width = FALSE, bootstrap_options = c("striped", "hover", "condensed")) %>%
+    row_spec(0, bold = TRUE, background = "#2c3e50", color = "white") %>%
+    row_spec(which(all_results$p_value < 0.05), background = "#d4edda") %>%
+    pack_rows("Sports Betting", 1, 4) %>%
+    pack_rows("DraftKings", 5, 8) %>%
+    pack_rows("Online Betting", 9, 12) %>%
+    pack_rows("NBA Betting", 13, 16)
 
-### Fitted Values Visualization
-
-```{r sb-fitted, warning=FALSE, message=FALSE, fig.width=12, fig.height=6}
-# Add fitted values
+# Fitted values plot
 sports_betting$Fitted <- fitted(model_sb)
 
 ggplot(sports_betting, aes(x = date)) +
     geom_line(aes(y = hits), color = "gray60", alpha = 0.6, linewidth = 0.5) +
     geom_line(aes(y = Fitted), color = "#1e88e5", linewidth = 1.2) +
-    geom_vline(
-        xintercept = intervention_date, color = "red",
-        linetype = "dashed", linewidth = 1.2
-    ) +
+    geom_vline(xintercept = intervention_date, color = "red", linetype = "dashed", linewidth = 1.2) +
     annotate("text",
         x = intervention_date, y = max(sports_betting$hits) * 0.95,
         label = "NY Launch", color = "red", size = 5, fontface = "bold"
     ) +
     labs(
-        title = "'Sports Betting' Searches: Actual vs. Fitted Values from ITS Model",
-        subtitle = "Gray = Actual search interest | Blue = Fitted trend lines",
-        x = "Date",
-        y = "Search Interest (0-100)"
+        title = "'Sports Betting' Searches: Actual vs. Fitted ITS Trend Lines",
+        subtitle = "Gray = Actual | Blue = Fitted (shows pre- and post-intervention trends)",
+        x = "Date", y = "Search Interest (0-100)"
     ) +
-    theme_minimal(base_size = 13) +
     theme(plot.title = element_text(face = "bold", size = 15))
 ```
 
----
+### Counterfactual & Interpretation
 
-## "DraftKings" Analysis
+```{r ny-counterfactual, warning=FALSE, message=FALSE, fig.width=14, fig.height=8}
+# Generate predictions and counterfactuals
+sports_betting <- sports_betting %>%
+    mutate(
+        Predicted = predict(model_sb),
+        Counterfactual = predict(model_sb, newdata = sports_betting %>% mutate(Post_Intervention = 0, Time_Since_Intervention = 0)),
+        Effect = Predicted - Counterfactual
+    )
 
-```{r its-draftkings, warning=FALSE, message=FALSE}
-model_dk <- lm(hits ~ Time + Post_Intervention + Time_Since_Intervention,
-    data = draftkings
-)
+# Counterfactual visualization
+ggplot(sports_betting, aes(x = date)) +
+    geom_line(aes(y = Counterfactual, linetype = "Counterfactual (No NY)"), color = "#1e88e5", linewidth = 1.2) +
+    geom_line(aes(y = Predicted, linetype = "Predicted (With NY)"), color = "#d32f2f", linewidth = 1.2) +
+    geom_point(aes(y = hits, shape = "Actual Data"), color = "gray30", size = 1, alpha = 0.5) +
+    geom_ribbon(
+        data = sports_betting %>% filter(Post_Intervention == 1),
+        aes(ymin = Predicted, ymax = Counterfactual), fill = "red", alpha = 0.15
+    ) +
+    geom_vline(xintercept = intervention_date, color = "red", linetype = "dashed", linewidth = 1.5) +
+    annotate("text",
+        x = intervention_date, y = max(sports_betting$hits) * 0.98,
+        label = "NY Launch", color = "red", size = 5, fontface = "bold", hjust = -0.1
+    ) +
+    scale_linetype_manual(
+        name = "Trend Lines",
+        values = c("Counterfactual (No NY)" = "dashed", "Predicted (With NY)" = "solid")
+    ) +
+    scale_shape_manual(name = "Data", values = c("Actual Data" = 16)) +
+    labs(
+        title = "Predicted vs. Counterfactual: Impact of NY Sports Betting Legalization",
+        subtitle = "Red shaded area shows intervention effect (difference between what happened and what would have happened)",
+        x = "Date", y = "Search Interest (0-100)",
+        caption = "Blue dashed = Counterfactual (pre-NY trend continued) | Red solid = Predicted (with NY intervention)"
+    ) +
+    theme(plot.title = element_text(face = "bold", size = 16), legend.position = "bottom")
 
-coef_dk <- summary(model_dk)$coefficients
+# Coefficient interpretation
+coefs <- coef(model_sb)
+coef_summary <- summary(model_sb)$coefficients
 
-results_dk <- data.frame(
-    Parameter = c(
-        "Intercept (Baseline)", "Pre-intervention Trend",
-        "Level Change (Immediate)", "Trend Change (Slope Difference)"
-    ),
-    Coefficient = coef_dk[, 1],
-    Std_Error = coef_dk[, 2],
-    t_value = coef_dk[, 3],
-    p_value = coef_dk[, 4]
-)
+cat("=== COEFFICIENT INTERPRETATION ===\n\n")
+cat(sprintf(
+    "β₁ (Pre-Trend) = %.4f (p = %.4f): Search interest %s by %.4f points/week before NY launch %s\n\n",
+    coefs[2], coef_summary[2, 4],
+    ifelse(coefs[2] > 0, "increased", "decreased"),
+    abs(coefs[2]),
+    ifelse(coef_summary[2, 4] < 0.05, "(significant)", "(not significant)")
+))
 
-kable(results_dk,
-    format = "html",
-    digits = 4,
-    caption = "'DraftKings' Search Interest: ITS Results",
-    col.names = c("Parameter", "Coefficient", "Std. Error", "t-value", "p-value")
-) %>%
-    kable_styling(
-        full_width = FALSE,
-        bootstrap_options = c("striped", "hover", "condensed", "responsive")
-    ) %>%
-    row_spec(0, bold = TRUE, background = "#ff6f00", color = "white") %>%
-    row_spec(which(results_dk$p_value < 0.05), background = "#fff3e0")
+cat(sprintf(
+    "β₂ (Level Change) = %.4f (p = %.4f): %s immediate %s of %.2f points when NY launched %s\n\n",
+    coefs[3], coef_summary[3, 4],
+    ifelse(coef_summary[3, 4] < 0.05, "Significant", "No significant"),
+    ifelse(coefs[3] > 0, "jump", "drop"),
+    abs(coefs[3]),
+    ifelse(coef_summary[3, 4] < 0.05, "(intervention had immediate effect)", "(no immediate shock)")
+))
+
+cat(sprintf(
+    "β₃ (Trend Change) = %.4f (p = %.4f): Post-NY trend = %.4f (pre) + %.4f (change) = %.4f per week\n",
+    coefs[4], coef_summary[4, 4], coefs[2], coefs[4], coefs[2] + coefs[4]
+))
+cat(sprintf(
+    "   %s in growth rate after NY launch %s\n\n",
+    ifelse(coefs[4] > 0, "Acceleration", "Deceleration"),
+    ifelse(coef_summary[4, 4] < 0.05, "(significant sustained effect)", "(not significant)")
+))
+
+# Delayed effect
+post_ny <- sports_betting %>% filter(Post_Intervention == 1)
+avg_effect <- mean(post_ny$Effect)
+current_effect <- tail(sports_betting$Effect, 1)
+
+cat(sprintf("Average Effect (Post-NY): %.2f points\n", avg_effect))
+cat(sprintf("Current Effect: %.2f points\n", current_effect))
+cat(sprintf(
+    "\nCounterfactual: Without NY legalization, current search interest would be %.1f instead of %.1f\n",
+    tail(sports_betting$Counterfactual, 1), tail(sports_betting$hits, 1)
+))
 ```
 
----
+The immediate effect is captured by the β₂ coefficient, which measures whether search interest jumped or declined right after January 8, 2022. A significant positive value indicates that New York’s legalization produced an instant cultural response. The counterfactual blue dashed line represents what search interest would have looked like had legalization not occurred; the gap between the blue counterfactual and the red actual line quantifies the intervention’s overall impact at any point in time.
 
-## "Online Betting" Analysis
+The sustained effect is reflected in the β₃ coefficient, which shows whether the growth trajectory changed after legalization. Positive values signal accelerated interest as the New York betting market stabilized and expanded. Beyond this trajectory shift, the delayed effect, seen in both the average post-intervention difference and the current separation between actual and counterfactual, reveals whether the impact persisted long after the initial launch period.
 
-```{r its-online-betting, warning=FALSE, message=FALSE}
-model_ob <- lm(hits ~ Time + Post_Intervention + Time_Since_Intervention,
-    data = online_betting
-)
+## COVID-19 Analysis
 
-coef_ob <- summary(model_ob)$coefficients
+### Background & Variable Selection
 
-results_ob <- data.frame(
-    Parameter = c(
-        "Intercept (Baseline)", "Pre-intervention Trend",
-        "Level Change (Immediate)", "Trend Change (Slope Difference)"
-    ),
-    Coefficient = coef_ob[, 1],
-    Std_Error = coef_ob[, 2],
-    t_value = coef_ob[, 3],
-    p_value = coef_ob[, 4]
-)
+**Intervention**: WHO declared COVID-19 pandemic on March 11, 2020, causing immediate suspension of all major sports leagues (NBA, NHL, MLB). **Variable**: "Sports betting" Google searches - an ITS candidate because the intervention had a clear, direct causal pathway: no live sports = no sports betting.
 
-kable(results_ob,
-    format = "html",
-    digits = 4,
-    caption = "'Online Betting' Search Interest: ITS Results",
-    col.names = c("Parameter", "Coefficient", "Std. Error", "t-value", "p-value")
+### Visualization & Data Preparation
+
+```{r covid-viz-data, warning=FALSE, message=FALSE, fig.width=14, fig.height=8}
+# Prepare COVID ITS data
+sports_covid_its <- sports_betting %>%
+    mutate(
+        X_t = row_number(),
+        Z_t = ifelse(date >= covid_intervention, 1, 0),
+        P_t = ifelse(date >= covid_intervention, as.numeric(date - covid_intervention) / 7, 0),
+        Y = hits
+    )
+
+# Visualization
+sports_covid <- sports_covid_its %>%
+    filter(date >= as.Date("2019-12-01") & date <= as.Date("2021-12-31"))
+
+ggplot(sports_covid, aes(x = date, y = Y)) +
+    geom_line(color = "#1e88e5", linewidth = 1.2) +
+    geom_point(color = "#1e88e5", size = 1.5, alpha = 0.6) +
+    geom_vline(xintercept = covid_intervention, color = "red", linetype = "dashed", linewidth = 1.5) +
+    annotate("text",
+        x = covid_intervention, y = max(sports_covid$Y) * 0.95,
+        label = "COVID-19 Pandemic\nMarch 11, 2020\nSports Leagues Shut Down",
+        color = "red", size = 5, fontface = "bold", hjust = -0.1
+    ) +
+    annotate("rect",
+        xmin = covid_intervention, xmax = as.Date("2020-07-01"),
+        ymin = -Inf, ymax = Inf, alpha = 0.1, fill = "red"
+    ) +
+    annotate("text",
+        x = as.Date("2020-05-01"), y = max(sports_covid$Y) * 0.1,
+        label = "Sports Shutdown Period", color = "darkred", size = 4, fontface = "italic"
+    ) +
+    labs(
+        title = "Google Searches for 'Sports Betting' Around COVID-19 Pandemic",
+        subtitle = "Dramatic decline when sports leagues shut down in March 2020",
+        x = "Date", y = "Search Interest (0-100)",
+        caption = "Red shaded area indicates major sports leagues suspended"
+    ) +
+    theme(plot.title = element_text(face = "bold", size = 16))
+
+# Data preparation table
+covid_table <- sports_covid_its %>%
+    filter(date >= as.Date("2020-02-01") & date <= as.Date("2020-05-31")) %>%
+    select(date, Y, X_t, Z_t, P_t) %>%
+    mutate(Period = ifelse(Z_t == 0, "Pre-COVID", "Post-COVID"), P_t = round(P_t, 1)) %>%
+    select(date, Period, Y, X_t, Z_t, P_t)
+
+kable(covid_table,
+    format = "html", digits = 1,
+    caption = "ITS Variables for COVID-19 Analysis (Sample Period)",
+    col.names = c("Date", "Period", "Y (Search Interest)", "X_t (Time)", "Z_t (COVID Indicator)", "P_t (Weeks Since COVID)")
 ) %>%
-    kable_styling(
-        full_width = FALSE,
-        bootstrap_options = c("striped", "hover", "condensed", "responsive")
-    ) %>%
-    row_spec(0, bold = TRUE, background = "#43a047", color = "white") %>%
-    row_spec(which(results_ob$p_value < 0.05), background = "#e8f5e9")
+    kable_styling(full_width = FALSE, bootstrap_options = c("striped", "hover", "condensed")) %>%
+    row_spec(0, bold = TRUE, background = "#2c3e50", color = "white") %>%
+    row_spec(which(covid_table$Z_t == 1), background = "#ffebee") %>%
+    column_spec(5, bold = TRUE, color = ifelse(covid_table$Z_t == 1, "red", "black"))
 ```
 
----
+**Variables**: Y = Search interest; X_t = Time index (weeks from dataset start); Z_t = COVID indicator (0 before March 11, 2020; 1 after); P_t = Weeks since COVID intervention (0 before, increases after).
 
-## "NBA Betting" Analysis
+### ITS Model & Results
 
-```{r its-nba-betting, warning=FALSE, message=FALSE}
-model_nb <- lm(hits ~ Time + Post_Intervention + Time_Since_Intervention,
-    data = nba_betting
-)
+```{r covid-its-model, warning=FALSE, message=FALSE, fig.width=14, fig.height=8}
+# Fit COVID ITS model
+covid_model <- lm(Y ~ X_t + Z_t + P_t, data = sports_covid_its)
 
-coef_nb <- summary(model_nb)$coefficients
+covid_coef <- summary(covid_model)$coefficients
 
-results_nb <- data.frame(
+covid_results <- data.frame(
     Parameter = c(
-        "Intercept (Baseline)", "Pre-intervention Trend",
-        "Level Change (Immediate)", "Trend Change (Slope Difference)"
+        "β₀: Intercept (Baseline)", "β₁: Pre-COVID Trend (X_t)",
+        "β₂: Immediate Level Change (Z_t)", "β₃: Trend Change After COVID (P_t)"
     ),
-    Coefficient = coef_nb[, 1],
-    Std_Error = coef_nb[, 2],
-    t_value = coef_nb[, 3],
-    p_value = coef_nb[, 4]
-)
-
-kable(results_nb,
-    format = "html",
-    digits = 4,
-    caption = "'NBA Betting' Search Interest: ITS Results",
-    col.names = c("Parameter", "Coefficient", "Std. Error", "t-value", "p-value")
-) %>%
-    kable_styling(
-        full_width = FALSE,
-        bootstrap_options = c("striped", "hover", "condensed", "responsive")
-    ) %>%
-    row_spec(0, bold = TRUE, background = "#8e24aa", color = "white") %>%
-    row_spec(which(results_nb$p_value < 0.05), background = "#f3e5f5")
-```
-
----
-
-# Comparative Summary
-
-```{r summary-comparison, warning=FALSE, message=FALSE}
-comparison_df <- data.frame(
-    Search_Term = c("Sports Betting", "DraftKings", "Online Betting", "NBA Betting"),
-    Pre_Trend = c(
-        results_sb$Coefficient[2], results_dk$Coefficient[2],
-        results_ob$Coefficient[2], results_nb$Coefficient[2]
-    ),
-    Level_Change = c(
-        results_sb$Coefficient[3], results_dk$Coefficient[3],
-        results_ob$Coefficient[3], results_nb$Coefficient[3]
-    ),
-    Trend_Change = c(
-        results_sb$Coefficient[4], results_dk$Coefficient[4],
-        results_ob$Coefficient[4], results_nb$Coefficient[4]
-    ),
-    Level_pval = c(
-        results_sb$p_value[3], results_dk$p_value[3],
-        results_ob$p_value[3], results_nb$p_value[3]
-    ),
-    Trend_pval = c(
-        results_sb$p_value[4], results_dk$p_value[4],
-        results_ob$p_value[4], results_nb$p_value[4]
+    Coefficient = covid_coef[, 1],
+    Std_Error = covid_coef[, 2],
+    t_value = covid_coef[, 3],
+    p_value = covid_coef[, 4],
+    Significance = ifelse(covid_coef[, 4] < 0.001, "***",
+        ifelse(covid_coef[, 4] < 0.01, "**",
+            ifelse(covid_coef[, 4] < 0.05, "*", "")
+        )
     )
 )
 
-kable(comparison_df,
-    format = "html",
-    digits = 4,
-    caption = "Comparison of NY Launch Impact Across All Search Terms",
-    col.names = c(
-        "Search Term", "Pre-Trend", "Level Change", "Trend Change",
-        "Level p-value", "Trend p-value"
-    )
+kable(covid_results,
+    format = "html", digits = 4,
+    caption = "COVID-19 ITS Model Results: Sports Betting Search Interest",
+    col.names = c("Parameter", "Coefficient", "Std. Error", "t-value", "p-value", "Sig.")
 ) %>%
-    kable_styling(
-        full_width = FALSE,
-        bootstrap_options = c("striped", "hover", "condensed", "responsive")
-    ) %>%
-    row_spec(0, bold = TRUE, background = "#2c3e50", color = "white")
+    kable_styling(full_width = FALSE, bootstrap_options = c("striped", "hover", "condensed")) %>%
+    row_spec(0, bold = TRUE, background = "#c62828", color = "white") %>%
+    row_spec(which(covid_results$p_value < 0.05), background = "#ffcdd2")
+
+# Fitted values visualization
+sports_covid_its$Fitted <- fitted(covid_model)
+
+ggplot(sports_covid_its, aes(x = date)) +
+    geom_line(aes(y = Y), color = "gray50", linewidth = 0.8, alpha = 0.7) +
+    geom_point(aes(y = Y), color = "gray50", size = 1, alpha = 0.5) +
+    geom_line(
+        data = sports_covid_its %>% filter(Z_t == 0), aes(y = Fitted),
+        color = "#1e88e5", linewidth = 2
+    ) +
+    geom_line(
+        data = sports_covid_its %>% filter(Z_t == 1), aes(y = Fitted),
+        color = "#d32f2f", linewidth = 2
+    ) +
+    geom_vline(xintercept = covid_intervention, color = "red", linetype = "dashed", linewidth = 1.5) +
+    annotate("text",
+        x = covid_intervention, y = max(sports_covid_its$Y) * 0.95,
+        label = "COVID-19\nMarch 11, 2020", color = "red", size = 5, fontface = "bold", hjust = -0.1
+    ) +
+    labs(
+        title = "ITS Model: Actual Data vs. Fitted Trend Lines",
+        subtitle = "Gray = Actual | Blue = Pre-COVID trend | Red = Post-COVID trend",
+        x = "Date", y = "Search Interest (0-100)",
+        caption = "Model: Y = β₀ + β₁(Time) + β₂(COVID Indicator) + β₃(Weeks Since COVID)"
+    ) +
+    theme(plot.title = element_text(face = "bold", size = 16))
 ```
 
+### Counterfactual & Interpretation
+
+```{r covid-counterfactual, warning=FALSE, message=FALSE, fig.width=14, fig.height=9}
+# Generate predictions and counterfactuals
+sports_covid_its <- sports_covid_its %>%
+    mutate(
+        Predicted = predict(covid_model),
+        Counterfactual = predict(covid_model, newdata = sports_covid_its %>% mutate(Z_t = 0, P_t = 0)),
+        Effect = Predicted - Counterfactual
+    )
+
+# Counterfactual visualization
+ggplot(sports_covid_its, aes(x = date)) +
+    geom_line(aes(y = Counterfactual, linetype = "Counterfactual (No COVID)"), color = "#1e88e5", linewidth = 1.2) +
+    geom_line(aes(y = Predicted, linetype = "Predicted (With COVID)"), color = "#d32f2f", linewidth = 1.2) +
+    geom_point(aes(y = Y, shape = "Actual Data"), color = "gray30", size = 1.5, alpha = 0.5) +
+    geom_ribbon(
+        data = sports_covid_its %>% filter(Z_t == 1),
+        aes(ymin = Predicted, ymax = Counterfactual), fill = "red", alpha = 0.15
+    ) +
+    geom_vline(xintercept = covid_intervention, color = "red", linetype = "dashed", linewidth = 1.5) +
+    annotate("text",
+        x = covid_intervention, y = max(sports_covid_its$Y) * 0.98,
+        label = "COVID-19\nIntervention", color = "red", size = 5, fontface = "bold", hjust = -0.1
+    ) +
+    annotate("text",
+        x = as.Date("2021-06-01"), y = 40,
+        label = "← Intervention Effect\n(Gap between blue and red lines)",
+        color = "#c62828", size = 4.5, fontface = "bold"
+    ) +
+    scale_linetype_manual(
+        name = "Trend Lines",
+        values = c("Counterfactual (No COVID)" = "dashed", "Predicted (With COVID)" = "solid")
+    ) +
+    scale_shape_manual(name = "Data", values = c("Actual Data" = 16)) +
+    labs(
+        title = "Predicted vs. Counterfactual: Impact of COVID-19 on Sports Betting Interest",
+        subtitle = "Red shaded area shows intervention effect (difference between actual and counterfactual)",
+        x = "Date", y = "Search Interest (0-100)",
+        caption = "Blue dashed = Counterfactual (pre-COVID trend) | Red solid = Predicted (with COVID)"
+    ) +
+    theme(plot.title = element_text(face = "bold", size = 16), legend.position = "bottom")
+
+# Coefficient interpretation
+coefs_c <- coef(covid_model)
+coef_summary_c <- summary(covid_model)$coefficients
+
+cat("=== COEFFICIENT INTERPRETATION ===\n\n")
+cat(sprintf(
+    "β₁ (Pre-COVID Trend) = %.4f (p = %.4f): Search interest %s by %.4f points/week before pandemic\n\n",
+    coefs_c[2], coef_summary_c[2, 4],
+    ifelse(coefs_c[2] > 0, "increased", "decreased"), abs(coefs_c[2])
+))
+
+cat(sprintf(
+    "β₂ (Immediate Shock) = %.4f (p = %.4f): Search interest DROPPED by %.2f points when sports stopped\n",
+    coefs_c[3], coef_summary_c[3, 4], abs(coefs_c[3])
+))
+cat("   This represents the immediate collapse in betting interest when all sports leagues shut down\n\n")
+
+cat(sprintf(
+    "β₃ (Recovery Rate) = %.4f (p = %.4f): Post-COVID trend = %.4f (pre) + %.4f (change) = %.4f per week\n",
+    coefs_c[4], coef_summary_c[4, 4], coefs_c[2], coefs_c[4], coefs_c[2] + coefs_c[4]
+))
+cat(sprintf(
+    "   Trend became %s, indicating %s as sports returned\n\n",
+    ifelse(coefs_c[2] + coefs_c[4] > coefs_c[2], "MORE POSITIVE", "MORE NEGATIVE"),
+    ifelse(coefs_c[4] > 0, "RECOVERY", "continued decline")
+))
+
+# Effect analysis
+post_covid_data <- sports_covid_its %>% filter(Z_t == 1)
+avg_effect <- mean(post_covid_data$Effect)
+min_effect <- min(post_covid_data$Effect)
+current_effect <- tail(sports_covid_its$Effect, 1)
+
+cat(sprintf("Average Effect (Post-COVID): %.2f points below counterfactual\n", avg_effect))
+cat(sprintf("Worst Point: %.2f points below counterfactual (peak disruption)\n", min_effect))
+cat(sprintf("Current Effect: %.2f points\n\n", current_effect))
+cat(sprintf(
+    "Counterfactual: Without COVID, current search interest would be %.1f instead of %.1f\n",
+    tail(sports_covid_its$Counterfactual, 1), tail(sports_covid_its$Y, 1)
+))
+
+ggplot(post_covid_data, aes(x = date, y = Effect)) +
+    geom_line(color = "#d32f2f", linewidth = 1.2) +
+    geom_point(color = "#d32f2f", size = 2) +
+    geom_hline(yintercept = 0, linetype = "dashed", color = "gray30", linewidth = 1) +
+    geom_smooth(method = "loess", se = TRUE, color = "#1e88e5", fill = "#1e88e5", alpha = 0.2) +
+    labs(
+        title = "Intervention Effect Over Time: COVID-19 Impact Trajectory",
+        subtitle = "Negative values = Interest below counterfactual | Positive = Above counterfactual",
+        x = "Date", y = "Intervention Effect (Predicted - Counterfactual)",
+        caption = "Blue trend line shows recovery trajectory over time"
+    ) +
+    theme(plot.title = element_text(face = "bold", size = 15))
+```
+
+The immediate effect is captured by β₂, which shows that search interest dropped roughly %.2 points the moment sports shut down, a catastrophic collapse that wiped out the core activity driving betting demand. The counterfactual trajectory illustrates what search interest would have been without COVID; the gap between actual and counterfactual values quantifies the “lost interest,” averaging %.1 points below where the market would have otherwise stood.
+
+The sustained effect is reflected in β₃, indicating how the trend shifted as sports gradually returned, beginning with the NBA bubble in July 2020 and the NFL season in September 2020. This forms the delayed effect: an immediate crash followed by slow recovery. The current distance between actual and counterfactual lines shows whether the industry has fully re-aligned with its pre-pandemic path or if lingering deficits remain.
+
+:::
+
 ---
-
-# Key Findings
-
-## Statistical Significance
-
-Based on the interrupted time series analysis of Google search trends, we examine:
-
-1. **Was there an immediate level change?** (Did search interest spike on January 8, 2022?)
-2. **Was there a trend change?** (Did the growth trajectory change after the NY launch?)
-
-## Interpretation Guidelines
-
-- **Level Change (β₂)**:
-  - Positive & significant → Search interest jumped immediately after NY launch
-  - Negative & significant → Search interest dropped (unlikely for this intervention)
-  - Not significant → No immediate spike in searches
-
-- **Trend Change (β₃)**:
-  - Positive & significant → Search interest grew faster after NY legalization
-  - Negative & significant → Growth slowed after initial spike
-  - Not significant → No sustained change in search trajectory
-
----
-
-# Conclusion
-
-The New York sports betting legalization on January 8, 2022, provides a natural experiment to test whether a major market expansion affects **public awareness and interest** in sports betting.
-
-Unlike stock price analysis (which suffers from macroeconomic confounders like Federal Reserve policy), Google Trends data directly captures consumer behavior and cultural engagement. The interrupted time series framework allows us to decompose the intervention effect into:
-
-1. **Immediate impact** (did people start searching immediately?)
-2. **Long-term trajectory change** (did sustained interest grow or fade?)
-
-This analysis ties directly to the broader thesis: **NBA analytics revolution → enabled sports betting infrastructure → regulatory expansion (NY) → increased public participation** (measured by search behavior).
