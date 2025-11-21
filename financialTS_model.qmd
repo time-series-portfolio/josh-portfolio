@@ -46,10 +46,6 @@ library(fGarch)
 theme_set(theme_minimal(base_size = 12))
 ```
 
-# Data Preparation
-
-We analyze four major sports betting stocks—DraftKings (DKNG), a pure-play online sports betting and daily fantasy sports platform; Penn Entertainment (PENN), a regional casino operator partnered with ESPN BET; Caesars Entertainment (CZR), a major casino operator with the Caesars Sportsbook brand; and MGM Resorts International (MGM), a global casino and resort company behind BetMGM. All four firms operate within the fast-evolving sports betting and online gaming industry, where regulatory developments, earnings surprises, and competitive pressures contribute to pronounced volatility clustering.
-
 ```{r load-data, warning=FALSE, message=FALSE}
 # Load all stock data
 dkng <- read_csv("data/financial/DKNG_daily.csv", show_col_types = FALSE)
