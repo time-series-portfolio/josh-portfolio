@@ -1,47 +1,41 @@
 {
-  "index.qmd": {
-    "index.html": "55a08263"
-  },
-  "about.qmd": {
-    "about.html": "29e98684"
-  },
   "financialTS_model.qmd": {
-    "financialTS_model.html": "05544d33"
+    "financialTS_model.html": "4d61a2f8"
   },
   "intro.qmd": {
-    "intro.html": "65e25611"
+    "intro.html": "8534864b"
   },
   "data_viz.qmd": {
-    "data_viz.html": "65a79ee1"
-  },
-  "eda.qmd": {
-    "eda.html": "5d02a154"
-  },
-  "DLTS.qmd": {
-    "DLTS.html": "d0b4c852"
-  },
-  "conclusion.qmd": {
-    "conclusion.html": "a1d35d49"
-  },
-  "multiTS_model.qmd": {
-    "multiTS_model.html": "5ab2a57c"
-  },
-  "data_source.qmd": {
-    "data_source.html": "f47061ab"
-  },
-  "other.qmd": {
-    "other.html": "d3ba843e"
-  },
-  "uniTS_model.qmd": {
-    "uniTS_model.html": "05a21bc5"
-  },
-  "betting_data/mlb_kalshi.ipynb": {
-    "mlb_kalshi.html": "96121a75"
+    "data_viz.html": "8c2aab38"
   },
   "ITS_analysis.qmd": {
-    "ITS_analysis.html": "8a52a96c"
+    "ITS_analysis.html": "18ebc2dd"
   },
-  "CLASS_PRESENTATION_NOTES.md": {
-    "CLASS_PRESENTATION_NOTES.html": "43fb7fc5"
+  "eda.qmd": {
+    "eda.html": "4a9a71e6"
+  },
+  "DLTS.qmd": {
+    "DLTS.html": "5fa153a0"
+  },
+  "index.qmd": {
+    "index.html": "5ef9cabd"
+  },
+  "conclusion.qmd": {
+    "conclusion.html": "384dc40d"
+  },
+  "about.qmd": {
+    "about.html": "6be3abdc"
+  },
+  "multiTS_model.qmd": {
+    "multiTS_model.html": "3b9d97a3"
+  },
+  "data_source.qmd": {
+    "data_source.html": "d02e758d"
+  },
+  "other.qmd": {
+    "other.html": "e91d508e"
+  },
+  "uniTS_model.qmd": {
+    "uniTS_model.html": "69b3b2b8"
   }
 }
