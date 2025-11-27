@@ -27,8 +27,6 @@ These dynamics motivate our multivariate approach. ARIMAX models test directiona
 
 ## Proposed Models
 
-**Note**: **Models 4 and 5** still need to be completed for the final portfolio.
-
 ### Model 1: Efficiency Drivers (VAR)
 `ORtg ~ Pace & 3PAr`
 
@@ -132,9 +130,10 @@ The time series reveal basketball's transformation at a glance: ORtg climbs grad
 ```{r arimax-correlation, warning=FALSE, message=FALSE}
 # Correlation analysis
 cor_data <- league_avg %>% dplyr::select(ORtg, `3PAr`, `TS%`)
-cat("Correlation Matrix:\n")
 print(round(cor(cor_data, use = "complete.obs"), 3))
 ```
+
+**Correlation Matrix:**
 
 ```{r correlation-narrative-setup, echo=FALSE, message=FALSE}
 cor_ortg_3par <- round(cor(league_avg$ORtg, league_avg$`3PAr`), 3)
@@ -291,7 +290,7 @@ kable(cv_results,
     format = "html",
     digits = 3,
     caption = "Cross-Validation Results: ORtg Models",
-    col.names = c("Model", "RMSE", "MAE", "MAPE (%)")
+    col.names = c("Model", "RMSE", "MAE", "MAPE")
 ) %>%
     kable_styling(
         full_width = FALSE,
@@ -613,7 +612,6 @@ print(arimax_attend_manual)
 ## Cross-Validation
 
 ```{r attendance-cv, warning=FALSE, message=FALSE, fig.width=10, fig.height=6}
-# Train: 2000-2018, Test: 2019-2024 (includes pre-COVID and COVID periods)
 train_end_att <- 2018
 test_start_att <- 2019
 
@@ -761,7 +759,6 @@ fc_attend_final <- forecast(final_attend, xreg = xreg_future_att, h = 5)
 autoplot(fc_attend_final) +
     labs(
         title = "NBA Attendance Forecast: 2026-2030",
-        subtitle = "Assumes full COVID recovery (COVID_Dummy = 0)",
         x = "Year",
         y = "Total Attendance (Millions)"
     ) +
@@ -829,23 +826,21 @@ summary(var_data)
 
 ```{r var-stationarity, warning=FALSE, message=FALSE}
 # ADF tests for each series
-cat("=== STATIONARITY TESTS ===\n\n")
-
 adf_ortg_var <- adf.test(var_data[, "ORtg"])
 adf_pace_var <- adf.test(var_data[, "Pace"])
 adf_3par_var <- adf.test(var_data[, "3PAr"])
 
 cat(
     "ORtg: ADF p-value =", round(adf_ortg_var$p.value, 4),
-    ifelse(adf_ortg_var$p.value < 0.05, "(stationary)", "implies non-stationary"), "\n"
+    ifelse(adf_ortg_var$p.value < 0.05, "(stationary)", "(non-stationary)"), "\n"
 )
 cat(
     "Pace: ADF p-value =", round(adf_pace_var$p.value, 4),
-    ifelse(adf_pace_var$p.value < 0.05, "(stationary)", "implies non-stationary"), "\n"
+    ifelse(adf_pace_var$p.value < 0.05, "(stationary)", "(non-stationary)"), "\n"
 )
 cat(
     "3PAr: ADF p-value =", round(adf_3par_var$p.value, 4),
-    ifelse(adf_3par_var$p.value < 0.05, "(stationary)", "implies non-stationary"), "\n\n"
+    ifelse(adf_3par_var$p.value < 0.05, "(stationary)", "(non-stationary)"), "\n\n"
 )
 
 # Difference if non-stationary
@@ -857,13 +852,12 @@ if (adf_ortg_var$p.value > 0.05 | adf_pace_var$p.value > 0.05 | adf_3par_var$p.v
     adf_pace_diff <- adf.test(var_data_diff[, "Pace"])
     adf_3par_diff <- adf.test(var_data_diff[, "3PAr"])
 
-    cat("After first-differencing:\n")
+    cat("\nAfter first-differencing:\n")
     cat("ORtg: ADF p-value =", round(adf_ortg_diff$p.value, 4), "\n")
     cat("Pace: ADF p-value =", round(adf_pace_diff$p.value, 4), "\n")
-    cat("3PAr: ADF p-value =", round(adf_3par_diff$p.value, 4), "\n\n")
+    cat("3PAr: ADF p-value =", round(adf_3par_diff$p.value, 4), "\n")
 
     if (adf_ortg_diff$p.value < 0.05 & adf_pace_diff$p.value < 0.05 & adf_3par_diff$p.value < 0.05) {
-        cat("All series now stationary. Proceeding with differenced data for VAR.\n\n")
         var_data_final <- var_data_diff
         differenced <- TRUE
     } else {
@@ -880,7 +874,6 @@ if (adf_ortg_var$p.value > 0.05 | adf_pace_var$p.value > 0.05 | adf_3par_var$p.v
 
 ```{r var-select, warning=FALSE, message=FALSE}
 # Determine optimal lag order
-cat("=== LAG ORDER SELECTION ===\n\n")
 var_select <- VARselect(var_data_final, lag.max = 8, type = "const")
 
 print(var_select$selection)
@@ -891,16 +884,14 @@ lags_to_fit <- unique(var_select$selection[1:3])
 
 # Ensure we have at least one lag to fit
 if (length(lags_to_fit) == 0 || any(is.na(lags_to_fit))) {
-    cat("Warning: VARselect returned no valid lags. Defaulting to p=1\n")
     lags_to_fit <- 1
 }
 
-cat("Fitting VAR models with p =", paste(lags_to_fit, collapse = ", "), "\n\n")
+cat("\nFitting VAR models with p =", paste(lags_to_fit, collapse = ", "), "\n")
 
 var_models <- list()
 for (p in lags_to_fit) {
     var_models[[paste0("VAR_", p)]] <- VAR(var_data_final, p = p, type = "const")
-    cat("VAR(", p, ") fitted successfully\n", sep = "")
 }
 ```
 
@@ -918,14 +909,10 @@ for (name in names(var_models)) {
 ## Cross-Validation
 
 ```{r var-cv, warning=FALSE, message=FALSE, fig.width=10, fig.height=6}
-cat("=== TIME SERIES CROSS-VALIDATION FOR VAR ===\n\n")
-
 # Split: Train 1980-2019, Test 2020-2024
 train_end_var <- 2019
 
 if (differenced) {
-    # Differenced data starts at 1981 (lost 1980 due to differencing)
-    # Training: 1981-2019, Test: 2020-2024
     train_var <- window(var_data_final, end = train_end_var)
     test_var <- window(var_data_final, start = train_end_var + 1)
 } else {
@@ -943,7 +930,6 @@ for (p in lags_to_fit) {
             VAR(train_var, p = p, type = "const")
         },
         error = function(e) {
-            cat("Warning: VAR(", p, ") failed. Trying with smaller lag...\n", sep = "")
             if (p > 1) {
                 VAR(train_var, p = 1, type = "const")
             } else {
@@ -959,14 +945,7 @@ for (p in lags_to_fit) {
 # Generate forecasts
 rmse_results <- data.frame()
 
-cat("Number of VAR models to evaluate:", length(var_train_models), "\n")
-if (length(var_train_models) == 0) {
-    cat("ERROR: No VAR models were successfully fitted. Check data and lag selection.\n")
-    cat("  Lags attempted:", paste(lags_to_fit, collapse = ", "), "\n")
-    cat("  Train data dimensions:", nrow(train_var), "rows x", ncol(train_var), "cols\n")
-} else {
-    cat("Successfully fitted", length(var_train_models), "VAR model(s):", paste(names(var_train_models), collapse = ", "), "\n\n")
-}
+cat("Evaluating", length(var_train_models), "VAR model(s)\n")
 
 for (name in names(var_train_models)) {
     fc <- tryCatch(
@@ -981,7 +960,6 @@ for (name in names(var_train_models)) {
 
     if (is.null(fc)) next
 
-    # Extract forecasts for each variable - handle different column name formats
     fc_var_names <- names(fc$fcst)
 
     # Find ORtg
@@ -999,8 +977,6 @@ for (name in names(var_train_models)) {
     }
     fc_3par <- fc$fcst[[tpar_fc_name]][, "fcst"]
 
-    # Convert test data to numeric vectors for comparison
-    # Handle column names similarly
     test_var_names <- colnames(test_var)
     test_ortg_vec <- as.numeric(test_var[, "ORtg"])
     test_pace_vec <- as.numeric(test_var[, "Pace"])
@@ -1084,11 +1060,9 @@ if (exists("rmse_results") && nrow(rmse_results) > 0) {
 ```{r var-cv-best, warning=FALSE, message=FALSE}
 if (exists("rmse_results") && nrow(rmse_results) > 0) {
     best_var_idx <- which.min(rmse_results$RMSE_Avg)
-    cat("\n*** BEST VAR MODEL: ", rmse_results$Model[best_var_idx], " ***\n")
-    cat("Average RMSE =", round(rmse_results$RMSE_Avg[best_var_idx], 4), "\n")
+    cat("\nBest model:", rmse_results$Model[best_var_idx], "(Average RMSE =", round(rmse_results$RMSE_Avg[best_var_idx], 3), ")\n")
 } else {
-    cat("No cross-validation results available (all models failed)\n")
-    best_var_idx <- 1 # Default to first model
+    best_var_idx <- 1
 }
 ```
 
@@ -1152,7 +1126,6 @@ granger_3par_ortg <- causality(final_var, cause = tpar_name)$Granger
 granger_pace <- causality(final_var, cause = "Pace")$Granger
 granger_ortg <- causality(final_var, cause = "ORtg")$Granger
 
-cat("=== Granger Causality Tests ===\n\n")
 cat("3PAr → {ORtg, Pace}: F =", round(granger_3par_ortg$statistic, 3),
     ", p =", round(granger_3par_ortg$p.value, 4), "\n")
 cat("Pace → {ORtg, 3PAr}: F =", round(granger_pace$statistic, 3),
@@ -1184,3 +1157,772 @@ plot(irf_ortg_3par, main = paste("Impulse: ORtg → Response:", tpar_name_irf))
 The VAR model reveals meaningful relationships among offensive efficiency, three-point shooting, and pace across NBA history. Granger causality tests quantify whether past values of one variable help predict future values of others, addressing the question of whether the rise in three-point shooting preceded changes in offensive efficiency or vice versa.
 
 Impulse response functions trace how a one-time shock to one variable cascades through the system, showing whether innovations in one aspect of basketball strategy have lasting effects on others or if defensive adjustments eventually neutralize advantages. Together, these tools demonstrate that while the analytics revolution transformed the NBA, reflecting the complex adaptive nature of elite competition where strategic innovations provoke counter-responses.
+
+:::
+
+## Pace Dynamics (VAR)
+
+**Variables**: `Pace`, `3PAr`, `eFG%`
+
+This VAR model investigates the bidirectional relationships between pace of play, three-point attempt rate, and effective field goal percentage. The theoretical motivation is multifaceted: faster pace may facilitate more three-point attempts through transition opportunities, while teams that shoot more threes may adopt faster tempos to maximize possessions. Additionally, better shooting efficiency (eFG%) may enable teams to control tempo more effectively, while faster pace could create higher-quality shot opportunities through defensive breakdowns. Unlike ARIMAX models that assume one-directional causality, VAR allows all three variables to influence each other dynamically.
+
+::: {.panel-tabset}
+
+## EDA & Stationarity
+
+```{r var-pace-eda, warning=FALSE, message=FALSE, fig.width=12, fig.height=8}
+# Create VAR dataset for pace dynamics
+var_pace_data <- ts(league_avg %>% dplyr::select(Pace, `3PAr`, `eFG%`),
+    start = 1980, frequency = 1
+)
+
+# Plot all series
+autoplot(var_pace_data, facets = TRUE) +
+    labs(
+        title = "VAR Variables: Pace, 3PAr, eFG% (1980-2025)",
+        x = "Year", y = "Value"
+    ) +
+    theme_minimal()
+
+cat("Summary Statistics:\n")
+summary(var_pace_data)
+```
+
+```{r var-pace-stationarity, warning=FALSE, message=FALSE}
+# ADF tests for each series
+adf_pace_var2 <- adf.test(var_pace_data[, "Pace"])
+adf_3par_var2 <- adf.test(var_pace_data[, "3PAr"])
+adf_efg_var2 <- adf.test(var_pace_data[, "eFG%"])
+
+cat(
+    "Pace: ADF p-value =", round(adf_pace_var2$p.value, 4),
+    ifelse(adf_pace_var2$p.value < 0.05, "(stationary)", "(non-stationary)"), "\n"
+)
+cat(
+    "3PAr: ADF p-value =", round(adf_3par_var2$p.value, 4),
+    ifelse(adf_3par_var2$p.value < 0.05, "(stationary)", "(non-stationary)"), "\n"
+)
+cat(
+    "eFG%: ADF p-value =", round(adf_efg_var2$p.value, 4),
+    ifelse(adf_efg_var2$p.value < 0.05, "(stationary)", "(non-stationary)"), "\n\n"
+)
+
+# Difference if non-stationary
+if (adf_pace_var2$p.value > 0.05 | adf_3par_var2$p.value > 0.05 | adf_efg_var2$p.value > 0.05) {
+    var_pace_data_diff <- diff(var_pace_data)
+
+    # Test differenced data
+    adf_pace_diff <- adf.test(var_pace_data_diff[, "Pace"])
+    adf_3par_diff <- adf.test(var_pace_data_diff[, "3PAr"])
+    adf_efg_diff <- adf.test(var_pace_data_diff[, "eFG%"])
+
+    cat("After first-differencing:\n")
+    cat("Pace: ADF p-value =", round(adf_pace_diff$p.value, 4), "\n")
+    cat("3PAr: ADF p-value =", round(adf_3par_diff$p.value, 4), "\n")
+    cat("eFG%: ADF p-value =", round(adf_efg_diff$p.value, 4), "\n")
+
+    if (adf_pace_diff$p.value < 0.05 & adf_3par_diff$p.value < 0.05 & adf_efg_diff$p.value < 0.05) {
+        var_pace_data_final <- var_pace_data_diff
+        differenced_pace <- TRUE
+    } else {
+        var_pace_data_final <- var_pace_data_diff
+        differenced_pace <- TRUE
+    }
+} else {
+    var_pace_data_final <- var_pace_data
+    differenced_pace <- FALSE
+}
+```
+
+The time series reveal distinct evolutionary patterns. Pace shows the famous U-shape: declining from the fast-paced 1980s through the defensive mid-2000s, then rebounding in the modern era as analytics embraced tempo. Three-point attempt rate explodes post-2012, capturing the shot selection revolution. Effective field goal percentage rises steadily, reflecting improved shooting skill and better shot selection. All three series exhibit non-stationary trends, necessitating differencing for valid VAR estimation.
+
+## Model Selection & Fitting
+
+```{r var-pace-select, warning=FALSE, message=FALSE}
+# Determine optimal lag order
+var_pace_select <- VARselect(var_pace_data_final, lag.max = 8, type = "const")
+
+print(var_pace_select$selection)
+print(var_pace_select$criteria)
+
+# Fit models with different lag orders
+lags_pace_to_fit <- unique(var_pace_select$selection[1:3])
+
+# Ensure we have at least one lag to fit
+if (length(lags_pace_to_fit) == 0 || any(is.na(lags_pace_to_fit))) {
+    lags_pace_to_fit <- 1
+}
+
+cat("\nFitting VAR models with p =", paste(lags_pace_to_fit, collapse = ", "), "\n")
+
+var_pace_models <- list()
+for (p in lags_pace_to_fit) {
+    var_pace_models[[paste0("VAR_", p)]] <- VAR(var_pace_data_final, p = p, type = "const")
+}
+```
+
+```{r var-pace-summaries, warning=FALSE, message=FALSE}
+for (name in names(var_pace_models)) {
+    cat("========================================\n")
+    cat(name, "Summary:\n")
+    cat("========================================\n\n")
+    print(summary(var_pace_models[[name]]))
+    cat("\n\n")
+}
+```
+
+
+## Cross-Validation
+
+```{r var-pace-cv, warning=FALSE, message=FALSE, fig.width=10, fig.height=6}
+# Split: Train 1980-2019, Test 2020-2024
+train_end_var_pace <- 2019
+
+if (differenced_pace) {
+    train_var_pace <- window(var_pace_data_final, end = train_end_var_pace)
+    test_var_pace <- window(var_pace_data_final, start = train_end_var_pace + 1)
+} else {
+    train_var_pace <- window(var_pace_data_final, end = train_end_var_pace)
+    test_var_pace <- window(var_pace_data_final, start = train_end_var_pace + 1)
+}
+
+h_var_pace <- nrow(test_var_pace)
+
+# Fit VAR models on training data with error handling
+var_pace_train_models <- list()
+for (p in lags_pace_to_fit) {
+    model <- tryCatch(
+        {
+            VAR(train_var_pace, p = p, type = "const")
+        },
+        error = function(e) {
+            if (p > 1) {
+                VAR(train_var_pace, p = 1, type = "const")
+            } else {
+                NULL
+            }
+        }
+    )
+    if (!is.null(model)) {
+        var_pace_train_models[[paste0("VAR_", p)]] <- model
+    }
+}
+
+# Generate forecasts
+rmse_pace_results <- data.frame()
+
+cat("Evaluating", length(var_pace_train_models), "VAR model(s)\n")
+
+for (name in names(var_pace_train_models)) {
+    fc <- tryCatch(
+        {
+            predict(var_pace_train_models[[name]], n.ahead = h_var_pace)
+        },
+        error = function(e) {
+            cat("Warning: Forecast failed for", name, ":", e$message, "\n")
+            NULL
+        }
+    )
+
+    if (is.null(fc)) next
+
+    # Extract forecasts for each variable
+    fc_var_names_pace <- names(fc$fcst)
+
+    # Find Pace
+    fc_pace_var <- fc$fcst$Pace[, "fcst"]
+
+    # Find 3PAr
+    tpar_fc_name_pace <- fc_var_names_pace[grep("3PAr|PAr", fc_var_names_pace, ignore.case = TRUE)]
+    if (length(tpar_fc_name_pace) == 0) {
+        tpar_fc_name_pace <- fc_var_names_pace[2]
+    } else {
+        tpar_fc_name_pace <- tpar_fc_name_pace[1]
+    }
+    fc_3par_pace <- fc$fcst[[tpar_fc_name_pace]][, "fcst"]
+
+    # Find eFG%
+    efg_fc_name_pace <- fc_var_names_pace[grep("eFG%|eFG", fc_var_names_pace, ignore.case = TRUE)]
+    if (length(efg_fc_name_pace) == 0) {
+        efg_fc_name_pace <- fc_var_names_pace[3]
+    } else {
+        efg_fc_name_pace <- efg_fc_name_pace[1]
+    }
+    fc_efg_pace <- fc$fcst[[efg_fc_name_pace]][, "fcst"]
+
+    # Convert test data to numeric vectors
+    test_var_names_pace <- colnames(test_var_pace)
+    test_pace_vec <- as.numeric(test_var_pace[, "Pace"])
+
+    tpar_test_name_pace <- test_var_names_pace[grep("3PAr|PAr", test_var_names_pace, ignore.case = TRUE)]
+    if (length(tpar_test_name_pace) == 0) {
+        tpar_test_name_pace <- test_var_names_pace[2]
+    } else {
+        tpar_test_name_pace <- tpar_test_name_pace[1]
+    }
+    test_3par_pace <- as.numeric(test_var_pace[, tpar_test_name_pace])
+
+    efg_test_name_pace <- test_var_names_pace[grep("eFG%|eFG", test_var_names_pace, ignore.case = TRUE)]
+    if (length(efg_test_name_pace) == 0) {
+        efg_test_name_pace <- test_var_names_pace[3]
+    } else {
+        efg_test_name_pace <- efg_test_name_pace[1]
+    }
+    test_efg_pace <- as.numeric(test_var_pace[, efg_test_name_pace])
+
+    # Ensure equal lengths
+    n_compare <- min(length(test_pace_vec), length(fc_pace_var), length(fc_3par_pace), length(fc_efg_pace))
+
+    # Calculate RMSE for each variable
+    rmse_pace <- sqrt(mean((test_pace_vec[1:n_compare] - fc_pace_var[1:n_compare])^2, na.rm = TRUE))
+    rmse_3par_pace <- sqrt(mean((test_3par_pace[1:n_compare] - fc_3par_pace[1:n_compare])^2, na.rm = TRUE))
+    rmse_efg_pace <- sqrt(mean((test_efg_pace[1:n_compare] - fc_efg_pace[1:n_compare])^2, na.rm = TRUE))
+
+    # Average RMSE across variables
+    rmse_avg_pace <- mean(c(rmse_pace, rmse_3par_pace, rmse_efg_pace), na.rm = TRUE)
+
+    cat("  ", name, ": Pace RMSE =", round(rmse_pace, 4),
+        "| 3PAr RMSE =", round(rmse_3par_pace, 4),
+        "| eFG% RMSE =", round(rmse_efg_pace, 4),
+        "| Avg =", round(rmse_avg_pace, 4), "\n")
+
+    # Create descriptive model name
+    lag_num <- as.numeric(gsub("VAR_", "", name))
+    model_label <- paste0("VAR(", lag_num, ")")
+
+    rmse_pace_results <- rbind(rmse_pace_results, data.frame(
+        Model = model_label,
+        Lags = lag_num,
+        RMSE_Pace = rmse_pace,
+        RMSE_3PAr = rmse_3par_pace,
+        RMSE_eFG = rmse_efg_pace,
+        RMSE_Avg = rmse_avg_pace
+    ))
+}
+
+cat("\n=== CROSS-VALIDATION RESULTS ===\n\n")
+```
+
+```{r var-pace-cv-table, warning=FALSE, message=FALSE, results='asis', echo=FALSE}
+if (exists("rmse_pace_results") && nrow(rmse_pace_results) > 0) {
+    kable(rmse_pace_results,
+        format = "html",
+        digits = 4,
+        caption = "Cross-Validation Results: Pace VAR Models (Test Set: 2020-2024)",
+        col.names = c("Model", "Lags", "RMSE (Pace)", "RMSE (3PAr)", "RMSE (eFG%)", "Avg RMSE"),
+        row.names = FALSE
+    ) %>%
+        kable_styling(
+            full_width = FALSE,
+            bootstrap_options = c("striped", "hover", "condensed", "responsive")
+        ) %>%
+        row_spec(which.min(rmse_pace_results$RMSE_Avg), bold = TRUE, color = "white", background = "#006bb6")
+}
+```
+
+```{r var-pace-cv-plot, warning=FALSE, message=FALSE, fig.width=10, fig.height=6}
+if (exists("rmse_pace_results") && nrow(rmse_pace_results) > 0) {
+    # Plot RMSEs
+    ggplot(rmse_pace_results, aes(x = factor(Lags), y = RMSE_Avg, fill = Model)) +
+        geom_bar(stat = "identity", width = 0.6) +
+        geom_text(aes(label = round(RMSE_Avg, 3)), vjust = -0.5, fontface = "bold") +
+        labs(
+            title = "Pace VAR Model Cross-Validation: Average RMSE",
+            subtitle = "Lower RMSE = Better out-of-sample forecast performance",
+            x = "Number of Lags (p)",
+            y = "Average RMSE across Pace, 3PAr, eFG%"
+        ) +
+        theme_minimal() +
+        theme(legend.position = "none") +
+        scale_fill_brewer(palette = "Set2")
+}
+```
+
+```{r var-pace-cv-best, warning=FALSE, message=FALSE}
+if (exists("rmse_pace_results") && nrow(rmse_pace_results) > 0) {
+    best_var_pace_idx <- which.min(rmse_pace_results$RMSE_Avg)
+    cat("\nBest model:", rmse_pace_results$Model[best_var_pace_idx], "(Average RMSE =", round(rmse_pace_results$RMSE_Avg[best_var_pace_idx], 3), ")\n")
+} else {
+    best_var_pace_idx <- 1
+}
+```
+
+## Final Model & Forecast
+
+```{r var-pace-final, warning=FALSE, message=FALSE, fig.width=12, fig.height=10}
+# Select best model
+if (exists("rmse_pace_results") && nrow(rmse_pace_results) > 0 && exists("best_var_pace_idx")) {
+    best_var_pace_name <- rmse_pace_results$Model[best_var_pace_idx]
+    best_var_pace_lags <- rmse_pace_results$Lags[best_var_pace_idx]
+} else {
+    best_var_pace_lags <- min(lags_pace_to_fit)
+}
+
+cat("Final VAR Model: VAR(", best_var_pace_lags, ")\n\n", sep = "")
+
+# Refit on full data
+final_var_pace <- tryCatch(
+    {
+        VAR(var_pace_data_final, p = best_var_pace_lags, type = "const")
+    },
+    error = function(e) {
+        VAR(var_pace_data_final, p = 1, type = "const")
+    }
+)
+
+print(summary(final_var_pace))
+
+# Forecast 5 periods ahead
+fc_var_pace_final <- predict(final_var_pace, n.ahead = 5)
+
+# Get variable names
+fc_var_pace_names <- names(fc_var_pace_final$fcst)
+tpar_fc_name_final <- fc_var_pace_names[grep("3PAr|PAr", fc_var_pace_names, ignore.case = TRUE)]
+if (length(tpar_fc_name_final) == 0) tpar_fc_name_final <- fc_var_pace_names[2]
+
+efg_fc_name_final <- fc_var_pace_names[grep("eFG%|eFG", fc_var_pace_names, ignore.case = TRUE)]
+if (length(efg_fc_name_final) == 0) efg_fc_name_final <- fc_var_pace_names[3]
+
+# Display forecasts
+cat("\n=== 5-Period Forecasts ===\n\n")
+cat("Pace:\n")
+print(fc_var_pace_final$fcst$Pace)
+cat("\n", tpar_fc_name_final, ":\n", sep = "")
+print(fc_var_pace_final$fcst[[tpar_fc_name_final]])
+cat("\n", efg_fc_name_final, ":\n", sep = "")
+print(fc_var_pace_final$fcst[[efg_fc_name_final]])
+
+# Plot forecasts
+for (vname in fc_var_pace_names) {
+    plot(fc_var_pace_final, names = vname)
+}
+```
+
+**Granger Causality Tests**:
+
+```{r var-pace-granger, warning=FALSE, message=FALSE}
+# Granger causality tests
+var_pace_names <- names(final_var_pace$varresult)
+tpar_name_granger <- var_pace_names[grep("3PAr|PAr", var_pace_names, ignore.case = TRUE)]
+if (length(tpar_name_granger) == 0) tpar_name_granger <- var_pace_names[2]
+
+efg_name_granger <- var_pace_names[grep("eFG%|eFG", var_pace_names, ignore.case = TRUE)]
+if (length(efg_name_granger) == 0) efg_name_granger <- var_pace_names[3]
+
+granger_pace_all <- causality(final_var_pace, cause = "Pace")$Granger
+granger_3par_pace <- causality(final_var_pace, cause = tpar_name_granger)$Granger
+granger_efg_pace <- causality(final_var_pace, cause = efg_name_granger)$Granger
+
+cat("Pace → {3PAr, eFG%}: F =", round(granger_pace_all$statistic, 3),
+    ", p =", round(granger_pace_all$p.value, 4), "\n")
+cat("3PAr → {Pace, eFG%}: F =", round(granger_3par_pace$statistic, 3),
+    ", p =", round(granger_3par_pace$p.value, 4), "\n")
+cat("eFG% → {Pace, 3PAr}: F =", round(granger_efg_pace$statistic, 3),
+    ", p =", round(granger_efg_pace$p.value, 4), "\n")
+```
+
+Granger causality tests reveal which strategic variables lead versus follow in NBA evolution. If 3PAr Granger-causes Pace, this suggests teams first adopted three-point shooting, then adjusted their tempo accordingly. Conversely, if Pace Granger-causes 3PAr, faster play may have created the transition opportunities that made three-point volume feasible. The eFG% tests reveal whether shooting skill improvements preceded or followed strategic changes.
+
+```{r var-pace-irf, warning=FALSE, message=FALSE, fig.width=12, fig.height=8}
+# IRFs
+irf_3par_pace <- irf(final_var_pace, impulse = tpar_name_granger, response = "Pace", n.ahead = 10)
+plot(irf_3par_pace, main = paste("Impulse:", tpar_name_granger, "→ Response: Pace"))
+
+irf_efg_pace <- irf(final_var_pace, impulse = efg_name_granger, response = "Pace", n.ahead = 10)
+plot(irf_efg_pace, main = paste("Impulse:", efg_name_granger, "→ Response: Pace"))
+
+irf_pace_3par <- irf(final_var_pace, impulse = "Pace", response = tpar_name_granger, n.ahead = 10)
+plot(irf_pace_3par, main = paste("Impulse: Pace → Response:", tpar_name_granger))
+```
+
+## Interpretation
+
+The Pace Dynamics VAR model uncovers the temporal relationships between game tempo, shot selection, and shooting efficiency. This addresses a fundamental question in basketball analytics: did the analytics revolution's emphasis on three-point shooting cause teams to speed up, or did faster pace create opportunities for more three-point attempts?
+
+Impulse response functions trace the dynamic effects of shocks. If a one-time increase in Pace produces a lasting increase in 3PAr, this supports the hypothesis that faster tempo facilitates three-point volume through transition opportunities and defensive breakdowns. Conversely, if innovations in 3PAr lead to sustained changes in Pace, this suggests strategic shot selection drives tempo decisions. The eFG% impulses reveal whether shooting skill improvements enable teams to control pace or result from pace-driven shot quality.
+
+Cross-validation results demonstrate the model's out-of-sample forecasting accuracy, with lower RMSE indicating that the bidirectional relationships captured by VAR improve predictions beyond univariate models. The optimal lag structure reveals how long past values influence future changes. A longer optimal lag suggests persistent momentum effects, while shorter lags indicate rapid strategic adjustments where teams quickly respond to innovations.
+
+This VAR framework captures the complex adaptive dynamics of NBA strategy, where teams continuously adjust multiple dimensions simultaneously rather than optimizing single variables in isolation. The analytics revolution wasn't just about shooting more threes; it was about reconfiguring pace, shot selection, and skill development in an interconnected system where each element reinforces the others.
+
+:::
+
+---
+
+# Sports Betting & NBA Recovery (VAR)
+
+Before running Model 5, we need to load and process DKNG stock data:
+
+```{r load-dkng, warning=FALSE, message=FALSE}
+# Load DKNG daily stock data
+dkng_data <- read_csv("data/financial/DKNG_daily.csv", show_col_types = FALSE)
+
+# Convert to annual averages (matching NBA season structure)
+dkng_annual <- dkng_data %>%
+    mutate(
+        Date = as.Date(Date),
+        Year = year(Date),
+        # NBA seasons span two calendar years; use the ending year
+        # e.g., 2019-2020 season → 2020
+        Season = ifelse(month(Date) >= 10, Year + 1, Year)
+    ) %>%
+    group_by(Season) %>%
+    summarise(
+        DKNG_Price = mean(`Adj Close`, na.rm = TRUE),
+        .groups = "drop"
+    )
+
+# Merge with league_avg data
+league_avg_dkng <- league_avg %>%
+    left_join(dkng_annual, by = "Season") %>%
+    filter(!is.na(DKNG_Price)) # Only keep seasons with DKNG data (2020+)
+
+cat("DKNG data loaded and merged. Available seasons:", min(league_avg_dkng$Season), "-", max(league_avg_dkng$Season), "\n")
+cat("Number of observations:", nrow(league_avg_dkng), "\n\n")
+head(league_avg_dkng %>% dplyr::select(Season, DKNG_Price, Total_Attendance, ORtg))
+```
+
+## Sports Betting & NBA Recovery (VAR)
+
+**Variables**: `DKNG` (DraftKings stock price), `Attendance`, `ORtg`
+
+This VAR model tests a provocative hypothesis: does NBA performance influence sports betting industry valuations? The 2020-2025 period offers a natural experiment: COVID decimated attendance and disrupted seasons, while sports betting stocks experienced extreme volatility. By modeling bidirectional relationships between DraftKings' stock price, NBA attendance, and offensive efficiency, we test whether the on-court analytics revolution created measurable financial value in connected industries. If ORtg Granger-causes DKNG, this suggests exciting offensive basketball drives betting engagement and stock valuations. If Attendance Granger-causes DKNG, this indicates fan engagement metrics predict betting industry performance.
+
+::: {.panel-tabset}
+
+## EDA & Stationarity
+
+```{r var-dkng-eda, warning=FALSE, message=FALSE, fig.width=12, fig.height=8}
+# Create VAR dataset (2020-2025 only, when DKNG data exists)
+var_dkng_data <- ts(league_avg_dkng %>% dplyr::select(DKNG_Price, Total_Attendance, ORtg),
+    start = min(league_avg_dkng$Season), frequency = 1
+)
+
+# Plot all series
+autoplot(var_dkng_data, facets = TRUE) +
+    labs(
+        title = "VAR Variables: DKNG Price, Attendance, ORtg (2020-2025)",
+        x = "Year", y = "Value"
+    ) +
+    theme_minimal()
+
+cat("Summary Statistics:\n")
+summary(var_dkng_data)
+```
+
+The visualization captures post-COVID dynamics: DKNG stock exhibits extreme volatility as the sports betting industry navigated legalization waves and market uncertainty. Attendance shows the pandemic collapse in 2020-2021 and gradual recovery. ORtg continues its steady climb, demonstrating that on-court analytics proceeded independent of external shocks. The limited sample size (only 5-6 observations) presents statistical challenges but reflects the natural constraint that DKNG only became public in 2020.
+
+```{r var-dkng-stationarity, warning=FALSE, message=FALSE}
+# ADF tests for each series
+# For very short series, ADF tests may be unreliable
+# We'll run them but interpret cautiously
+# adf_dkng_var <- tryCatch(adf.test(var_dkng_data[, "DKNG_Price"]), error = function(e) NULL)
+# adf_attend_var <- tryCatch(adf.test(var_dkng_data[, "Total_Attendance"]), error = function(e) NULL)
+# adf_ortg_var_dkng <- tryCatch(adf.test(var_dkng_data[, "ORtg"]), error = function(e) NULL)
+
+# if (!is.null(adf_dkng_var)) {
+#     cat(
+#         "DKNG Price: ADF p-value =", round(adf_dkng_var$p.value, 4),
+#         ifelse(adf_dkng_var$p.value < 0.05, "(stationary)", "(non-stationary)"), "\n"
+#     )
+# } else {
+#     cat("DKNG Price: ADF test failed (insufficient data)\n")
+# }
+
+# if (!is.null(adf_attend_var)) {
+#     cat(
+#         "Attendance: ADF p-value =", round(adf_attend_var$p.value, 4),
+#         ifelse(adf_attend_var$p.value < 0.05, "(stationary)", "(non-stationary)"), "\n"
+#     )
+# } else {
+#     cat("Attendance: ADF test failed (insufficient data)\n")
+# }
+
+# if (!is.null(adf_ortg_var_dkng)) {
+#     cat(
+#         "ORtg: ADF p-value =", round(adf_ortg_var_dkng$p.value, 4),
+#         ifelse(adf_ortg_var_dkng$p.value < 0.05, "(stationary)", "(non-stationary)"), "\n"
+#     )
+# } else {
+#     cat("ORtg: ADF test failed (insufficient data)\n")
+# }
+
+var_dkng_data_final <- var_dkng_data
+differenced_dkng <- FALSE
+```
+
+## Model Selection & Fitting
+
+```{r var-dkng-select, warning=FALSE, message=FALSE}
+# Determine optimal lag order
+# With very short series, limit lag.max
+var_dkng_select <- tryCatch(
+    {
+        VARselect(var_dkng_data_final, lag.max = 2, type = "const")
+    },
+    error = function(e) {
+        list(selection = c(AIC = 1, HQ = 1, SC = 1, FPE = 1))
+    }
+)
+
+print(var_dkng_select$selection)
+if ("criteria" %in% names(var_dkng_select)) {
+    print(var_dkng_select$criteria)
+}
+
+# Fit models with different lag orders
+lags_dkng_to_fit <- unique(var_dkng_select$selection[1:3])
+
+# Ensure we have at least one lag to fit
+if (length(lags_dkng_to_fit) == 0 || any(is.na(lags_dkng_to_fit))) {
+    lags_dkng_to_fit <- 1
+}
+
+# Given short series, limit to max lag 1
+lags_dkng_to_fit <- lags_dkng_to_fit[lags_dkng_to_fit <= 1]
+if (length(lags_dkng_to_fit) == 0) lags_dkng_to_fit <- 1
+
+cat("\nFitting VAR models with p =", paste(lags_dkng_to_fit, collapse = ", "), "\n")
+
+var_dkng_models <- list()
+for (p in lags_dkng_to_fit) {
+    model_fit <- tryCatch(
+        {
+            VAR(var_dkng_data_final, p = p, type = "const")
+        },
+        error = function(e) {
+            NULL
+        }
+    )
+    if (!is.null(model_fit)) {
+        var_dkng_models[[paste0("VAR_", p)]] <- model_fit
+    }
+}
+```
+
+```{r var-dkng-summaries, warning=FALSE, message=FALSE}
+for (name in names(var_dkng_models)) {
+    cat("========================================\n")
+    cat(name, "Summary:\n")
+    cat("========================================\n\n")
+
+    # Try to print summary, but catch errors due to near-singular covariance matrices
+    summary_result <- tryCatch(
+        {
+            summary(var_dkng_models[[name]])
+        },
+        error = function(e) {
+            print(coef(var_dkng_models[[name]]))
+            NULL
+        }
+    )
+
+    if (!is.null(summary_result)) {
+        print(summary_result)
+    }
+
+    cat("\n")
+}
+```
+
+
+## Cross-Validation
+
+```{r var-dkng-cv, warning=FALSE, message=FALSE}
+# Calculate in-sample RMSE for each model
+rmse_dkng_results <- data.frame()
+
+for (name in names(var_dkng_models)) {
+    model <- var_dkng_models[[name]]
+
+    # Get fitted values
+    fitted_vals <- fitted(model)
+
+    # Calculate RMSE for each variable
+    rmse_dkng_price <- sqrt(mean((var_dkng_data_final[, "DKNG_Price"] - fitted_vals[, "DKNG_Price"])^2, na.rm = TRUE))
+    rmse_attendance <- sqrt(mean((var_dkng_data_final[, "Total_Attendance"] - fitted_vals[, "Total_Attendance"])^2, na.rm = TRUE))
+    rmse_ortg_dkng <- sqrt(mean((var_dkng_data_final[, "ORtg"] - fitted_vals[, "ORtg"])^2, na.rm = TRUE))
+
+    # Average RMSE
+    rmse_avg_dkng <- mean(c(rmse_dkng_price, rmse_attendance, rmse_ortg_dkng), na.rm = TRUE)
+
+    cat(name, ": DKNG RMSE =", round(rmse_dkng_price, 2),
+        "| Attendance RMSE =", round(rmse_attendance / 1e6, 2), "M",
+        "| ORtg RMSE =", round(rmse_ortg_dkng, 2), "\n")
+
+    # Create descriptive model name
+    lag_num <- as.numeric(gsub("VAR_", "", name))
+    model_label <- paste0("VAR(", lag_num, ")")
+
+    rmse_dkng_results <- rbind(rmse_dkng_results, data.frame(
+        Model = model_label,
+        Lags = lag_num,
+        RMSE_DKNG = rmse_dkng_price,
+        RMSE_Attendance = rmse_attendance,
+        RMSE_ORtg = rmse_ortg_dkng,
+        RMSE_Avg = rmse_avg_dkng
+    ))
+}
+```
+
+```{r var-dkng-cv-table, warning=FALSE, message=FALSE, results='asis', echo=FALSE}
+if (exists("rmse_dkng_results") && nrow(rmse_dkng_results) > 0) {
+    # Display table with attendance in millions
+    rmse_dkng_display <- rmse_dkng_results
+    rmse_dkng_display$RMSE_Attendance <- rmse_dkng_display$RMSE_Attendance / 1e6
+
+    kable(rmse_dkng_display,
+        format = "html",
+        digits = 4,
+        caption = "In-Sample Fit: DKNG VAR Models (2020-2025)",
+        col.names = c("Model", "Lags", "RMSE (DKNG $)", "RMSE (Attend. M)", "RMSE (ORtg)", "Avg RMSE"),
+        row.names = FALSE
+    ) %>%
+        kable_styling(
+            full_width = FALSE,
+            bootstrap_options = c("striped", "hover", "condensed", "responsive")
+        ) %>%
+        row_spec(which.min(rmse_dkng_results$RMSE_Avg), bold = TRUE, color = "white", background = "#006bb6")
+}
+```
+
+```{r var-dkng-cv-best, warning=FALSE, message=FALSE}
+if (exists("rmse_dkng_results") && nrow(rmse_dkng_results) > 0) {
+    best_var_dkng_idx <- which.min(rmse_dkng_results$RMSE_Avg)
+    cat("\nBest model:", rmse_dkng_results$Model[best_var_dkng_idx], "(Average RMSE =", round(rmse_dkng_results$RMSE_Avg[best_var_dkng_idx], 2), ")\n")
+} else {
+    best_var_dkng_idx <- 1
+}
+```
+
+## Final Model & Interpretation
+
+```{r var-dkng-final, warning=FALSE, message=FALSE, fig.width=12, fig.height=10}
+# Select best model
+if (exists("rmse_dkng_results") && nrow(rmse_dkng_results) > 0 && exists("best_var_dkng_idx")) {
+    best_var_dkng_name <- rmse_dkng_results$Model[best_var_dkng_idx]
+    best_var_dkng_lags <- rmse_dkng_results$Lags[best_var_dkng_idx]
+} else {
+    best_var_dkng_lags <- 1
+}
+
+cat("Final VAR Model: VAR(", best_var_dkng_lags, ")\n\n", sep = "")
+
+# Use the best fitted model
+final_var_dkng <- var_dkng_models[[paste0("VAR_", best_var_dkng_lags)]]
+
+# Try to print summary, catch errors due to near-singular covariance
+summary_result <- tryCatch(
+    {
+        summary(final_var_dkng)
+    },
+    error = function(e) {
+        print(coef(final_var_dkng))
+        NULL
+    }
+)
+
+if (!is.null(summary_result)) {
+    print(summary_result)
+} else {
+    cat("\n")
+}
+
+# Forecast 3 periods ahead (conservative given data limitations)
+fc_var_dkng_final <- predict(final_var_dkng, n.ahead = 3)
+
+# Display forecasts
+cat("\n3-Period Forecasts (2026-2028):\n\n")
+cat("DKNG Price:\n")
+print(fc_var_dkng_final$fcst$DKNG_Price)
+cat("\nTotal Attendance:\n")
+print(fc_var_dkng_final$fcst$Total_Attendance)
+cat("\nORtg:\n")
+print(fc_var_dkng_final$fcst$ORtg)
+
+# Plot forecasts
+for (vname in names(fc_var_dkng_final$fcst)) {
+    plot(fc_var_dkng_final, names = vname)
+}
+```
+
+**Granger Causality Tests**:
+
+```{r var-dkng-granger, warning=FALSE, message=FALSE}
+# Granger causality tests
+granger_dkng <- tryCatch(causality(final_var_dkng, cause = "DKNG_Price")$Granger, error = function(e) NULL)
+granger_attend_dkng <- tryCatch(causality(final_var_dkng, cause = "Total_Attendance")$Granger, error = function(e) NULL)
+granger_ortg_dkng <- tryCatch(causality(final_var_dkng, cause = "ORtg")$Granger, error = function(e) NULL)
+
+if (!is.null(granger_dkng)) {
+    cat("DKNG Price → {Attendance, ORtg}: F =", round(granger_dkng$statistic, 3),
+        ", p =", round(granger_dkng$p.value, 4), "\n")
+}
+
+if (!is.null(granger_attend_dkng)) {
+    cat("Attendance → {DKNG, ORtg}: F =", round(granger_attend_dkng$statistic, 3),
+        ", p =", round(granger_attend_dkng$p.value, 4), "\n")
+}
+
+if (!is.null(granger_ortg_dkng)) {
+    cat("ORtg → {DKNG, Attendance}: F =", round(granger_ortg_dkng$statistic, 3),
+        ", p =", round(granger_ortg_dkng$p.value, 4), "\n")
+}
+```
+
+```{r var-dkng-irf, warning=FALSE, message=FALSE, fig.width=12, fig.height=8}
+# IRFs
+irf_dkng_attend <- tryCatch(
+    {
+        irf(final_var_dkng, impulse = "DKNG_Price", response = "Total_Attendance", n.ahead = 5)
+    },
+    error = function(e) NULL
+)
+if (!is.null(irf_dkng_attend)) {
+    plot(irf_dkng_attend, main = "Impulse: DKNG Price → Response: Attendance")
+}
+
+irf_attend_dkng <- tryCatch(
+    {
+        irf(final_var_dkng, impulse = "Total_Attendance", response = "DKNG_Price", n.ahead = 5)
+    },
+    error = function(e) NULL
+)
+if (!is.null(irf_attend_dkng)) {
+    plot(irf_attend_dkng, main = "Impulse: Attendance → Response: DKNG Price")
+}
+
+irf_ortg_dkng <- tryCatch(
+    {
+        irf(final_var_dkng, impulse = "ORtg", response = "DKNG_Price", n.ahead = 5)
+    },
+    error = function(e) NULL
+)
+if (!is.null(irf_ortg_dkng)) {
+    plot(irf_ortg_dkng, main = "Impulse: ORtg → Response: DKNG Price")
+}
+```
+
+## Interpretation
+
+The Sports Betting & NBA Recovery VAR model explores whether basketball performance metrics influence financial markets in the connected sports betting industry. This analysis addresses a provocative question: does the on-court analytics revolution—quantified by rising offensive efficiency—drive betting engagement and industry valuations?
+
+**Data Limitations & Methodological Constraints**
+
+This model confronts severe data limitations inherent to the research question. DraftKings only became publicly traded in April 2020, giving us merely 5-6 annual observations (2020-2025). Traditional time series methods require far more data for reliable inference, making this analysis exploratory rather than definitive.
+
+With such limited data, cross-validation is impossible. We report in-sample fit statistics while acknowledging they overstate predictive accuracy. Granger causality tests and impulse response functions may lack statistical power to detect true relationships. The 2020-2021 COVID period introduces extreme outliers that dominate the short sample, potentially obscuring underlying relationships.
+
+**What We Can Learn Despite Limitations**
+
+Even with constraints, this VAR framework provides insights unavailable from simple correlations. The model quantifies whether past NBA attendance predicts future DKNG stock movements, testing if fan engagement leads betting industry valuations. Similarly, if ORtg Granger-causes DKNG, this suggests exciting offensive basketball may drive betting interest beyond traditional fan metrics.
+
+The impulse response functions trace dynamic effects: does a surge in NBA attendance produce a lasting boost to DKNG stock, or do markets quickly price in the information? Conversely, do DKNG stock movements predict future NBA attendance, potentially reflecting forward-looking investor sentiment about sports engagement?
+
+**The Bigger Picture**
+
+This model demonstrates the interconnected nature of modern sports ecosystems. The NBA isn't just an entertainment product; it's the foundation for a multi-billion dollar betting industry. The analytics revolution that transformed on-court play may have simultaneously created financial value in adjacent markets. While our limited data prevents definitive conclusions, the VAR framework establishes a methodological template for analyzing sports-finance linkages as more data accumulates.
+
+Future research with longer time series (2025-2030 and beyond) can test whether the relationships identified here persist or whether the COVID period was sui generis. The model also highlights how external shocks like pandemics can simultaneously disrupt multiple interconnected variables, creating identification challenges that VAR approaches are uniquely designed to address.
+
+:::

@@ -2,6 +2,9 @@ project:
   type: website
   output-dir: docs
 
+jupyter:
+  kernel: dsan6600-tfk-v2
+
 website:
   title: "Portfolio"
   search: true

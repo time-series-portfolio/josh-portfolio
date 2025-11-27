@@ -203,7 +203,7 @@ kable(comparison_df,
     format = "html",
     digits = 3,
     caption = "Cross-Validation Results: ORtg Forecast Models",
-    col.names = c("Model", "RMSE", "MAE", "MAPE (%)")
+    col.names = c("Model", "RMSE", "MAE", "MAPE")
 ) %>%
     kable_styling(
         full_width = FALSE,
@@ -331,7 +331,7 @@ kable(comparison_3par,
     format = "html",
     digits = 4,
     caption = "Cross-Validation Results: 3PAr Forecast Models",
-    col.names = c("Model", "RMSE", "MAE", "MAPE (%)")
+    col.names = c("Model", "RMSE", "MAE", "MAPE")
 ) %>%
     kable_styling(
         full_width = FALSE,
@@ -385,11 +385,6 @@ fc_penn <- forecast(best_penn, h = 26)
 n_train_penn <- floor(0.8 * length(ts_penn))
 train_penn <- window(ts_penn, end = time(ts_penn)[n_train_penn])
 test_penn <- window(ts_penn, start = time(ts_penn)[n_train_penn + 1])
-```
-
-```{r penn-info, warning=FALSE, message=FALSE}
-cat("PENN weekly series:", length(ts_penn), "observations\n")
-cat("Note: PENN's high volatility may require simpler models\n")
 ```
 
 ::: {.panel-tabset}
@@ -454,7 +449,7 @@ kable(comparison_penn,
     format = "html",
     digits = 2,
     caption = "Cross-Validation Results: PENN Stock Forecast Models",
-    col.names = c("Model", "RMSE ($)", "MAE ($)", "MAPE (%)")
+    col.names = c("Model", "RMSE", "MAE", "MAPE")
 ) %>%
     kable_styling(
         full_width = FALSE,
@@ -462,7 +457,6 @@ kable(comparison_penn,
     ) %>%
     row_spec(which.min(comparison_penn$RMSE), bold = TRUE, color = "white", background = "#006bb6")
 
-cat("\n\nNote: PENN's extreme volatility (Barstool→ESPN BET transition) makes forecasting challenging.\n")
 cat("High RMSE values reflect fundamental business uncertainty rather than model inadequacy.\n")
 ```
 
@@ -606,7 +600,7 @@ kable(comparison_dkng,
     format = "html",
     digits = 2,
     caption = "Cross-Validation Results: DKNG Stock Forecast Models",
-    col.names = c("Model", "RMSE ($)", "MAE ($)", "MAPE (%)")
+    col.names = c("Model", "RMSE", "MAE", "MAPE")
 ) %>%
     kable_styling(
         full_width = FALSE,
@@ -616,7 +610,7 @@ kable(comparison_dkng,
 
 if (acc_sarima["RMSE"] < acc_snaive["RMSE"]) {
     improvement <- round((1 - acc_sarima["RMSE"] / acc_snaive["RMSE"]) * 100, 1)
-    cat("\n\n**Key Finding**: SARIMA outperforms seasonal naive by ", improvement, "%\n", sep = "")
+    cat("\n\nKey Finding: SARIMA outperforms seasonal naive by ", improvement, "%\n", sep = "")
 }
 ```
 

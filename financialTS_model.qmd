@@ -138,8 +138,6 @@ for (ticker in names(stocks_list)) {
 }
 ```
 
-**Interpretation**: Excess kurtosis (>3) is a signature of financial returns, indicating fat tails extreme returns occur more frequently than a normal distribution would predict. This is another motivation for GARCH models.
-
 ---
 
 # Data Visualization & Stationarity
@@ -253,7 +251,7 @@ cat("Conclusion:", ifelse(adf_dkng$p.value < 0.05,
 ), "\n")
 ```
 
-**Stationarity Conclusion**: The ADF test confirms that DKNG returns are stationary (p < 0.01). This validates our use of returns rather than prices and confirms that we don't need differencing in the mean equation (d=0 in ARIMA terms).
+**Stationarity Conclusion**: The ADF test confirms that DKNG returns are stationary (p < 0.01). This validates our use of returns rather than prices and confirms that we don't need differencing in the mean equation.
 
 :::
 
@@ -472,7 +470,7 @@ par(mfrow = c(1, 1))
 
 ::: {.panel-tabset}
 
-### Step 1: Mean Equation Selection
+### Mean Equation Selection
 
 ```{r dkng-mean-models, warning=FALSE, message=FALSE}
 # Prepare data
@@ -506,7 +504,7 @@ kable(mean_aic,
     row_spec(which.min(mean_aic$AIC), bold = TRUE, color = "white", background = "#006bb6")
 ```
 
-### Step 2: Check for ARCH Effects
+### Check for ARCH Effects
 
 ```{r dkng-arch-test, warning=FALSE, message=FALSE, fig.width=12, fig.height=8}
 # Use best mean model from AIC
@@ -546,7 +544,7 @@ cat("Conclusion:", ifelse(arch_test$p.value < 0.05,
 - **ARCH LM Test**: Highly significant (p < 0.05), confirming ARCH effects
 - **Conclusion**: We need to add a GARCH variance equation to properly model volatility
 
-### Step 3: Fit ARMA+GARCH Models
+### Fit ARMA+GARCH Models
 
 Now we fit complete models with GARCH(1,1) variance equation:
 
@@ -622,7 +620,7 @@ cat("Model Coefficients:\n")
 print(coef(best_garch_model))
 ```
 
-### Step 4: Model Diagnostics
+### Model Diagnostics
 
 ```{r dkng-diagnostics, warning=FALSE, message=FALSE, fig.width=12, fig.height=10}
 # Extract standardized residuals
@@ -690,7 +688,7 @@ cat("  Conclusion:", ifelse(lb_test_sq$p.value > 0.05,
 - **Ljung-Box Tests**: p-values > 0.05 indicate the model has adequately captured temporal dependencies
 - **Q-Q Plot**: Some deviation in tails suggests fat-tailed distribution (could consider t-distribution)
 
-### Step 5: Volatility Forecast
+### Volatility Forecast
 
 ```{r dkng-volatility-forecast, warning=FALSE, message=FALSE, fig.width=12, fig.height=8}
 # Extract conditional volatility
