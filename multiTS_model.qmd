@@ -10,7 +10,7 @@ format:
 
 # Theoretical Framework
 
-This chapter examines bidirectional relationships between variables, including the explicit linkage between basketball performance and betting industry valuations (Model 5: DKNG ~ Attendance + ORtg). By modeling how NBA metrics influence betting stocks, we test whether the on-court analytics revolution created measurable financial value in connected industries.
+This chapter examines bidirectional relationships between variables, including the explicit linkage between basketball performance and betting industry valuations (DKNG ~ Attendance + ORtg). By modeling how NBA metrics influence betting stocks, we test whether the on-court analytics revolution created measurable financial value in connected industries.
 
 ::: {.panel-tabset}
 
@@ -30,9 +30,8 @@ These dynamics motivate our multivariate approach. ARIMAX models test directiona
 ### Model 1: Efficiency Drivers (VAR)
 `ORtg ~ Pace & 3PAr`
 
-
 ### Model 2: Shot Selection & Efficiency (ARIMAX)
-**Response**: `ORtg ~ 3PAr + TS%`
+`ORtg ~ 3PAr + TS%`
 
 ### Model 3: COVID Impact on Attendance (ARIMAX)
 `Attendance ~ ORtg + Pace`
@@ -41,7 +40,7 @@ These dynamics motivate our multivariate approach. ARIMAX models test directiona
 `Pace ~ 3PAr + eFG%`
 
 ### Model 5: Sports Betting & NBA Recovery (VAR)
-**Variables**: `DKNG ~ Attendance + ORtg`
+`DKNG ~ Attendance + ORtg`
 
 :::
 
@@ -135,7 +134,41 @@ print(round(cor(cor_data, use = "complete.obs"), 3))
 
 **Correlation Matrix:**
 
-```{r correlation-narrative-setup, echo=FALSE, message=FALSE}
+```{r correlation-matrix-viz, echo=FALSE, message=FALSE, fig.width=8, fig.height=6}
+cor_matrix <- cor(cor_data, use = "complete.obs")
+
+cor_long <- cor_matrix %>%
+    as.data.frame() %>%
+    rownames_to_column("var1") %>%
+    pivot_longer(-var1, names_to = "var2", values_to = "correlation")
+
+ggplot(cor_long, aes(x = var1, y = var2, fill = correlation)) +
+    geom_tile(color = "white", linewidth = 1.5) +
+    geom_text(aes(label = round(correlation, 3)),
+              color = "white", size = 6, fontface = "bold") +
+    scale_fill_gradient2(
+        low = "#FED976",
+        mid = "#006bb6",
+        high = "#08306B",
+        midpoint = 0.75,
+        limits = c(0, 1),
+        name = "Correlation"
+    ) +
+    labs(
+        title = "Correlation Matrix: Offensive Efficiency Variables",
+        subtitle = "ORtg, 3PAr, and TS%",
+        x = NULL,
+        y = NULL
+    ) +
+    theme_minimal(base_size = 14) +
+    theme(
+        plot.title = element_text(hjust = 0.5, face = "bold"),
+        plot.subtitle = element_text(hjust = 0.5),
+        axis.text.x = element_text(angle = 45, hjust = 1),
+        panel.grid = element_blank()
+    ) +
+    coord_fixed()
+
 cor_ortg_3par <- round(cor(league_avg$ORtg, league_avg$`3PAr`), 3)
 cor_ortg_ts <- round(cor(league_avg$ORtg, league_avg$`TS%`), 3)
 cor_3par_ts <- round(cor(league_avg$`3PAr`, league_avg$`TS%`), 3)
@@ -216,7 +249,6 @@ arima_resid <- auto.arima(lm_residuals, seasonal = FALSE)
 cat("\nARIMA model for residuals:\n")
 print(arima_resid)
 
-# Diagnostics
 checkresiduals(arima_resid)
 ```
 
@@ -1849,80 +1881,120 @@ for (vname in names(fc_var_dkng_final$fcst)) {
 **Granger Causality Tests**:
 
 ```{r var-dkng-granger, warning=FALSE, message=FALSE}
-# Granger causality tests
-granger_dkng <- tryCatch(causality(final_var_dkng, cause = "DKNG_Price")$Granger, error = function(e) NULL)
-granger_attend_dkng <- tryCatch(causality(final_var_dkng, cause = "Total_Attendance")$Granger, error = function(e) NULL)
-granger_ortg_dkng <- tryCatch(causality(final_var_dkng, cause = "ORtg")$Granger, error = function(e) NULL)
+# Check if model exists
+if (exists("final_var_dkng") && !is.null(final_var_dkng)) {
+    # Granger causality tests with error suppression
+    granger_dkng <- tryCatch(
+        causality(final_var_dkng, cause = "DKNG_Price")$Granger,
+        error = function(e) NULL
+    )
 
-if (!is.null(granger_dkng)) {
-    cat("DKNG Price → {Attendance, ORtg}: F =", round(granger_dkng$statistic, 3),
-        ", p =", round(granger_dkng$p.value, 4), "\n")
-}
+    granger_attend_dkng <- tryCatch(
+        causality(final_var_dkng, cause = "Total_Attendance")$Granger,
+        error = function(e) NULL
+    )
 
-if (!is.null(granger_attend_dkng)) {
-    cat("Attendance → {DKNG, ORtg}: F =", round(granger_attend_dkng$statistic, 3),
-        ", p =", round(granger_attend_dkng$p.value, 4), "\n")
-}
+    granger_ortg_dkng <- tryCatch(
+        causality(final_var_dkng, cause = "ORtg")$Granger,
+        error = function(e) NULL
+    )
 
-if (!is.null(granger_ortg_dkng)) {
-    cat("ORtg → {DKNG, Attendance}: F =", round(granger_ortg_dkng$statistic, 3),
-        ", p =", round(granger_ortg_dkng$p.value, 4), "\n")
+    # Display results
+    if (!is.null(granger_dkng)) {
+        cat("DKNG Price → {Attendance, ORtg}:\n")
+        cat("  F-statistic =", round(granger_dkng$statistic, 3), "\n")
+        cat("  p-value =", round(granger_dkng$p.value, 4), "\n")
+        cat("  Interpretation:", ifelse(granger_dkng$p.value < 0.05,
+                                        "DKNG Price Granger-causes other variables",
+                                        "No significant Granger causality"), "\n\n")
+    }
+
+    if (!is.null(granger_attend_dkng)) {
+        cat("Attendance → {DKNG, ORtg}:\n")
+        cat("  F-statistic =", round(granger_attend_dkng$statistic, 3), "\n")
+        cat("  p-value =", round(granger_attend_dkng$p.value, 4), "\n")
+        cat("  Interpretation:", ifelse(granger_attend_dkng$p.value < 0.05,
+                                        "Attendance Granger-causes other variables",
+                                        "No significant Granger causality"), "\n\n")
+    }
+
+    if (!is.null(granger_ortg_dkng)) {
+        cat("ORtg → {DKNG, Attendance}:\n")
+        cat("  F-statistic =", round(granger_ortg_dkng$statistic, 3), "\n")
+        cat("  p-value =", round(granger_ortg_dkng$p.value, 4), "\n")
+        cat("  Interpretation:", ifelse(granger_ortg_dkng$p.value < 0.05,
+                                        "ORtg Granger-causes other variables",
+                                        "No significant Granger causality"), "\n\n")
+    }
+
+    # Summary note
+    if (is.null(granger_dkng) && is.null(granger_attend_dkng) && is.null(granger_ortg_dkng)) {
+        cat("Note: Granger causality tests unavailable (n =", nrow(var_dkng_data_final), "observations).\n")
+    }
 }
 ```
 
+**Impulse Response Functions**:
+
 ```{r var-dkng-irf, warning=FALSE, message=FALSE, fig.width=12, fig.height=8}
-# IRFs
-irf_dkng_attend <- tryCatch(
-    {
-        irf(final_var_dkng, impulse = "DKNG_Price", response = "Total_Attendance", n.ahead = 5)
-    },
-    error = function(e) NULL
-)
-if (!is.null(irf_dkng_attend)) {
-    plot(irf_dkng_attend, main = "Impulse: DKNG Price → Response: Attendance")
-}
+# Check if model exists
+if (exists("final_var_dkng") && !is.null(final_var_dkng)) {
+    # Track successful plots
+    plots_created <- 0
 
-irf_attend_dkng <- tryCatch(
-    {
-        irf(final_var_dkng, impulse = "Total_Attendance", response = "DKNG_Price", n.ahead = 5)
-    },
-    error = function(e) NULL
-)
-if (!is.null(irf_attend_dkng)) {
-    plot(irf_attend_dkng, main = "Impulse: Attendance → Response: DKNG Price")
-}
+    # IRF: DKNG Price → Attendance
+    irf_dkng_attend <- tryCatch(
+        irf(final_var_dkng, impulse = "DKNG_Price", response = "Total_Attendance", n.ahead = 5),
+        error = function(e) NULL
+    )
+    if (!is.null(irf_dkng_attend)) {
+        plot(irf_dkng_attend, main = "Impulse: DKNG Price → Response: Attendance")
+        plots_created <- plots_created + 1
+    }
 
-irf_ortg_dkng <- tryCatch(
-    {
-        irf(final_var_dkng, impulse = "ORtg", response = "DKNG_Price", n.ahead = 5)
-    },
-    error = function(e) NULL
-)
-if (!is.null(irf_ortg_dkng)) {
-    plot(irf_ortg_dkng, main = "Impulse: ORtg → Response: DKNG Price")
+    # IRF: Attendance → DKNG Price
+    irf_attend_dkng <- tryCatch(
+        irf(final_var_dkng, impulse = "Total_Attendance", response = "DKNG_Price", n.ahead = 5),
+        error = function(e) NULL
+    )
+    if (!is.null(irf_attend_dkng)) {
+        plot(irf_attend_dkng, main = "Impulse: Attendance → Response: DKNG Price")
+        plots_created <- plots_created + 1
+    }
+
+    # IRF: ORtg → DKNG Price
+    irf_ortg_dkng <- tryCatch(
+        irf(final_var_dkng, impulse = "ORtg", response = "DKNG_Price", n.ahead = 5),
+        error = function(e) NULL
+    )
+    if (!is.null(irf_ortg_dkng)) {
+        plot(irf_ortg_dkng, main = "Impulse: ORtg → Response: DKNG Price")
+        plots_created <- plots_created + 1
+    }
+
+    # IRF: DKNG Price → ORtg (additional relationship)
+    irf_dkng_ortg <- tryCatch(
+        irf(final_var_dkng, impulse = "DKNG_Price", response = "ORtg", n.ahead = 5),
+        error = function(e) NULL
+    )
+    if (!is.null(irf_dkng_ortg)) {
+        plot(irf_dkng_ortg, main = "Impulse: DKNG Price → Response: ORtg")
+        plots_created <- plots_created + 1
+    }
+
+    # Summary note
+    if (plots_created == 0) {
+        cat("\nNote: IRF unavailable (n =", nrow(var_dkng_data_final), "observations).\n")
+    } else {
+        cat("\nGenerated", plots_created, "IRF plot(s). Interpret with caution (n =", nrow(var_dkng_data_final), ").\n")
+    }
 }
 ```
 
 ## Interpretation
 
-The Sports Betting & NBA Recovery VAR model explores whether basketball performance metrics influence financial markets in the connected sports betting industry. This analysis addresses a provocative question: does the on-court analytics revolution—quantified by rising offensive efficiency—drive betting engagement and industry valuations?
+This VAR model tests whether NBA performance metrics influence sports betting industry valuations. With DKNG only public since April 2020, we have just 5-6 observations—severely limiting statistical inference. Granger causality tests and IRF analyses lack sufficient degrees of freedom for reliable results.
 
-**Data Limitations & Methodological Constraints**
-
-This model confronts severe data limitations inherent to the research question. DraftKings only became publicly traded in April 2020, giving us merely 5-6 annual observations (2020-2025). Traditional time series methods require far more data for reliable inference, making this analysis exploratory rather than definitive.
-
-With such limited data, cross-validation is impossible. We report in-sample fit statistics while acknowledging they overstate predictive accuracy. Granger causality tests and impulse response functions may lack statistical power to detect true relationships. The 2020-2021 COVID period introduces extreme outliers that dominate the short sample, potentially obscuring underlying relationships.
-
-**What We Can Learn Despite Limitations**
-
-Even with constraints, this VAR framework provides insights unavailable from simple correlations. The model quantifies whether past NBA attendance predicts future DKNG stock movements, testing if fan engagement leads betting industry valuations. Similarly, if ORtg Granger-causes DKNG, this suggests exciting offensive basketball may drive betting interest beyond traditional fan metrics.
-
-The impulse response functions trace dynamic effects: does a surge in NBA attendance produce a lasting boost to DKNG stock, or do markets quickly price in the information? Conversely, do DKNG stock movements predict future NBA attendance, potentially reflecting forward-looking investor sentiment about sports engagement?
-
-**The Bigger Picture**
-
-This model demonstrates the interconnected nature of modern sports ecosystems. The NBA isn't just an entertainment product; it's the foundation for a multi-billion dollar betting industry. The analytics revolution that transformed on-court play may have simultaneously created financial value in adjacent markets. While our limited data prevents definitive conclusions, the VAR framework establishes a methodological template for analyzing sports-finance linkages as more data accumulates.
-
-Future research with longer time series (2025-2030 and beyond) can test whether the relationships identified here persist or whether the COVID period was sui generis. The model also highlights how external shocks like pandemics can simultaneously disrupt multiple interconnected variables, creating identification challenges that VAR approaches are uniquely designed to address.
+Despite data constraints, this framework demonstrates the interconnected sports-finance ecosystem: NBA attendance and offensive efficiency potentially drive betting industry valuations. The COVID period introduces extreme outliers that dominate the short sample, making results exploratory rather than definitive. As more data accumulates (2025+), future analyses can test whether these relationships persist beyond the pandemic disruption.
 
 :::

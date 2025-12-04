@@ -10,11 +10,11 @@ format:
 
 # Overview
 
-This analysis examines two major interventions that reshaped the sports betting landscape: the COVID-19 pandemic (March 2020) and New York's online sports betting legalization (January 2022). Using Google Trends data spanning 2020-2024, we employ interrupted time series regression to quantify both immediate shocks and sustained trend changes. The ITS model 
+This analysis examines two major interventions that reshaped the sports betting landscape: the COVID-19 pandemic (March 2020) and New York's online sports betting legalization (January 2022). Using Google Trends data spanning 2020-2024, we employ interrupted time series regression to quantify both immediate shocks and sustained trend changes. Google Trends provides a direct cultural proxy for public engagement, capturing how these events transformed sports betting from a niche activity during COVID's sports shutdown to mainstream entertainment following New York's market entry. The ITS model 
 
 > $Y_t = \beta_0 + \beta_1 \cdot Time_t + \beta_2 \cdot Intervention_t + \beta_3 \cdot Time\_Since\_Intervention_t + \epsilon_t$
 
-isolates intervention effects from underlying trends, measuring level changes ($\beta_2$) and slope changes ($\beta_3$) in search interest. Google Trends provides a direct cultural proxy for public engagement, capturing how these events transformed sports betting from a niche activity during COVID's sports shutdown to mainstream entertainment following New York's market entry.
+isolates intervention effects from underlying trends, measuring level changes ($\beta_2$) and slope changes ($\beta_3$) in search interest. 
 
 ---
 
@@ -70,12 +70,15 @@ nba_betting <- trends %>%
 
 ### Background & Data
 
-**Intervention**: New York online sports betting launch (January 8, 2022) - the largest U.S. sports betting market by revenue, representing ~20% of the national market. **Research Question**: Did NY legalization produce a significant change in public interest in sports betting? We analyze Google search trends as a direct measure of cultural impact and consumer awareness, examining four search terms that capture different facets of betting interest from general ("sports betting") to operator-specific ("draftkings") to sport-specific ("nba betting").
+**Intervention**: New York online sports betting launch (January 8, 2022) - the largest U.S. sports betting market by revenue, representing ~20% of the national market. 
+
+**Research Question**: Did NY legalization produce a significant change in public interest in sports betting? 
+
+> We analyze Google search trends as a direct measure of cultural impact and consumer awareness, examining four search terms that capture different facets of betting interest from general ("sports betting") to operator-specific ("draftkings") to sport-specific ("nba betting").
 
 ### Visualization & Data Preparation
 
 ```{r ny-viz-data, warning=FALSE, message=FALSE, fig.width=14, fig.height=10}
-# Visualization
 p1 <- ggplot(sports_betting, aes(x = date, y = hits)) +
     geom_line(color = "#1e88e5", linewidth = 1) +
     geom_vline(xintercept = intervention_date, color = "red", linetype = "dashed", linewidth = 1.2) +
@@ -139,11 +142,10 @@ kable(prep_table,
     row_spec(which(prep_table$Z_t == 1), background = "#e3f2fd")
 ```
 
-**Variables**: Y = Search interest; X_t = Time (weeks from start); Z_t = NY intervention indicator (0 before, 1 after Jan 8, 2022); P_t = Weeks since NY launch (0 before intervention, increases after).
-
 ### ITS Model & Results
 
-**Model**: $Y_t = \beta_0 + \beta_1 X_t + \beta_2 Z_t + \beta_3 P_t + \varepsilon_t$ where $\beta_1$ captures pre-intervention trend, $\beta_2$ measures immediate level change, and $\beta_3$ quantifies trend change after intervention.
+**Model**: $Y_t = \beta_0 + \beta_1 X_t + \beta_2 Z_t + \beta_3 P_t + \varepsilon_t$
+, where $\beta_1$ captures pre-intervention trend, $\beta_2$ measures immediate level change, and $\beta_3$ quantifies trend change after intervention.
 
 ```{r ny-its-models, warning=FALSE, message=FALSE, fig.width=12, fig.height=6}
 # Fit models for all search terms
@@ -245,56 +247,37 @@ ggplot(sports_betting, aes(x = date)) +
 coefs <- coef(model_sb)
 coef_summary <- summary(model_sb)$coefficients
 
-cat("=== COEFFICIENT INTERPRETATION ===\n\n")
-cat(sprintf(
-    "β₁ (Pre-Trend) = %.4f (p = %.4f): Search interest %s by %.4f points/week before NY launch %s\n\n",
-    coefs[2], coef_summary[2, 4],
-    ifelse(coefs[2] > 0, "increased", "decreased"),
-    abs(coefs[2]),
-    ifelse(coef_summary[2, 4] < 0.05, "(significant)", "(not significant)")
-))
-
-cat(sprintf(
-    "β₂ (Level Change) = %.4f (p = %.4f): %s immediate %s of %.2f points when NY launched %s\n\n",
-    coefs[3], coef_summary[3, 4],
-    ifelse(coef_summary[3, 4] < 0.05, "Significant", "No significant"),
-    ifelse(coefs[3] > 0, "jump", "drop"),
-    abs(coefs[3]),
-    ifelse(coef_summary[3, 4] < 0.05, "(intervention had immediate effect)", "(no immediate shock)")
-))
-
-cat(sprintf(
-    "β₃ (Trend Change) = %.4f (p = %.4f): Post-NY trend = %.4f (pre) + %.4f (change) = %.4f per week\n",
-    coefs[4], coef_summary[4, 4], coefs[2], coefs[4], coefs[2] + coefs[4]
-))
-cat(sprintf(
-    "   %s in growth rate after NY launch %s\n\n",
-    ifelse(coefs[4] > 0, "Acceleration", "Deceleration"),
-    ifelse(coef_summary[4, 4] < 0.05, "(significant sustained effect)", "(not significant)")
-))
-
 # Delayed effect
 post_ny <- sports_betting %>% filter(Post_Intervention == 1)
 avg_effect <- mean(post_ny$Effect)
 current_effect <- tail(sports_betting$Effect, 1)
-
-cat(sprintf("Average Effect (Post-NY): %.2f points\n", avg_effect))
-cat(sprintf("Current Effect: %.2f points\n", current_effect))
-cat(sprintf(
-    "\nCounterfactual: Without NY legalization, current search interest would be %.1f instead of %.1f\n",
-    tail(sports_betting$Counterfactual, 1), tail(sports_betting$hits, 1)
-))
+counterfactual_current <- tail(sports_betting$Counterfactual, 1)
+actual_current <- tail(sports_betting$hits, 1)
 ```
 
-The immediate effect is captured by the β₂ coefficient, which measures whether search interest jumped or declined right after January 8, 2022. A significant positive value indicates that New York’s legalization produced an instant cultural response. The counterfactual blue dashed line represents what search interest would have looked like had legalization not occurred; the gap between the blue counterfactual and the red actual line quantifies the intervention’s overall impact at any point in time.
+**Coefficient Interpretation**
 
-The sustained effect is reflected in the β₃ coefficient, which shows whether the growth trajectory changed after legalization. Positive values signal accelerated interest as the New York betting market stabilized and expanded. Beyond this trajectory shift, the delayed effect, seen in both the average post-intervention difference and the current separation between actual and counterfactual, reveals whether the impact persisted long after the initial launch period.
+- **β₁ (Pre-Trend)** = `r sprintf("%.4f", coefs[2])` (p = `r sprintf("%.4f", coef_summary[2, 4])`): Search interest `r ifelse(coefs[2] > 0, "increased", "decreased")` by `r sprintf("%.4f", abs(coefs[2]))` points per week before NY launch `r ifelse(coef_summary[2, 4] < 0.05, "(significant)", "(not significant)")`
+
+- **β₂ (Level Change)** = `r sprintf("%.4f", coefs[3])` (p = `r sprintf("%.4f", coef_summary[3, 4])`): `r ifelse(coef_summary[3, 4] < 0.05, "Significant", "No significant")` immediate `r ifelse(coefs[3] > 0, "jump", "drop")` of `r sprintf("%.2f", abs(coefs[3]))` points when NY launched `r ifelse(coef_summary[3, 4] < 0.05, "(intervention had immediate effect)", "(no immediate shock)")`
+
+- **β₃ (Trend Change)** = `r sprintf("%.4f", coefs[4])` (p = `r sprintf("%.4f", coef_summary[4, 4])`): Post-NY trend = `r sprintf("%.4f", coefs[2])` (pre) + `r sprintf("%.4f", coefs[4])` (change) = `r sprintf("%.4f", coefs[2] + coefs[4])` per week
+  `r ifelse(coefs[4] > 0, "Acceleration", "Deceleration")` in growth rate after NY launch `r ifelse(coef_summary[4, 4] < 0.05, "(significant sustained effect)", "(not significant)")`
+
+- **Average Effect (Post-NY)**: `r sprintf("%.2f", avg_effect)` points
+- **Current Effect**: `r sprintf("%.2f", current_effect)` points
+
+**Counterfactual**: Without NY legalization, current search interest would be `r sprintf("%.1f", counterfactual_current)` instead of `r sprintf("%.1f", actual_current)`
+
+The β₂ coefficient captures the immediate effect, indicating whether search interest jumped or declined right after New York’s January 8, 2022 legalization, with a significant negative value signaling an immediate cultural response. The counterfactual blue dashed line shows what search interest would have been without the intervention, and the gap between it and the actual red line quantifies the overall impact at any point. The β₃ coefficient reflects the sustained effect by measuring how the growth trajectory changed post-legalization, where negative values indicate slowing interest as the market stabilized. Together with the delayed effect—seen in both the average post, intervention difference and the ongoing separation between actual and counterfactual, these patterns reveal how the impact evolved and persisted well beyond the initial launch period.
 
 ## COVID-19 Analysis
 
 ### Background & Variable Selection
 
-**Intervention**: WHO declared COVID-19 pandemic on March 11, 2020, causing immediate suspension of all major sports leagues (NBA, NHL, MLB). **Variable**: "Sports betting" Google searches - an ITS candidate because the intervention had a clear, direct causal pathway: no live sports = no sports betting.
+**Intervention**: WHO declared COVID-19 pandemic on March 11, 2020, causing immediate suspension of all major sports leagues (NBA, NHL, MLB). 
+
+**Variable**: "Sports betting" Google searches - an ITS candidate because the intervention had a clear, direct causal pathway: no live sports = no sports betting.
 
 ### Visualization & Data Preparation
 
@@ -318,7 +301,7 @@ ggplot(sports_covid, aes(x = date, y = Y)) +
     geom_vline(xintercept = covid_intervention, color = "red", linetype = "dashed", linewidth = 1.5) +
     annotate("text",
         x = covid_intervention, y = max(sports_covid$Y) * 0.95,
-        label = "COVID-19 Pandemic\nMarch 11, 2020\nSports Leagues Shut Down",
+        label = "COVID-19 Pandemic\nMarch 11, 2020",
         color = "red", size = 5, fontface = "bold", hjust = -0.1
     ) +
     annotate("rect",
@@ -327,7 +310,8 @@ ggplot(sports_covid, aes(x = date, y = Y)) +
     ) +
     annotate("text",
         x = as.Date("2020-05-01"), y = max(sports_covid$Y) * 0.1,
-        label = "Sports Shutdown Period", color = "darkred", size = 4, fontface = "italic"
+        label = "Sports Leagues Shut Down",
+        color = "darkred", size = 4, fontface = "italic"
     ) +
     labs(
         title = "Google Searches for 'Sports Betting' Around COVID-19 Pandemic",
@@ -354,8 +338,6 @@ kable(covid_table,
     row_spec(which(covid_table$Z_t == 1), background = "#ffebee") %>%
     column_spec(5, bold = TRUE, color = ifelse(covid_table$Z_t == 1, "red", "black"))
 ```
-
-**Variables**: Y = Search interest; X_t = Time index (weeks from dataset start); Z_t = COVID indicator (0 before March 11, 2020; 1 after); P_t = Weeks since COVID intervention (0 before, increases after).
 
 ### ITS Model & Results
 
@@ -445,7 +427,7 @@ ggplot(sports_covid_its, aes(x = date)) +
     ) +
     annotate("text",
         x = as.Date("2021-06-01"), y = 40,
-        label = "← Intervention Effect\n(Gap between blue and red lines)",
+        label = "Intervention Effect",
         color = "#c62828", size = 4.5, fontface = "bold"
     ) +
     scale_linetype_manual(
@@ -465,43 +447,31 @@ ggplot(sports_covid_its, aes(x = date)) +
 coefs_c <- coef(covid_model)
 coef_summary_c <- summary(covid_model)$coefficients
 
-cat("=== COEFFICIENT INTERPRETATION ===\n\n")
-cat(sprintf(
-    "β₁ (Pre-COVID Trend) = %.4f (p = %.4f): Search interest %s by %.4f points/week before pandemic\n\n",
-    coefs_c[2], coef_summary_c[2, 4],
-    ifelse(coefs_c[2] > 0, "increased", "decreased"), abs(coefs_c[2])
-))
-
-cat(sprintf(
-    "β₂ (Immediate Shock) = %.4f (p = %.4f): Search interest DROPPED by %.2f points when sports stopped\n",
-    coefs_c[3], coef_summary_c[3, 4], abs(coefs_c[3])
-))
-cat("   This represents the immediate collapse in betting interest when all sports leagues shut down\n\n")
-
-cat(sprintf(
-    "β₃ (Recovery Rate) = %.4f (p = %.4f): Post-COVID trend = %.4f (pre) + %.4f (change) = %.4f per week\n",
-    coefs_c[4], coef_summary_c[4, 4], coefs_c[2], coefs_c[4], coefs_c[2] + coefs_c[4]
-))
-cat(sprintf(
-    "   Trend became %s, indicating %s as sports returned\n\n",
-    ifelse(coefs_c[2] + coefs_c[4] > coefs_c[2], "MORE POSITIVE", "MORE NEGATIVE"),
-    ifelse(coefs_c[4] > 0, "RECOVERY", "continued decline")
-))
-
 # Effect analysis
 post_covid_data <- sports_covid_its %>% filter(Z_t == 1)
-avg_effect <- mean(post_covid_data$Effect)
-min_effect <- min(post_covid_data$Effect)
-current_effect <- tail(sports_covid_its$Effect, 1)
+avg_effect_c <- mean(post_covid_data$Effect)
+min_effect_c <- min(post_covid_data$Effect)
+current_effect_c <- tail(sports_covid_its$Effect, 1)
+counterfactual_current_c <- tail(sports_covid_its$Counterfactual, 1)
+actual_current_c <- tail(sports_covid_its$Y, 1)
+```
 
-cat(sprintf("Average Effect (Post-COVID): %.2f points below counterfactual\n", avg_effect))
-cat(sprintf("Worst Point: %.2f points below counterfactual (peak disruption)\n", min_effect))
-cat(sprintf("Current Effect: %.2f points\n\n", current_effect))
-cat(sprintf(
-    "Counterfactual: Without COVID, current search interest would be %.1f instead of %.1f\n",
-    tail(sports_covid_its$Counterfactual, 1), tail(sports_covid_its$Y, 1)
-))
+**Coefficient Interpretation**
 
+- **β₁ (Pre-COVID Trend)** = `r sprintf("%.4f", coefs_c[2])` (p = `r sprintf("%.4f", coef_summary_c[2, 4])`): Search interest `r ifelse(coefs_c[2] > 0, "increased", "decreased")` by `r sprintf("%.4f", abs(coefs_c[2]))` points per week before pandemic
+
+- **β₂ (Immediate Shock)** = `r sprintf("%.4f", coefs_c[3])` (p = `r sprintf("%.4f", coef_summary_c[3, 4])`): Search interest DROPPED by `r sprintf("%.2f", abs(coefs_c[3]))` points when sports stopped. This represents the immediate collapse in betting interest when all sports leagues shut down
+
+- **β₃ (Recovery Rate)** = `r sprintf("%.4f", coefs_c[4])` (p = `r sprintf("%.4f", coef_summary_c[4, 4])`): Post-COVID trend = `r sprintf("%.4f", coefs_c[2])` (pre) + `r sprintf("%.4f", coefs_c[4])` (change) = `r sprintf("%.4f", coefs_c[2] + coefs_c[4])` per week
+  Trend became `r ifelse(coefs_c[2] + coefs_c[4] > coefs_c[2], "MORE POSITIVE", "MORE NEGATIVE")`, indicating `r ifelse(coefs_c[4] > 0, "RECOVERY", "continued decline")` as sports returned
+
+- **Average Effect (Post-COVID)**: `r sprintf("%.2f", avg_effect_c)` points below counterfactual
+- **Worst Point**: `r sprintf("%.2f", min_effect_c)` points below counterfactual (peak disruption)
+- **Current Effect**: `r sprintf("%.2f", current_effect_c)` points
+
+**Counterfactual**: Without COVID, current search interest would be `r sprintf("%.1f", counterfactual_current_c)` instead of `r sprintf("%.1f", actual_current_c)`
+
+```{r covid-effect-plot, warning=FALSE, message=FALSE, fig.width=14, fig.height=8}
 ggplot(post_covid_data, aes(x = date, y = Effect)) +
     geom_line(color = "#d32f2f", linewidth = 1.2) +
     geom_point(color = "#d32f2f", size = 2) +
@@ -516,9 +486,7 @@ ggplot(post_covid_data, aes(x = date, y = Effect)) +
     theme(plot.title = element_text(face = "bold", size = 15))
 ```
 
-The immediate effect is captured by β₂, which shows that search interest dropped roughly %.2 points the moment sports shut down, a catastrophic collapse that wiped out the core activity driving betting demand. The counterfactual trajectory illustrates what search interest would have been without COVID; the gap between actual and counterfactual values quantifies the “lost interest,” averaging %.1 points below where the market would have otherwise stood.
-
-The sustained effect is reflected in β₃, indicating how the trend shifted as sports gradually returned, beginning with the NBA bubble in July 2020 and the NFL season in September 2020. This forms the delayed effect: an immediate crash followed by slow recovery. The current distance between actual and counterfactual lines shows whether the industry has fully re-aligned with its pre-pandemic path or if lingering deficits remain.
+β₂ captures the immediate effect, showing that search interest dropped roughly %.2 points when sports shut down, a catastrophic collapse that erased the core driver of betting demand, while the counterfactual trajectory shows what interest would have been without COVID, with the gap representing “lost interest,” averaging %.1 points below the expected level. β₃ reflects the sustained effect, revealing how the trend shifted as sports gradually returned with the NBA bubble and NFL season, producing a delayed pattern of sharp collapse followed by slow recovery. The current distance between the actual and counterfactual lines indicates whether the industry has fully realigned with its pre-pandemic path or if meaningful deficits persist.
 
 :::
 

@@ -667,13 +667,6 @@ ma_penn_52 <- ma(ts_penn, order = 52)
 
 ## Comparative Overview
 
-```{r betting-stocks-info, warning=FALSE, message=FALSE}
-cat("DKNG:", nrow(dkng), "days |", min(dkng$Date), "to", max(dkng$Date), "\n")
-cat("PENN:", nrow(penn), "days |", min(penn$Date), "to", max(penn$Date), "\n")
-cat("MGM:", nrow(mgm), "days |", min(mgm$Date), "to", max(mgm$Date), "\n")
-cat("CZR:", nrow(czr), "days |", min(czr$Date), "to", max(czr$Date), "\n")
-```
-
 ```{r betting-stocks-compare, warning=FALSE, message=FALSE, fig.width=12, fig.height=8}
 autoplot(ts_dkng / as.numeric(ts_dkng)[1] * 100, series = "DKNG") +
     autolayer(ts_penn / as.numeric(ts_penn)[1] * 100, series = "PENN") +

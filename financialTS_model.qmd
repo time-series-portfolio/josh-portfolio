@@ -12,9 +12,7 @@ format:
 
 ## Overview
 
-Having established the relationship between NBA performance and betting markets, we now shift our focus to the financial behavior of sports betting stocks themselves. In this chapter, these firms are treated as an independent financial ecosystem shaped by sports events, regulatory changes, and broader market forces.
-
-Financial returns exhibit volatility clustering, where periods of high or low volatility tend to persist. Because ARIMA models assume constant variance, they are not well suited for data with this property. GARCH models address this limitation by explicitly capturing time-varying volatility. The key insight is that while returns may be unpredictable due to market efficiency, volatility often follows predictable patterns that are essential for risk management, options pricing, and portfolio optimization.
+Having established the relationship between NBA performance and betting markets, we now shift our focus to the financial behavior of sports betting stocks themselves. In this chapter, these firms are treated as an independent financial ecosystem shaped by sports events, regulatory changes, and broader market forces. Financial returns exhibit volatility clustering, where periods of high or low volatility tend to persist. Because ARIMA models assume constant variance, they are not well suited for data with this property. GARCH models address this limitation by explicitly capturing time-varying volatility. The key insight is that while returns may be unpredictable due to market efficiency, volatility often follows predictable patterns that are essential for risk management, options pricing, and portfolio optimization.
 
 ---
 
@@ -83,13 +81,7 @@ mgm <- mgm %>%
 
 ## Calculate Returns
 
-Financial time series models typically work with **returns** rather than prices because:
-
-1. **Stationarity**: Prices are non-stationary (trending), returns are closer to stationary
-2. **Scale Independence**: Returns normalize for price level (a $1 move matters more for a $10 stock than a $100 stock)
-3. **Theoretical Foundation**: Asset pricing models (CAPM, APT) are formulated in terms of returns
-
-We calculate **log returns** (continuously compounded):
+Financial time series models typically work with **returns** rather than prices. So, we calculate **log returns** (continuously compounded):
 
 $$
 r_t = \ln(P_t) - \ln(P_{t-1}) = \ln\left(\frac{P_t}{P_{t-1}}\right)
@@ -531,7 +523,7 @@ arch_test <- FinTS::ArchTest(resid_mean, lags = 12)
 cat("\n=== ARCH LM Test ===\n")
 cat("Null Hypothesis: No ARCH effects\n")
 cat("Chi-squared:", round(arch_test$statistic, 4), "\n")
-cat("p-value:", format(arch_test$p.value, scientific = FALSE), "\n")
+cat("p-value:", format(arch_test$p.value, scientific = TRUE, digits = 4), "\n")
 cat("Conclusion:", ifelse(arch_test$p.value < 0.05,
     "REJECT H0 - ARCH effects present, GARCH modeling needed",
     "Fail to reject H0 - No ARCH effects"
@@ -740,8 +732,6 @@ cat("Max Volatility:", round(max(cond_vol), 4), "%\n")
 
 ## Penn Entertainment (PENN) Model
 
-Following the same procedure for PENN:
-
 ::: {.panel-tabset}
 
 ### Mean Equation & ARCH Test
@@ -781,7 +771,7 @@ resid_penn <- residuals(best_mean_penn)
 
 arch_test_penn <- FinTS::ArchTest(resid_penn, lags = 12)
 cat("\n=== ARCH LM Test (PENN) ===\n")
-cat("p-value:", format(arch_test_penn$p.value, scientific = FALSE), "\n")
+cat("p-value:", format(arch_test_penn$p.value, scientific = TRUE, digits = 4), "\n")
 cat("Conclusion:", ifelse(arch_test_penn$p.value < 0.05,
     "ARCH effects present - GARCH needed",
     "No ARCH effects"
@@ -962,7 +952,7 @@ par(mfrow = c(1, 1))
 arch_test_czr <- FinTS::ArchTest(resid_czr, lags = 12)
 cat("\n=== ARCH LM Test (CZR) ===\n")
 cat("Chi-squared:", round(arch_test_czr$statistic, 4), "\n")
-cat("p-value:", format(arch_test_czr$p.value, scientific = FALSE), "\n")
+cat("p-value:", format(arch_test_czr$p.value, scientific = TRUE, digits = 4), "\n")
 cat("Conclusion:", ifelse(arch_test_czr$p.value < 0.05,
     "ARCH effects present → GARCH needed",
     "No ARCH effects"
@@ -1178,7 +1168,7 @@ par(mfrow = c(1, 1))
 arch_test_mgm <- FinTS::ArchTest(resid_mgm, lags = 12)
 cat("\n=== ARCH LM Test (MGM) ===\n")
 cat("Chi-squared:", round(arch_test_mgm$statistic, 4), "\n")
-cat("p-value:", format(arch_test_mgm$p.value, scientific = FALSE), "\n")
+cat("p-value:", format(arch_test_mgm$p.value, scientific = TRUE, digits = 4), "\n")
 cat("Conclusion:", ifelse(arch_test_mgm$p.value < 0.05,
     "ARCH effects present → GARCH needed",
     "No ARCH effects"
@@ -1669,7 +1659,7 @@ ggplot(all_returns, aes(x = Ticker, y = Return_Pct, fill = Ticker)) +
 
 ## Correlation Analysis
 
-```{r correlation-analysis, warning=FALSE, message=FALSE, fig.width=10, fig.height=8}
+```{r correlation-analysis, warning=FALSE, message=FALSE, fig.width=10, fig.height=8, results='asis'}
 # Create wide format for correlation
 returns_wide <- all_returns %>%
     dplyr::select(Date, Ticker, Return_Pct) %>%
@@ -1680,8 +1670,17 @@ returns_wide <- all_returns %>%
 # Correlation matrix
 cor_matrix <- cor(returns_wide)
 
-cat("=== CORRELATION MATRIX ===\n\n")
-print(round(cor_matrix, 3))
+# Display formatted correlation matrix table
+cat("### Correlation Matrix\n\n")
+kable(round(cor_matrix, 3),
+    format = "html",
+    digits = 3,
+    caption = "Return Correlations Among Sports Betting Stocks"
+) %>%
+    kable_styling(
+        full_width = FALSE,
+        bootstrap_options = c("striped", "hover", "condensed", "responsive")
+    )
 
 # Heatmap
 library(reshape2)
@@ -1689,9 +1688,9 @@ cor_melted <- melt(cor_matrix)
 
 ggplot(cor_melted, aes(Var1, Var2, fill = value)) +
     geom_tile(color = "white") +
-    geom_text(aes(label = round(value, 2)), color = "white", size = 5, fontface = "bold") +
+    geom_text(aes(label = round(value, 2)), color = "black", size = 5, fontface = "bold") +
     scale_fill_gradient2(
-        low = "blue", high = "red", mid = "white",
+        low = "#d1e5f0", high = "#006bb6", mid = "white",
         midpoint = 0, limit = c(-1, 1), space = "Lab",
         name = "Correlation"
     ) +
@@ -1701,7 +1700,11 @@ ggplot(cor_melted, aes(Var1, Var2, fill = value)) +
         x = NULL, y = NULL
     ) +
     theme_minimal() +
-    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+    theme(
+        axis.text.x = element_text(angle = 45, hjust = 1, size = 11),
+        axis.text.y = element_text(size = 11),
+        plot.title = element_text(face = "bold")
+    )
 ```
 
 **Correlation Insights**:

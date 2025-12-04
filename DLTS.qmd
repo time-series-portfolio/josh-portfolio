@@ -17,31 +17,13 @@ This chapter explores deep learning approaches to time series forecasting, compa
 
 ## Literature Review
 
-Recurrent neural networks fundamentally changed sequence modeling by maintaining hidden states that capture temporal dependencies. Vanilla RNNs suffer from vanishing gradients during backpropagation through time, limiting their ability to learn long-term dependencies in sequences longer than 10-15 timesteps. This mathematical constraint—where gradients exponentially decay with sequence length—means simple RNNs struggle with the multi-decade NBA trends we analyze here.
+Recurrent neural networks fundamentally changed sequence modeling by maintaining hidden states that capture temporal dependencies. Vanilla RNNs suffer from vanishing gradients during backpropagation through time, limiting their ability to learn long-term dependencies in sequences longer than 10-15 timesteps. This mathematical constraint means simple RNNs struggle with the multi-decade NBA trends we analyze here.
 
 Long Short-Term Memory (LSTM) networks address this limitation through gated memory cells that regulate information flow. The forget gate, input gate, and output gate collectively allow LSTMs to maintain relevant information over hundreds of timesteps while discarding irrelevant patterns. This architecture proved transformative for sequence prediction tasks, from machine translation to financial forecasting.
 
-Gated Recurrent Units (GRU) simplify the LSTM architecture by combining the forget and input gates into a single update gate, reducing parameters while maintaining comparable performance. For time series with limited observations—like our 45 years of NBA data—GRU's parameter efficiency may prevent overfitting better than LSTM's more complex gating mechanism.
+Gated Recurrent Units (GRU) simplify the LSTM architecture by combining the forget and input gates into a single update gate, reducing parameters while maintaining comparable performance. For time series with limited observations GRU's parameter efficiency may prevent overfitting better than LSTM's more complex gating mechanism.
 
 The critical question for sports analytics: do these flexible architectures outperform domain-informed ARIMA models when data is scarce? Recent work suggests deep learning excels with large datasets but may underperform simpler models when sample sizes are limited. Our 45-year NBA series tests this boundary, comparing model classes on identical data to determine when complexity aids versus hinders forecasting accuracy.
-
-## Model Architecture Considerations
-
-**Key Challenge**: Time series data is scarce compared to typical deep learning applications. While image classifiers train on millions of examples, we have 45 annual observations. This makes regularization essential.
-
-**Regularization Strategies**:
-
-- **Dropout**: Randomly drops units during training to prevent co-adaptation
-- **Early Stopping**: Monitors validation loss to prevent overfitting
-- **Input Windowing**: Creates multiple training samples from sequential data
-- **Simplified Architectures**: Fewer layers and units to match data scale
-
-**Evaluation Strategy**:
-
-- Train/validation/test split preserving temporal order
-- Rolling window cross-validation for robust performance estimates
-- RMSE as primary metric for direct comparison with ARIMA
-- Forecast horizon analysis to assess multi-step prediction capability
 
 :::
 
@@ -63,9 +45,6 @@ from sklearn.preprocessing import MinMaxScaler
 from IPython.display import display
 import warnings
 warnings.filterwarnings('ignore')
-
-print("TensorFlow version:", tf.__version__)
-print("Keras version:", keras.__version__)
 
 np.random.seed(5600)
 tf.random.set_seed(5600)
@@ -99,16 +78,15 @@ league_avg.columns = ['Season', 'ORtg', 'DRtg', 'Pace', '3PAr', 'TS%', 'eFG%']
 league_avg = league_avg.sort_values('Season').reset_index(drop=True)
 
 print(f"\nData loaded: {len(league_avg)} seasons from {league_avg['Season'].min()} to {league_avg['Season'].max()}")
-print(league_avg.head())
 ```
 
 ---
 
-# Part 1: Univariate Deep Learning Forecasting
+# Univariate Deep Learning Forecasting
 
 ## Data Preparation
 
-We use **Offensive Rating (ORtg)** as our univariate series—the same metric analyzed with ARIMA in the univariate models chapter. This allows direct comparison between traditional and deep learning approaches.
+We use **Offensive Rating (ORtg)** as our univariate series. This allows direct comparison between traditional and deep learning approaches.
 
 ```{python data-prep}
 # Extract ORtg series
@@ -158,23 +136,11 @@ test_scaled = scaler.transform(test_data[['ORtg']])
 print(f"\nScaled range: [{train_scaled.min():.3f}, {train_scaled.max():.3f}]")
 ```
 
-**Scaling Rationale**: MinMaxScaler normalizes data to [0, 1], improving neural network training stability and convergence speed. We fit the scaler only on training data to prevent data leakage.
-
 ### Input Windowing
 
 ```{python windowing}
 def create_sequences(data, window_size):
-    """
-    Create input-output pairs for sequence prediction.
 
-    Args:
-        data: Array of values
-        window_size: Number of timesteps to use as input
-
-    Returns:
-        X: Input sequences (samples, timesteps, features)
-        y: Target values (samples, 1)
-    """
     X, y = [], []
     for i in range(len(data) - window_size):
         X.append(data[i:i + window_size])
@@ -193,8 +159,6 @@ print(f"Output shape: {y_train.shape}")
 print(f"\nValidation sequences: {X_val.shape[0]} samples")
 print(f"Test sequences: {X_test.shape[0]} samples")
 ```
-
-**Window Size Rationale**: A 5-year window balances pattern capture with sample availability. Larger windows would reduce training samples, while smaller windows might miss multi-year trends.
 
 ---
 
@@ -773,41 +737,21 @@ plt.show()
 
 ### Analysis
 
-**Relative Performance**:
+The three deep learning models perform similarly, with test RMSE values close together, indicating that for a simple univariate series with limited data, added architectural complexity offers little benefit. Regularization played a critical role; early stopping, dropout, and L2 kept training and validation curves tight and prevented overfitting; with all models converging within 50–100 epochs instead of the full 200. Their multi-step forecasts also behaved as expected: beyond 5–7 steps, predictions regress toward the mean as uncertainty accumulates, and all models converge to similar long-term values, reflecting that they captured the series’ smooth upward trend rather than intricate dynamics.
 
-The three deep learning models show similar performance patterns, with test RMSE values clustered closely together. This suggests that for our relatively simple univariate series with limited data, architectural complexity beyond basic RNN provides diminishing returns.
-
-**Regularization Effectiveness**:
-
-Early stopping proved essential—all models converged within 50-100 epochs rather than the full 200, preventing overfitting. Dropout and L2 regularization kept training/validation gaps narrow, indicating good generalization. Without these techniques, models would memorize training patterns and fail on unseen data.
-
-**Forecast Horizon**:
-
-Multi-step forecasts show characteristic recurrent network behavior: predictions tend toward series mean after 5-7 steps as uncertainty compounds. All three models converge to similar long-term forecasts, suggesting they've learned the underlying trend rather than complex dynamics. This is appropriate for NBA offensive rating, which follows a smooth upward trajectory without sharp regime changes.
-
-**Comparison with Traditional ARIMA**:
-
-From our univariate ARIMA analysis, the best model achieved test RMSE around 0.8-1.2 (depending on the specific forecast period). Deep learning models perform comparably, neither dramatically outperforming nor underperforming. ARIMA's explicit trend modeling may be better suited for this smooth, trending series with limited observations. Deep learning excels when patterns are complex and data is abundant—neither fully applies here.
+Compared with traditional ARIMA, which achieved test RMSE around 0.8–1.2 depending on the forecast window, deep learning models perform roughly on par and neither clearly outperform nor lag behind. Given the series’ simplicity and limited length, ARIMA’s explicit trend structure is naturally well suited, while deep learning typically shines with richer patterns and larger datasets.
 
 ---
 
-# Part 2: Forecasting Performance Reflection
+# Forecasting Performance Reflection
 
-After comparing both traditional (ARIMA, SARIMA) and deep learning approaches (RNN, GRU, LSTM) on NBA offensive rating, several insights emerge about model selection for time series forecasting.
+Across both traditional (ARIMA, SARIMA) and deep learning models (RNN, GRU, LSTM), test RMSE values fall within a similar range of roughly 0.8–1.5, indicating that no single method clearly outperforms the others for NBA offensive rating. With only 45 annual observations and a smooth, steadily increasing trend, the dataset favors simpler statistical models whose structure aligns with the underlying dynamics. ARIMA offers interpretable coefficients and transparent trend components, while deep learning models operate as black boxes and require substantially more computation and tuning to achieve similar accuracy.
 
-**Quantitative Insight**: Test RMSE values cluster tightly across all models (approximately 0.8-1.5 points per 100 possessions), suggesting no single approach dominates for this dataset. ARIMA's simplicity achieves comparable accuracy to more complex neural networks, reinforcing the principle that model sophistication should match data characteristics. With 45 annual observations, we lack the sample size where deep learning typically excels.
-
-**Qualitative Insight**: ARIMA provides interpretable coefficients and confidence intervals grounded in statistical theory, making it easier to explain forecasts to stakeholders. Deep learning models operate as black boxes, offering flexibility at the cost of interpretability. For a smooth trending series like ORtg, ARIMA's explicit trend component captures dynamics transparently, while neural networks learn patterns implicitly through weight optimization.
-
-**Trade-offs**: Computational cost differs dramatically—ARIMA fits in seconds, while deep learning requires minutes of training with careful hyperparameter tuning. Interpretability favors ARIMA; flexibility favors deep learning. For NBA offensive rating with limited data and clear trends, traditional methods offer the best balance of accuracy, speed, and interpretability.
-
-**Key Lesson**: Comparing models revealed that data characteristics matter more than algorithm sophistication. The analytics revolution in basketball follows a smooth, near-linear upward trajectory that ARIMA captures elegantly. Deep learning would shine with higher-frequency data (game-by-game rather than season-by-season) or more complex multivariate relationships. The right tool depends on the problem structure, not algorithmic fashion.
+Ultimately, the trade-offs emphasize that data characteristics should drive model choice. ARIMA is fast, interpretable, and well-suited to low-frequency, trend-dominated series, giving it the best balance of performance and practicality here. Deep learning becomes advantageous only with richer, higher-frequency data or complex multivariate interactions. The comparison reinforces a broader lesson: effective forecasting depends less on algorithmic sophistication and more on matching the model to the structure and scale of the problem.
 
 ---
 
-# Part 3: Multivariate Forecasting
-
-## Multivariate Data Preparation
+# Multivariate Forecasting
 
 We now incorporate multiple NBA metrics to capture relationships between pace, shooting, and efficiency.
 
@@ -842,8 +786,6 @@ print(f"\nMultivariate sequence shapes:")
 print(f"  X_train: {X_mv_train.shape} (samples, timesteps, features)")
 print(f"  y_train: {y_mv_train.shape} (samples, features)")
 ```
-
-**Note**: We're forecasting all three variables simultaneously. Each model predicts the next step's ORtg, Pace, and 3PAr jointly based on the previous 5 timesteps.
 
 ---
 
@@ -1007,14 +949,17 @@ print(f"  Average:    {mv_lstm_rmse_avg:.4f}")
 
 ## Traditional Multivariate Model: VAR
 
-For comparison, we fit a Vector AutoRegression (VAR) model—a classical multivariate approach.
-
-```{python var-model}
+For comparison, we fit a Vector AutoRegression (VAR) model.
+```{python var-model, warning=FALSE}
 from statsmodels.tsa.api import VAR
 from statsmodels.tsa.stattools import adfuller
 
 # Prepare data for VAR (requires stationarity)
 var_data = multivar_data[['ORtg', 'Pace', '3PAr']].copy()
+
+# Create proper datetime index (annual frequency starting from first season)
+start_year = int(league_avg['Season'].min())
+var_data.index = pd.date_range(start=f'{start_year}-01-01', periods=len(var_data), freq='YS')
 
 # Check stationarity
 for col in var_data.columns:
@@ -1032,7 +977,7 @@ for col in var_data_diff.columns:
 var_train = var_data_diff.iloc[:train_size-1]
 var_test = var_data_diff.iloc[train_size-1:]
 
-# Fit VAR
+# Fit VAR (warning suppressed by proper datetime index)
 var_model = VAR(var_train)
 var_results = var_model.fit(maxlags=5, ic='aic')
 
@@ -1092,7 +1037,7 @@ final_comparison = pd.DataFrame({
     ]
 })
 
-print("\n### Comprehensive Model Comparison\n")
+print("\n Comprehensive Model Comparison\n")
 # Style the comprehensive comparison table similar to kable()
 styled_final = final_comparison.style.format({
     'RMSE': '{:.4f}'
@@ -1133,24 +1078,10 @@ plt.show()
 
 ---
 
-## Model Comparison Write-Up
+## Model Comparison
 
-**Model Complexity and Accuracy**
+The comprehensive comparison reveals that deep learning models (RNN, GRU, LSTM) achieve competitive but not superior performance compared to traditional ARIMA/VAR methods, challenging the assumption that sophisticated neural architectures automatically improve predictions. For NBA time series with 45 annual observations, statistical models' explicit structure matches the data scale better than deep learning's parameter-heavy flexibility. Multivariate modeling shows mixed results: adding Pace and 3PAr alongside ORtg sometimes improves forecast accuracy by capturing interdependencies, but also increases complexity that may introduce noise when sample sizes are limited.
 
-The comprehensive comparison reveals a nuanced relationship between model complexity and forecasting accuracy. Deep learning models (RNN, GRU, LSTM) achieve competitive but not superior performance compared to traditional ARIMA/VAR methods. This challenges the assumption that sophisticated neural architectures automatically improve predictions. For NBA time series with 45 annual observations, statistical models' explicit structure matches the data scale better than deep learning's parameter-heavy flexibility.
+For NBA strategic planning, ARIMA and VAR models offer the best balance of accuracy and interpretability. These traditional methods provide transparent coefficients, statistical confidence intervals, and converge reliably without extensive hyperparameter tuning; critical when explaining forecasts to team executives making personnel decisions. Multivariate approaches add value by revealing whether rising offensive efficiency comes from faster play or better shot selection, informing roster construction priorities. However, this benefit depends on careful variable selection, as including weakly related variables degrades accuracy through overfitting.
 
-Multivariate modeling shows mixed results. Adding Pace and 3PAr alongside ORtg sometimes improves forecast accuracy by capturing interdependencies—when one variable trends up, others adjust accordingly. However, multivariate models also increase complexity, requiring estimation of cross-variable relationships that may introduce noise when sample sizes are limited. The VAR model's modest performance suggests traditional multivariate methods capture these dynamics adequately without neural network overhead.
-
-**Trust for Real-World Forecasting**
-
-For NBA strategic planning, I would trust ARIMA for univariate ORtg forecasts and VAR for multivariate analysis. These models provide interpretable coefficients, statistical confidence intervals, and converge reliably without extensive hyperparameter tuning. Deep learning models require careful regularization, validation set monitoring, and offer less transparency—problematic when explaining forecasts to team executives making personnel decisions based on projected offensive trends.
-
-**Practical Implications**
-
-Using only univariate models would miss critical relationships: Pace influences ORtg through possessions per game, while 3PAr captures shot selection strategy. Multivariate approaches explicitly model these connections, revealing whether rising offensive efficiency comes from faster play, better shooting, or strategic shot selection. This distinction matters for roster construction. Should teams prioritize pace-and-space athletes or halfcourt shooters?
-
-However, multivariate modeling's benefit depends on variable selection and data quality. Including weakly related variables degrades accuracy through overfitting. The key lesson: model choice should reflect both data characteristics (sample size, stationarity, relationships) and practical needs (interpretability, computational resources, forecast horizon). Sophisticated methods shine when warranted by data structure, not algorithmic novelty.
-
-**Conclusion**
-
-This analysis demonstrates that effective forecasting requires matching model complexity to data characteristics. With 45 years of NBA data, traditional statistical methods offer optimal accuracy-interpretability tradeoffs compared to deep learning. Multivariate approaches add value when relationships are strong and well-understood, but also introduce risks when sample sizes limit reliable parameter estimation. The right model depends on your specific forecasting context—there is no universal "best" approach.
+Effective forecasting requires matching model complexity to data characteristics and practical needs. With 45 years of NBA data, traditional statistical methods offer optimal accuracy-interpretability tradeoffs compared to deep learning. Multivariate approaches capture important relationships between Pace, 3PAr, and ORtg, but introduce risks when sample sizes limit reliable parameter estimation. Model choice should reflect data structure (sample size, stationarity, relationships) and forecasting context (interpretability, computational resources, forecast horizon).

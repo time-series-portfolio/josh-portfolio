@@ -357,15 +357,7 @@ window.Quarto = {
 <h1>Theoretical Framework</h1>
 <section id="overview" class="level2">
 <h2 class="anchored" data-anchor-id="overview">Overview</h2>
-<p>This chapter extends our analysis in two directions: continuing to examine basketball’s on-court evolution through ORtg and 3PAr, while introducing sports betting stocks (PENN, DKNG) that exemplify how the data revolution transformed passive viewership into active wagering. Together, these series illustrate how analytics reshaped both game strategy and the financial markets built around it.</p>
-<p>In this analysis, we examine four distinct time series that represent different aspects of basketball analytics and sports betting markets:</p>
-<ol type="1">
-<li><strong>NBA League-Average Offensive Rating (ORtg)</strong>: Points scored per 100 possessions, capturing offensive efficiency trends from 1980-2025</li>
-<li><strong>3-Point Attempt Rate (3PAr)</strong>: The proportion of field goal attempts taken from beyond the arc, documenting the analytics revolution</li>
-<li><strong>PENN Stock Price</strong>: Weekly stock prices reflecting the turbulent sports betting market during the Barstool-to-ESPN BET transition</li>
-<li><strong>DraftKings (DKNG) Stock Price</strong>: Weekly prices showing seasonal patterns in the sports betting industry</li>
-</ol>
-<p>Each series presents unique modeling challenges. NBA metrics evolve gradually with rule changes and strategic innovations, making them ideal for annual frequency models. Stock prices exhibit high volatility and potential weekly seasonality, requiring SARIMA frameworks that account for both trend and cyclical patterns.</p>
+<p>This chapter extends our analysis in two directions: continuing to examine basketball’s on-court evolution through ORtg and 3PAr, while introducing sports betting stocks (PENN, DKNG) that exemplify how the data revolution transformed passive viewership into active wagering. Together, these series illustrate how analytics reshaped both game strategy and the financial markets built around it. NBA metrics evolve gradually with rule changes and strategic innovations, making them ideal for annual frequency models. Stock prices exhibit high volatility and potential weekly seasonality, requiring SARIMA frameworks that account for both trend and cyclical patterns.</p>
 <hr>
 </section>
 </section>
@@ -1578,14 +1570,6 @@ Key Finding: SARIMA outperforms seasonal naive by 69.1%</code></pre>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>52-step ahead RMSE: $ 8.02 </code></pre>
-</div>
-<details class="code-fold">
-<summary>Code</summary>
-<div class="sourceCode cell-code" id="cb114"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb114-1"><a href="#cb114-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">Note: 52-step forecasts have higher uncertainty (longer horizon)</span><span class="sc">\n</span><span class="st">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</details>
-<div class="cell-output cell-output-stdout">
-<pre><code>
-Note: 52-step forecasts have higher uncertainty (longer horizon)</code></pre>
 </div>
 </div>
 </div>

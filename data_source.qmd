@@ -82,12 +82,6 @@ Downloaded HTML tables were converted to CSV format using a Python script that:
    - **Symbol**: CZR (Nasdaq)
    - **Start Date**: January 2020
 
-**Entertainment Baseline:**
-
-1. **DIS (The Walt Disney Company)**
-   - **Symbol**: DIS (NYSE)
-   - **Established**: Trading since 1957
-
 ### Extraction Method
 
 Yahoo Finance provides free access to historical stock data via the `yfinance` Python library:
