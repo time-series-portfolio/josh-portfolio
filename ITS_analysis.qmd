@@ -308,11 +308,11 @@ p_covid_impact <- ggplot(sports_covid, aes(x = date, y = Y)) +
         xmin = covid_intervention, xmax = as.Date("2020-07-01"),
         ymin = -Inf, ymax = Inf, alpha = 0.1, fill = "red"
     ) +
-    annotate("text",
-        x = as.Date("2020-05-01"), y = max(sports_covid$Y) * 0.1,
-        label = "Sports Leagues Shut Down",
-        color = "darkred", size = 4, fontface = "italic"
-    ) +
+    # annotate("text",
+    #     x = as.Date("2020-05-01"), y = max(sports_covid$Y) * 0.1,
+    #     label = "Sports Leagues Shut Down",
+    #     color = "darkred", size = 4, fontface = "italic"
+    # ) +
     labs(
         title = "Google Searches for 'Sports Betting' Around COVID-19 Pandemic",
         subtitle = "Dramatic decline when sports leagues shut down in March 2020",
