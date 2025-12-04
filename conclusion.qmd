@@ -17,7 +17,7 @@ The diagram above captures the journey this analysis took. We began by examining
 The modern NBA barely resembles the game played in 1980. Back then, teams averaged around 104 points per 100 possessions, relying heavily on mid-range jump shots and post-up plays. By 2025, that figure climbed to nearly 113 points per 100 possessions, 
 a nearly 10% efficiency gain. But this wasn't simply teams running faster or working harder. The data reveals something more fundamental: **teams learned to make smarter decisions about where to shoot**.
 
-![](images/ortg_evolution.png)
+![](/images/ortg_evolution.png)
 
 In the early 1980s, three-point attempts accounted for less than 5% of all shots. Today, that figure exceeds 40%. This wasn't gradual drift—it was a sharp inflection around 2012 when front offices simultaneously embraced analytics. Our forecasting models show this shift was predictable once the analytics revolution began, following a clear upward trajectory that shows no signs of plateauing. Teams discovered what the math had been saying all along: three-pointers and shots at the rim yield more points than mid-range jumpers. The Houston Rockets didn't invent this insight, but they popularized it, and the entire league followed. This represents one of the fastest strategic adaptations in professional sports history, all driven by data rather than tradition.
 
@@ -27,7 +27,7 @@ Interestingly, this efficiency revolution occurred despite tempo fluctuations. P
 
 Around 2012, something shifted. It wasn't a single rule change or a star player's innovation. Instead, it was the year when team executives across the league simultaneously decided to let data guide decisions. Daryl Morey in Houston, Sam Hinkie in Philadelphia, and others began building rosters around statistical principles rather than traditional scouting intuition. Our multivariate models detected this as a structural break—a moment where the relationships between pace, shot selection, and efficiency fundamentally changed.
 
-![](images/3par_revolution.png)
+![](/images/3par_revolution.png)
 
 Before 2012, teams occasionally shot threes, but mostly as a strategic option. After 2012, three-point volume became the foundation of offensive philosophy. The data shows that improving three-point shooting accuracy and increasing three-point volume both independently drove efficiency gains, but their combined effect was transformative. Teams that embraced both—shooting more threes *and* developing better three-point shooters—pulled ahead of teams that changed only one dimension.
 
