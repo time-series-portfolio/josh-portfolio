@@ -50,6 +50,7 @@ Looking ahead, our forecasting models—ranging from traditional ARIMA to deep l
 
 ![](images/ortg_forecast.png)
 
+
 Basketball has never been this efficient, shot distributions have never been this extreme, and defenses have never faced these strategic constraints. Will defenses adapt with new schemes that neutralize three-point volume? Will the league intervene with rule changes to rebalance offense and defense? Or will efficiency continue climbing until we approach mathematical limits? Our models can't answer these questions definitively because they depend on human decisions that haven't been made yet.
 
 The betting industry's future appears more certain. Volatility models show that sports betting stocks have stabilized after their pandemic boom-bust cycle. DKNG, PENN, CZR, and MGM all exhibit predictable seasonal patterns tied to the sports calendar, suggesting this young industry is maturing. As more states legalize online betting and operators compete for market share, the business model shifts from explosive growth to sustainable profitability. Our forecasts suggest betting stocks will track broader market trends rather than experiencing the 300% swings seen in 2020-2021.
