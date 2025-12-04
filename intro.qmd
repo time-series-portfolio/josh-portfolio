@@ -16,13 +16,13 @@ Basketball today is not merely an athletic competition but a living laboratory o
 
 ![The Big Picture](images/flowchart.png)
 
-With the framework above, I aim to tell the story of how basketball’s offensive efficiency evolved under the dual pressures of analytics and disruption. The analysis begins with a long-run view of the game’s transformation: tracing how three-point attempts, shot selection, and pace redefined offensive output from 1980 through 2025. By examining league wide efficiency, field-goal percentages, and possessions per 48 minutes, I hope to capture how the modern NBA diverged from its slower, mid-range past into a data-optimized era of high variance offense.
+With the framework above, I aim to tell the story of how basketball's offensive efficiency evolved under the dual pressures of analytics and disruption, and how this transformation rippled through the betting industry that emerged alongside it. The analysis begins with a long-run view of the game's transformation: tracing how three-point attempts, shot selection, and pace redefined offensive output from 1980 through 2025. By examining league-wide efficiency, field-goal percentages, and possessions per 48 minutes, I hope to capture how the modern NBA diverged from its slower, mid-range past into a data-optimized era of high-variance offense.
 
-From there, the focus shifts to the Analytics Revolution, a period beginning around 2012 when front offices embraced quantitative models and player-tracking data. Here, patterns in shot distance, efficiency metrics, and team-level statistics reveal how strategy and roster construction began to align with mathematical optimization. These structural changes not only reshaped offensive philosophy but also institutionalized analytics as a core component of competitive advantage.
+From there, the focus shifts to the Analytics Revolution, a period beginning around 2012 when front offices embraced quantitative models and player-tracking data. Here, patterns in shot distance, efficiency metrics, and team-level statistics reveal how strategy and roster construction began to align with mathematical optimization. These structural changes not only reshaped offensive philosophy but also institutionalized analytics as a core component of competitive advantage. Crucially, this quantification of basketball enabled a parallel revolution in sports betting: as the game became more measurable and predictable, betting markets and daily fantasy platforms could price odds with unprecedented precision.
 
-The next chapter explores the COVID-19 shock, a natural experiment that disrupted decades of rhythm. Empty arenas, travel restrictions, and condensed schedules created conditions to test how context, apart from talent or tactics, influences performance. Comparing attendance patterns, scoring volatility, and pace before, during, and after the pandemic provides a rare window into basketball's psychological and environmental dimensions.
+The next chapter explores the COVID-19 shock, a natural experiment that disrupted both basketball operations and betting industry growth. Empty arenas collapsed attendance and forced league suspensions, creating an exogenous shock to test how context influences both on-court performance and public engagement. Using interrupted time series analysis on Google Trends data and sports betting stock prices, I quantify the immediate collapse in betting interest when live sports ceased, then trace the recovery trajectory as leagues resumed play. This framework extends to New York's January 2022 online betting legalization, isolating how major policy interventions reshape cultural engagement and industry valuations.
 
-Finally, the analysis turns toward the future. By modeling post-2023 trends using both traditional and modern time-series methods, the goal is to forecast whether the league has stabilized in a new equilibrium or continues to evolve. From evolution and optimization to disruption and re-emergence the project aims to capture how data, environment, and adaptation intertwine to define the modern game.
+Finally, the analysis turns toward the future. By modeling post-2023 trends using both traditional time-series methods (ARIMA, VAR) and modern deep learning architectures (LSTM, GRU), the goal is to forecast whether the league has stabilized in a new equilibrium or continues to evolve. From evolution and optimization to disruption and re-emergence, the project aims to capture how data, environment, and adaptation intertwine to define not only the modern game but also the financial markets that now depend on it.
 
 ## Literature Review
 
@@ -32,21 +32,21 @@ A central thread is shot-selection optimization. Spatial analyses show that peri
 
 Tempo and spacing economics form the second pillar. Prior work links ball movement, spacing, and faster pace to scoring efficiency in the modern game @franks2015characterizing. Rather than treating pace and efficiency as static correlates, we examine their dynamic ordering: do changes in tempo precede shifts in efficiency, or the reverse? A multivariate framework lets us see how this relationship strengthened from the pre-analytics period into the analytics era, clarifying whether “playing faster” is a driver, a consequence, or part of a feedback loop with shot quality.
 
-The third pillar addresses COVID-era disruptions. Empty-arena conditions in 2020 weakened traditional home-court effects and scrambled normal rhythms. We treat the bubble and capacity-limited seasons as an exogenous intervention, quantify the immediate impact on pace, efficiency, and scoring variance, and then measure persistence and recovery. By juxtaposing pre-2020 fitted behavior with realized outcomes through 2022, we can distinguish a temporary shock from a lasting structural shift.
+The third pillar addresses COVID-era disruptions and their cascading effects across both sports and betting industries. Empty-arena conditions in 2020 collapsed attendance and public engagement, creating a natural experiment to test how context influences both on-court performance and consumer behavior. Using interrupted time series analysis on Google Trends data, we quantify the immediate shock to sports betting interest when live sports ceased, then trace the recovery trajectory as leagues resumed. We extend this framework to New York's January 2022 legalization of online sports betting, the largest state market entry, to measure how policy interventions reshape betting industry dynamics.
 
-Together, these components extend prior literature that established what changed (shot mix, tempo strategies, COVID effects) but seldom mapped how and when the transitions unfolded or whether they endured. Concretely, we (i) date the analytics inflection with objective break tests; (ii) test whether rising three-point volume leads or follows efficiency gains; (iii) model low-order serial dependence and feedback that cross-sectional designs omit; and (iv) isolate the pandemic’s impulse and its decay. Treating efficiency, pace, and shot selection as interconnected trajectories reveals the timing, coupling, and durability of the forces reshaping the modern NBA.
+Together, these components extend prior literature that established what changed (shot mix, tempo strategies, COVID effects) but seldom mapped how and when the transitions unfolded or whether they endured. Concretely, we (i) date the analytics inflection with objective break tests around 2012; (ii) model the dynamic interdependencies between three-point volume, shooting efficiency, and offensive rating using VAR and ARIMAX frameworks; (iii) capture low-order serial dependence and bidirectional feedback that cross-sectional designs omit; and (iv) isolate both the pandemic's cultural impact on betting engagement and major regulatory shifts using interrupted time series regression. Treating efficiency, pace, and shot selection as interconnected trajectories reveals the timing, coupling, and durability of the forces reshaping the modern NBA and the industries built around it.
 
 # Guiding Questions
 
-1. How has the NBA’s offensive efficiency evolved since 1980?
+1. How has the NBA's offensive efficiency evolved since 1980?
 2. When did measurable statistical evidence of the analytics revolution emerge?
-3. Did the rise in 3-point attempt rate precede or follow improvements in efficiency?
-4. To what extent does game pace amplify or mediate the impact of shot selection?
-5. How did the 2020 “bubble” season disrupt established offensive and defensive patterns?
+3. What are the dynamic relationships between 3-point attempt rate, shooting efficiency, and offensive rating?
+4. How do pace and shot selection interact to drive offensive performance in multivariate models?
+5. How did the COVID-19 pandemic impact public interest in sports betting?
 6. How have attendance levels and arena dynamics evolved post-COVID?
-7. Are the relationships between 3-point volume, pace, and ORtg stable across eras?
-8. Do we observe permanent structural changes or temporary shocks surrounding COVID?
+7. Can multivariate models (VAR, ARIMAX) capture the interdependencies between offensive metrics better than univariate approaches?
+8. Did New York's sports betting legalization in 2022 produce measurable shifts in betting industry engagement?
 9. Can time-series forecasts predict whether efficiency will continue to climb or plateau?
-10. What broader lessons about analytics-driven optimization can be drawn from the NBA’s evolution?
+10. How did the analytics revolution transform both on-court strategy and the financial markets built around basketball (betting stocks)?
 
 **Main Referrence: Gamage, P. (2026). Applied Time Series for Data Science**

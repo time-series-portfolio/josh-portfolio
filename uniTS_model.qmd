@@ -155,13 +155,19 @@ cat("Conclusion:", ifelse(ljung_ortg$p.value > 0.05, "Residuals are white noise"
 ## Forecast & Validation
 
 ```{r ortg-forecast, warning=FALSE, message=FALSE, fig.width=12, fig.height=6}
-autoplot(fc_ortg) +
+p_ortg_forecast <- autoplot(fc_ortg) +
     labs(
         title = "ORtg Forecast: 5-Year Ahead Prediction",
         subtitle = paste0("Model: ", paste0(best_ortg), " | 80% and 95% prediction intervals"),
         x = "Year", y = "Offensive Rating (Points per 100 Possessions)"
     ) +
     theme_minimal()
+
+# Display plot
+print(p_ortg_forecast)
+
+# Save for conclusion
+ggsave("images/ortg_forecast.png", plot = p_ortg_forecast, width = 12, height = 6, dpi = 300, bg = "white")
 ```
 
 ```{r ortg-fc-values, warning=FALSE, message=FALSE}
@@ -647,4 +653,23 @@ cat("52-step ahead RMSE: $", round(rmse_52step, 2), "\n")
 
 DraftKings’ stock exhibits clearer structure than PENN’s, making SARIMA modeling more effective. The weekly series shows meaningful annual seasonality, visible in ACF spikes around lag 52, which aligns with the sports calendar and predictable fluctuations in betting volume across quarters. The chosen SARIMA model typically includes both non-seasonal differencing and seasonal components, with a seasonal MA term indicating that shocks tied to major sports events can carry over for an entire yearly cycle. This structure reflects DraftKings’ more stable, sports-betting-focused business model, and the model’s performance confirms it: SARIMA consistently outperforms seasonal naïve forecasts by 10–30%, with lower 1-step-ahead error and appropriate widening of uncertainty over longer horizons.
 
-Time-series cross-validation provides a rigorous evaluation by refitting the model across expanding windows rather than relying on a single split, producing robust and reliable error estimates. While beating naïve benchmarks doesn’t contradict market efficiency the model’s structure and performance reveal exploitable seasonality suitable for risk management, scenario analysis, and baseline forecasting. The resulting prediction intervals help quantify uncertainty, and the model offers a benchmark that any trading strategy must surpass to demonstrate true alpha.
+Time-series cross-validation provides a rigorous evaluation by refitting the model across expanding windows rather than relying on a single split, producing robust and reliable error estimates. While beating naïve benchmarks doesn't contradict market efficiency the model's structure and performance reveal exploitable seasonality suitable for risk management, scenario analysis, and baseline forecasting. The resulting prediction intervals help quantify uncertainty, and the model offers a benchmark that any trading strategy must surpass to demonstrate true alpha.
+
+---
+
+# Bridging to Multivariate Analysis
+
+The univariate models above establish that NBA metrics and betting stocks exhibit predictable time-series structure. ORtg, 3PAr, and Pace all follow non-stationary trends that become forecastable after differencing, while DKNG and PENN stock prices display volatility clustering and seasonal patterns. These findings confirm that basketball's evolution and the betting industry's growth are not random walks but structured processes shaped by innovation, strategy, and market forces.
+
+Yet univariate analysis has a fundamental limitation: **it treats each series in isolation**. When we model ORtg using only its own past values, we ignore the reality that offensive efficiency doesn't evolve independently. It's shaped by strategic decisions (3PAr), player skill (TS%), tempo (Pace), and defensive adaptation. Similarly, betting stock prices don't fluctuate in a vacuum—they respond to NBA attendance, game quality, regulatory changes, and broader market sentiment.
+
+The next chapter shifts from **single-equation forecasting** to **system-level dynamics** using multivariate time series models. ARIMAX extends ARIMA by incorporating exogenous predictors, testing hypotheses like "Does 3PAr predict ORtg?" while controlling for autocorrelation. VAR (Vector Autoregression) goes further by modeling bidirectional feedback loops where every variable predicts every other variable, revealing whether the analytics revolution followed a simple cause-effect sequence or emerged from complex co-evolution.
+
+**What you'll see next:**
+
+- **ARIMAX models** quantify how shot selection and shooting skill predict offensive efficiency, testing whether analytics-driven strategy translates to measurable performance gains
+- **VAR models** uncover temporal ordering through Granger causality tests, answering: Did 3PAr drive ORtg, or did efficient offenses enable more three-point volume?
+- **COVID intervention analysis** isolates the pandemic's structural break from underlying trends using dummy variables
+- **NBA-to-betting linkage** tests whether on-court analytics created financial value by modeling DKNG stock as a function of NBA attendance and offensive rating
+
+Having established that each series is forecastable, we now ask: **Do they forecast each other?** The analytics revolution transformed basketball, but did it follow a single driver or emerge from interconnected forces? Multivariate models provide the framework to find out.

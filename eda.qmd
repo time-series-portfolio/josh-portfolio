@@ -90,7 +90,7 @@ adf_diff_ortg <- adf.test(diff_ortg)
 ## Time Series Plot
 
 ```{r ortg-plot, warning=FALSE, message=FALSE, fig.width=12, fig.height=6}
-ggplot(df_ortg, aes(x = Year, y = Value, color = Era)) +
+p_ortg_evolution <- ggplot(df_ortg, aes(x = Year, y = Value, color = Era)) +
     geom_line(size = 1.2) +
     geom_point(size = 3) +
     geom_vline(xintercept = 2012, linetype = "dashed", color = "#f58426", size = 1) +
@@ -120,6 +120,12 @@ ggplot(df_ortg, aes(x = Year, y = Value, color = Era)) +
         plot.subtitle = element_text(size = 11, color = "gray40"),
         legend.position = "bottom"
     )
+
+# Display plot
+print(p_ortg_evolution)
+
+# Save for conclusion
+ggsave("images/ortg_evolution.png", plot = p_ortg_evolution, width = 12, height = 6, dpi = 300, bg = "white")
 ```
 
 ## Lag Plots
@@ -371,7 +377,7 @@ adf_diff_3par <- adf.test(diff_3par)
 ## Time Series Plot
 
 ```{r 3par-plot, warning=FALSE, message=FALSE, fig.width=12, fig.height=6}
-ggplot(df_3par, aes(x = Year, y = Value, color = Era)) +
+p_3par_revolution <- ggplot(df_3par, aes(x = Year, y = Value, color = Era)) +
     geom_line(size = 1.2) +
     geom_point(size = 3) +
     geom_vline(xintercept = 2012, linetype = "dashed", color = "#f58426", size = 1) +
@@ -398,6 +404,12 @@ ggplot(df_3par, aes(x = Year, y = Value, color = Era)) +
         plot.subtitle = element_text(size = 11, color = "gray40"),
         legend.position = "bottom"
     )
+
+# Display plot
+print(p_3par_revolution)
+
+# Save for conclusion
+ggsave("images/3par_revolution.png", plot = p_3par_revolution, width = 12, height = 6, dpi = 300, bg = "white")
 ```
 
 ## Lag Plots

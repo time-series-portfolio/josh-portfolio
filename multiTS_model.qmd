@@ -1998,3 +1998,25 @@ This VAR model tests whether NBA performance metrics influence sports betting in
 Despite data constraints, this framework demonstrates the interconnected sports-finance ecosystem: NBA attendance and offensive efficiency potentially drive betting industry valuations. The COVID period introduces extreme outliers that dominate the short sample, making results exploratory rather than definitive. As more data accumulates (2025+), future analyses can test whether these relationships persist beyond the pandemic disruption.
 
 :::
+
+---
+
+# Bridging to Financial Time Series Models
+
+The multivariate models above establish bidirectional relationships between NBA performance metrics: shot selection influences efficiency, pace interacts with three-point volume, and attendance responds to both game quality and external shocks. Model 5 (DKNG ~ Attendance + ORtg) introduced sports betting stocks into the system, testing whether on-court analytics created measurable financial value. However, that analysis treated stock prices as just another variable in a VAR system, ignoring a fundamental property of financial returns: **volatility clustering**.
+
+**The financial modeling challenge:** Stock prices exhibit time-varying variance where periods of high volatility cluster together, then give way to calmer periods. The March 2020 crash, the SPAC-driven boom of 2021, and the 2022 correction created extreme swings in DKNG and PENN that standard ARIMA/VAR models cannot capture. These models assume constant variance (homoskedasticity), but financial markets violate this assumption systematically.
+
+**The next chapter** shifts focus from **mean dynamics** (forecasting price levels) to **variance dynamics** (modeling volatility). We treat sports betting stocks as an independent financial ecosystem shaped by regulatory changes, competitive pressures, and broader market forces—not merely dependent variables responding to NBA metrics. ARCH and GARCH models explicitly capture volatility clustering, allowing us to forecast not just returns but the **uncertainty around those returns**.
+
+**What you'll see next:**
+
+- **Log returns** replace price levels, transforming non-stationary series into stationary percentage changes suitable for financial modeling
+- **ARCH/GARCH models** quantify how past volatility predicts future volatility, revealing whether betting stocks exhibit persistent risk patterns
+- **Conditional variance forecasting** provides risk management tools by predicting confidence intervals that widen during turbulent periods and narrow during stability
+- **Stylized facts** (fat tails, zero mean, volatility clustering) are tested empirically, demonstrating whether betting stocks behave like traditional equities
+
+The transition from multivariate to financial models reflects a shift from **basketball analytics** to **market microstructure**. Having established that NBA efficiency evolved under analytics and potentially influenced betting markets, we now ask: **How do betting stocks behave as financial assets?** Their volatility patterns reveal whether this young industry has stabilized or remains subject to boom-bust cycles driven by regulatory uncertainty.
+
+Where multivariate models asked "Do NBA metrics predict DKNG prices?", financial models ask "Does DKNG volatility predict itself?" Both questions illuminate the sports-finance ecosystem, but from complementary perspectives: cross-sectional relationships versus temporal risk dynamics.
+

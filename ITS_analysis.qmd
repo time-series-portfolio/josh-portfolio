@@ -269,7 +269,7 @@ actual_current <- tail(sports_betting$hits, 1)
 
 **Counterfactual**: Without NY legalization, current search interest would be `r sprintf("%.1f", counterfactual_current)` instead of `r sprintf("%.1f", actual_current)`
 
-The β₂ coefficient captures the immediate effect, indicating whether search interest jumped or declined right after New York’s January 8, 2022 legalization, with a significant negative value signaling an immediate cultural response. The counterfactual blue dashed line shows what search interest would have been without the intervention, and the gap between it and the actual red line quantifies the overall impact at any point. The β₃ coefficient reflects the sustained effect by measuring how the growth trajectory changed post-legalization, where negative values indicate slowing interest as the market stabilized. Together with the delayed effect—seen in both the average post, intervention difference and the ongoing separation between actual and counterfactual, these patterns reveal how the impact evolved and persisted well beyond the initial launch period.
+The β₂ coefficient captures the immediate effect, indicating whether search interest jumped or declined right after New York’s January 8, 2022 legalization, with a significant negative value signaling an immediate cultural response. The counterfactual blue dashed line shows what search interest would have been without the intervention, and the gap between it and the actual red line quantifies the overall impact at any point. The β₃ coefficient reflects the sustained effect by measuring how the growth trajectory changed post-legalization, where negative values indicate slowing interest as the market stabilized. Together with the delayed effect, intervention difference and the ongoing separation between actual and counterfactual, these patterns reveal how the impact evolved and persisted well beyond the initial launch period.
 
 ## COVID-19 Analysis
 
@@ -295,7 +295,7 @@ sports_covid_its <- sports_betting %>%
 sports_covid <- sports_covid_its %>%
     filter(date >= as.Date("2019-12-01") & date <= as.Date("2021-12-31"))
 
-ggplot(sports_covid, aes(x = date, y = Y)) +
+p_covid_impact <- ggplot(sports_covid, aes(x = date, y = Y)) +
     geom_line(color = "#1e88e5", linewidth = 1.2) +
     geom_point(color = "#1e88e5", size = 1.5, alpha = 0.6) +
     geom_vline(xintercept = covid_intervention, color = "red", linetype = "dashed", linewidth = 1.5) +
@@ -320,6 +320,12 @@ ggplot(sports_covid, aes(x = date, y = Y)) +
         caption = "Red shaded area indicates major sports leagues suspended"
     ) +
     theme(plot.title = element_text(face = "bold", size = 16))
+
+# Display plot
+print(p_covid_impact)
+
+# Save for conclusion
+ggsave("images/covid_betting_impact.png", plot = p_covid_impact, width = 14, height = 8, dpi = 300, bg = "white")
 
 # Data preparation table
 covid_table <- sports_covid_its %>%
