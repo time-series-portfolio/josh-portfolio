@@ -14,7 +14,8 @@ The diagram above captures the journey this analysis took. We began by examining
 
 ## Basketball's 45-Year Transformation: Playing Smarter, Not Just Faster
 
-The modern NBA barely resembles the game played in 1980. Back then, teams averaged around 104 points per 100 possessions, relying heavily on mid-range jump shots and post-up plays. By 2025, that figure climbed to nearly 113 points per 100 possessions—a nearly 10% efficiency gain. But this wasn't simply teams running faster or working harder. The data reveals something more fundamental: **teams learned to make smarter decisions about where to shoot**.
+The modern NBA barely resembles the game played in 1980. Back then, teams averaged around 104 points per 100 possessions, relying heavily on mid-range jump shots and post-up plays. By 2025, that figure climbed to nearly 113 points per 100 possessions, 
+a nearly 10% efficiency gain. But this wasn't simply teams running faster or working harder. The data reveals something more fundamental: **teams learned to make smarter decisions about where to shoot**.
 
 ![](images/ortg_evolution.png)
 
