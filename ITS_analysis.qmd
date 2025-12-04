@@ -123,7 +123,10 @@ p4 <- ggplot(nba_betting, aes(x = date, y = hits)) +
     labs(title = "Google Searches: 'nba betting'", x = "Date", y = "Search Interest (0-100)") +
     theme(plot.title = element_text(face = "bold"))
 
-gridExtra::grid.arrange(p1, p2, p3, p4, ncol = 2)
+ny_trends_grid <- gridExtra::grid.arrange(p1, p2, p3, p4, ncol = 2)
+
+# Save for presentation
+ggsave("images/ny_betting_trends.png", plot = ny_trends_grid, width = 14, height = 10, dpi = 300, bg = "white")
 
 # Data preparation table
 prep_table <- sports_betting %>%
@@ -298,27 +301,12 @@ sports_covid <- sports_covid_its %>%
 p_covid_impact <- ggplot(sports_covid, aes(x = date, y = Y)) +
     geom_line(color = "#1e88e5", linewidth = 1.2) +
     geom_point(color = "#1e88e5", size = 1.5, alpha = 0.6) +
-    geom_vline(xintercept = covid_intervention, color = "red", linetype = "dashed", linewidth = 1.5) +
-    annotate("text",
-        x = covid_intervention, y = max(sports_covid$Y) * 0.95,
-        label = "COVID-19 Pandemic\nMarch 11, 2020",
-        color = "red", size = 5, fontface = "bold", hjust = -0.1
-    ) +
-    annotate("rect",
-        xmin = covid_intervention, xmax = as.Date("2020-07-01"),
-        ymin = -Inf, ymax = Inf, alpha = 0.1, fill = "red"
-    ) +
-    # annotate("text",
-    #     x = as.Date("2020-05-01"), y = max(sports_covid$Y) * 0.1,
-    #     label = "Sports Leagues Shut Down",
-    #     color = "darkred", size = 4, fontface = "italic"
-    # ) +
     labs(
-        title = "Google Searches for 'Sports Betting' Around COVID-19 Pandemic",
-        subtitle = "Dramatic decline when sports leagues shut down in March 2020",
-        x = "Date", y = "Search Interest (0-100)",
-        caption = "Red shaded area indicates major sports leagues suspended"
+        title = "Google Searches for 'Sports Betting' (2020-2024)",
+        subtitle = "Public interest trends in sports betting over time",
+        x = "Date", y = "Search Interest (0-100)"
     ) +
+    theme_minimal(base_size = 14) +
     theme(plot.title = element_text(face = "bold", size = 16))
 
 # Display plot
