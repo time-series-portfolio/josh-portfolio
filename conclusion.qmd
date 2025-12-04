@@ -8,7 +8,7 @@ This project set out to answer a straightforward question: How has professional 
 
 ## The Complete Picture: From Evolution to Disruption to Recovery
 
-![](images/flowchart.png)
+![](images/flowchart1.png)
 
 The diagram above captures the journey this analysis took. We began by examining basketball's long-run evolution, then zoomed in on the analytics revolution that accelerated around 2012, measured the COVID-19 pandemic's catastrophic disruption in 2020, and finally connected these on-court changes to the financial markets that grew alongside them. Each piece of this puzzle required different analytical approaches, but together they reveal a coherent narrative about how sports, data, and money intersected in the 21st century.
 

@@ -14,7 +14,7 @@ This project seeks to quantify and contextualize the NBA’s evolution toward ef
 
 Basketball today is not merely an athletic competition but a living laboratory of applied data science. The league’s embrace of analytics mirrors a broader transformation in modern industries: decisions increasingly rest on quantitative evidence rather than intuition. The shift from mid-range isolation to high efficiency, high variance offense encapsulates how optimization, technology, and information access shape human behavior, specifically in sports. 
 
-![The Big Picture](images/flowchart.png)
+![The Big Picture](images/flowchart1.png)
 
 With the framework above, I aim to tell the story of how basketball's offensive efficiency evolved under the dual pressures of analytics and disruption, and how this transformation rippled through the betting industry that emerged alongside it. The analysis begins with a long-run view of the game's transformation: tracing how three-point attempts, shot selection, and pace redefined offensive output from 1980 through 2025. By examining league-wide efficiency, field-goal percentages, and possessions per 48 minutes, I hope to capture how the modern NBA diverged from its slower, mid-range past into a data-optimized era of high-variance offense.
 
