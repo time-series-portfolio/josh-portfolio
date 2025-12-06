@@ -1,5 +1,11 @@
 ---
 title: "Conclusions: The Analytics Revolution and Its Ripple Effects"
+format:
+  html:
+    code-fold: true
+    toc: true
+    toc-depth: 3
+    embed-resources: true
 ---
 
 # What We Discovered
@@ -8,7 +14,7 @@ This project set out to answer a straightforward question: How has professional 
 
 ## The Complete Picture: From Evolution to Disruption to Recovery
 
-![](images/flowchart1.png)
+![](/images/flowchart1.png)
 
 The diagram above captures the journey this analysis took. We began by examining basketball's long-run evolution, then zoomed in on the analytics revolution that accelerated around 2012, measured the COVID-19 pandemic's catastrophic disruption in 2020, and finally connected these on-court changes to the financial markets that grew alongside them. Each piece of this puzzle required different analytical approaches, but together they reveal a coherent narrative about how sports, data, and money intersected in the 21st century.
 
@@ -18,7 +24,7 @@ The modern NBA barely resembles the game played in 1980. Back then, teams averag
 
 ![](/images/ortg_evolution.png)
 
-In the early 1980s, three-point attempts accounted for less than 5% of all shots. Today, that figure exceeds 40%. This wasn't gradual drift—it was a sharp inflection around 2012 when front offices simultaneously embraced analytics. Our forecasting models show this shift was predictable once the analytics revolution began, following a clear upward trajectory that shows no signs of plateauing. Teams discovered what the math had been saying all along: three-pointers and shots at the rim yield more points than mid-range jumpers. The Houston Rockets didn't invent this insight, but they popularized it, and the entire league followed. This represents one of the fastest strategic adaptations in professional sports history, all driven by data rather than tradition.
+In the early 1980s, three-point attempts accounted for less than 5% of all shots. Today, that figure exceeds 40%. This was a sharp inflection around 2012 when front offices simultaneously embraced analytics. Our forecasting models show this shift was predictable once the analytics revolution began, following a clear upward trajectory that shows no signs of plateauing. Teams discovered what the math had been saying all along: three-pointers and shots at the rim yield more points than mid-range jumpers. The Houston Rockets didn't invent this insight, but they popularized it, and the entire league followed. This represents one of the fastest strategic adaptations in professional sports history, all driven by data rather than tradition.
 
 Interestingly, this efficiency revolution occurred despite tempo fluctuations. Pace of play, how many possessions teams get per game, followed a U-shaped pattern: fast in the 1980s, slowing to a trough in the mid-2000s, then accelerating again in the modern era. Our models revealed that efficiency gains came from **shot selection, not just speed**. A slower team shooting smart shots beats a fast team shooting poor shots. This finding challenges the simplistic narrative that "analytics made basketball faster." Analytics made basketball *efficient*, which sometimes meant playing faster, but more importantly meant shooting smarter.
 
@@ -28,9 +34,9 @@ Around 2012, something shifted. It wasn't a single rule change or a star player'
 
 ![](/images/3par_revolution.png)
 
-Before 2012, teams occasionally shot threes, but mostly as a strategic option. After 2012, three-point volume became the foundation of offensive philosophy. The data shows that improving three-point shooting accuracy and increasing three-point volume both independently drove efficiency gains, but their combined effect was transformative. Teams that embraced both—shooting more threes *and* developing better three-point shooters—pulled ahead of teams that changed only one dimension.
+Before 2012, teams occasionally shot threes, but mostly as a strategic option. After 2012, three-point volume became the foundation of offensive philosophy. The data shows that improving three-point shooting accuracy and increasing three-point volume both independently drove efficiency gains, but their combined effect was transformative. Teams that embraced both, shooting more threes *and* developing better three-point shooters, pulled ahead of teams that changed only one dimension.
 
-Crucially, this quantification of basketball didn't happen in isolation. As the game became more measurable and predictable, a parallel industry emerged: sports betting. Daily fantasy platforms like DraftKings and betting operators like Penn Entertainment built businesses on the premise that basketball outcomes could be priced with statistical precision. The analytics revolution didn't just change how teams played; it created the informational infrastructure for a multi-billion dollar gambling industry. Our analysis of betting stocks shows they experienced explosive growth during the same 2012-2020 period when analytics matured, suggesting these transformations were interconnected rather than coincidental.
+Crucially, this quantification of basketball didn't happen in isolation. As the game became more measurable and predictable, sports betting emerged. Daily fantasy platforms like DraftKings and betting operators like Penn Entertainment built businesses on the premise that basketball outcomes could be priced with statistical precision. The analytics revolution didn't just change how teams played; it created the informational infrastructure for a multi-billion dollar gambling industry. Our analysis of betting stocks shows they experienced explosive growth during the same 2012-2020 period when analytics matured, suggesting these transformations were interconnected rather than coincidental.
 
 ## COVID-19: The Shock That Tested Everything
 
@@ -40,13 +46,13 @@ Then March 2020 arrived, and everything stopped. The COVID-19 pandemic created a
 
 But the impact extended far beyond basketball courts. Google searches for "sports betting" plummeted by roughly 30-40 points when sports leagues shut down, demonstrating how deeply betting engagement depends on live competition. DraftKings' stock, which went public via SPAC merger in April 2020, experienced extreme volatility as investors tried to price a betting company without sports to bet on. Penn Entertainment's stock crashed then rebounded erratically as casinos closed and online betting surged.
 
-The recovery trajectory was uneven. When leagues resumed play in the NBA "bubble" and NFL returned in fall 2020, betting interest rebounded faster than attendance. This makes sense: people could bet on games from home, but couldn't attend empty arenas. By 2023-2024, attendance had partially recovered but remained below pre-pandemic levels, while betting markets had fully recovered and expanded. The pandemic accelerated a trend already underway—the shift from in-person attendance to digital engagement. COVID didn't change basketball's direction; it fast-forwarded the timeline.
+The recovery trajectory was uneven. When leagues resumed play in the NBA "bubble" and NFL returned in fall 2020, betting interest rebounded faster than attendance. This makes sense because people could bet on games from home, but couldn't attend empty arenas. By 2023-2024, attendance had partially recovered but remained below pre-pandemic levels, while betting markets had fully recovered and expanded. The pandemic accelerated a trend already underway, the shift from in-person attendance to digital engagement.
 
-Our analysis also examined New York's January 2022 legalization of online sports betting, the largest market entry in U.S. history. The intervention analysis shows this produced a measurable but complex effect: immediate surge in search interest followed by gradual normalization as the novelty faded. This pattern repeats across state legalizations—initial hype, then stabilization at a higher baseline than before. Sports betting is becoming mainstream entertainment rather than a niche activity, and regulatory changes are the driving force.
+Our analysis also examined New York's January 2022 legalization of online sports betting, the largest market entry in U.S. history. The intervention analysis shows this produced a measurable but complex effect. Particularly an immediate surge in search interest followed by gradual normalization as the novelty faded. Sports betting is becoming mainstream entertainment rather than a niche activity, and regulatory changes are the driving force.
 
 ## What the Forecasts Tell Us: A New Equilibrium or Continued Evolution?
 
-Looking ahead, our forecasting models—ranging from traditional ARIMA to deep learning neural networks—all point toward continued offensive efficiency gains, though with increasing uncertainty. The five-year forecasts project offensive rating will reach 114-115 points per 100 possessions by 2030, with three-point attempt rates potentially exceeding 45% of all shots. But the widening confidence intervals in every model reveal an important truth: **we're in uncharted territory**.
+Looking ahead, our forecasting models, ranging from traditional ARIMA to deep learning neural networks, all point toward continued offensive efficiency gains, though with increasing uncertainty. The five-year forecasts project offensive rating will reach 114-115 points per 100 possessions by 2030, with three-point attempt rates potentially exceeding 45% of all shots. But the widening confidence intervals in every model reveal an important truth: **we're in uncharted territory**.
 
 ![](images/ortg_forecast.png)
 
@@ -59,4 +65,10 @@ The betting industry's future appears more certain. Volatility models show that 
 
 ## What This Means for Basketball, Business, and Data Science
 
-This analysis highlights three broader lessons: data-driven optimization takes time to diffuse, as seen in the decades-long lag between the mathematical case for three-pointers and league-wide adoption; external shocks expose hidden system dependencies, with COVID revealing how tightly sports betting and fan engagement rely on live competition; and complex systems often favor simpler models, since advanced deep learning did not outperform traditional statistical forecasting for basketball data. Together, these insights show that NBA teams must continue innovating to stay competitive, the betting industry is shifting toward more sustainable long-term models, and data scientists can use time series analysis to uncover causal patterns across many domains. Basketball in 2025 is a data-optimized global product shaped by analytics, technology, and disruption—a microcosm of how complex systems evolve and a blueprint for understanding transformation across industries.
+This analysis highlights three broader lessons: 
+
+1. Data-driven optimization takes time to diffuse, as seen in the decades-long lag between the mathematical case for three-pointers and league-wide adoption
+2. External shocks expose hidden system dependencies, with COVID revealing how tightly sports betting and fan engagement rely on live competition
+3. Complex systems often favor simpler models, since advanced deep learning did not outperform traditional statistical forecasting for basketball data. 
+
+Together, these insights show that NBA teams must continue innovating to stay competitive, the betting industry is shifting toward more sustainable long-term models, and data scientists can use time series analysis to uncover causal patterns across many domains. Basketball in 2025 is a data-optimized global product shaped by analytics, technology, and disruption.
