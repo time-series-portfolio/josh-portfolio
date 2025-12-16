@@ -1733,28 +1733,3 @@ ggplot(cor_melted, aes(Var1, Var2, fill = value)) +
 :::
 
 ---
-
-# Bridging to Deep Learning for Time Series
-
-The financial models above demonstrate that sports betting stocks exhibit classic volatility clustering patterns captured by ARCH/GARCH frameworks. DKNG, PENN, CZR, and MGM show time-varying variance where turbulent periods persist before giving way to calm. These models excel at forecasting **conditional volatility**—predicting the uncertainty around returns rather than the returns themselves—making them essential for risk management and options pricing.
-
-Yet ARCH/GARCH models share a fundamental assumption with ARIMA and VAR: they impose **explicit parametric structure**. GARCH(1,1) assumes today's variance depends on yesterday's variance and yesterday's squared return with fixed coefficients. ARIMA(p,d,q) requires us to specify lag orders before fitting. These models demand domain expertise and statistical judgment, making them powerful when assumptions hold but brittle when reality deviates.
-
-**The deep learning alternative** abandons explicit parameterization in favor of learned representations. Recurrent neural networks (RNNs), Long Short-Term Memory (LSTM), and Gated Recurrent Units (GRUs) automatically discover temporal patterns through gradient descent rather than requiring analysts to pre-specify AR and MA terms. This flexibility enables deep learning models to capture complex nonlinearities, long-range dependencies, and regime shifts that defy simple parametric forms.
-
-**The next chapter** tests whether this flexibility improves forecasts or simply overfits limited data. With only 45 years of NBA data, do LSTM's 1,600+ parameters extract genuine signal or memorize noise? The comparison is direct: identical train/test splits, identical evaluation metrics (RMSE, MAE), identical target variable (ORtg). Traditional methods have interpretable coefficients and well-understood statistical properties; deep learning offers representational power but requires careful regularization.
-
-**What you'll see next:**
-
-- **RNN, LSTM, and GRU architectures** applied to NBA offensive efficiency forecasting, with explicit comparison to ARIMA baselines
-- **Regularization techniques** (L2 penalties, dropout, early stopping) that prevent overfitting on small datasets
-- **Input windowing** that transforms annual observations into supervised learning sequences (5-year windows → 1-year ahead)
-- **Performance comparison tables** showing whether deep learning adds value beyond traditional methods for sports analytics
-
-The transition from financial to deep learning models reflects a methodological tension in modern forecasting: **parametric parsimony versus representational flexibility**. GARCH models have 2-3 parameters; LSTMs have thousands. For volatile betting stocks with rich intraday data, that complexity may capture genuine structure. For annual NBA statistics with 45 observations, it may simply overfit.
-
-**The critical question:** Does basketball's evolution exhibit patterns too complex for ARIMA's linear assumptions but too simple for LSTM's deep architecture? Or do we sit in the sweet spot where both approaches offer complementary insights? The empirical comparison tests whether sports analytics has entered the deep learning era or whether classical time series methods remain the gold standard for data-scarce domains.
-
-Where GARCH asked "How does volatility evolve?", deep learning asks "What temporal patterns can we learn without assuming functional form?" Both frameworks forecast the future, but from opposite epistemological starting points: theory-driven specification versus data-driven discovery.
-
----

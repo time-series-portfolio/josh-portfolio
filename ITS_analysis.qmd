@@ -70,7 +70,7 @@ nba_betting <- trends %>%
 
 ### Background & Data
 
-**Intervention**: New York online sports betting launch (January 8, 2022) - the largest U.S. sports betting market by revenue, representing ~20% of the national market. 
+**Intervention**: New York online sports betting launch (January 8, 2022). The largest U.S. sports betting market by revenue, representing ~20% of the national market. 
 
 **Research Question**: Did NY legalization produce a significant change in public interest in sports betting? 
 
